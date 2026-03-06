@@ -147,9 +147,21 @@ void slowrf_task(void *pvParameters) {
                         uint8_t parity_bit = (dec.current_bits & 1);
                         int ones = 0;
                         for (int i = 0; i < 8; i++) { if ((data_byte >> i) & 1) ones++; }
+                        // FS20 ODD Parity
                         if (parity_bit == ((ones % 2) ? 0 : 1)) {
-                            if (dec.byte_cnt < sizeof(dec.data)) { dec.data[dec.byte_cnt++] = data_byte; }
-                        } else { reset_decoder(&dec); }
+                            if (dec.byte_cnt < sizeof(dec.data)) { 
+                                dec.data[dec.byte_cnt++] = data_byte; 
+                            }
+                        } else { 
+                            // Only reset if we already had some data, otherwise it's just noise
+                            if (dec.byte_cnt > 0) {
+                                if (slowrf_debug) usb_serial_jtag_write_bytes("PARERR\r\n", 8, 0);
+                                reset_decoder(&dec); 
+                            } else {
+                                dec.bit_cnt = 0;
+                                dec.current_bits = 0;
+                            }
+                        }
                         dec.current_bits = 0; dec.bit_cnt = 0;
                     }
                 }
