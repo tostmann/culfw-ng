@@ -16,26 +16,41 @@ static void IRAM_ATTR gpio_isr_handler(void* arg) {
     last_time = current_time;
     
     isr_count++;
-    if (diff > 100) { // Ignore extremely short glitches
+    // Simple filter: 200us < duration < 10ms
+    if (diff > 200 && diff < 10000) { 
         xQueueSendFromISR(pulse_queue, &diff, NULL);
     }
 }
 
 void slowrf_task(void *pvParameters) {
     int64_t pulse;
+    int bit_count = 0;
+    uint8_t current_data[10]; // FS20 is usually 5.5 bytes
+    
     while (1) {
         if (xQueueReceive(pulse_queue, &pulse, portMAX_DELAY)) {
-            // Filter noise
-            if (pulse < 200) continue; 
+            // Extremely simplified decoder logic for debugging
+            // In a real CUL, we would use a more sophisticated state machine
+            if (pulse > 3000) {
+                // Sync Gap
+                bit_count = 0;
+            } else if (pulse > 300 && pulse < 900) {
+                // Potential bit pulse
+                bit_count++;
+            }
             
-            // For now, just a placeholder. 
-            // In a real implementation, we would collect bits here.
+            // Periodically yield to prevent WDT
+            static int loop_cnt = 0;
+            if (++loop_cnt > 50) {
+                vTaskDelay(1);
+                loop_cnt = 0;
+            }
         }
     }
 }
 
 esp_err_t slowrf_init() {
-    pulse_queue = xQueueCreate(100, sizeof(int64_t));
+    pulse_queue = xQueueCreate(256, sizeof(int64_t));
     
     gpio_config_t io_conf = {
         .intr_type = GPIO_INTR_ANYEDGE,
@@ -49,7 +64,8 @@ esp_err_t slowrf_init() {
     gpio_install_isr_service(0);
     gpio_isr_handler_add(GPIO_GDO0, gpio_isr_handler, NULL);
     
-    xTaskCreate(slowrf_task, "slowrf_task", 4096, NULL, 15, NULL);
+    // Lowered priority from 15 to 4 (above LED, below parser)
+    xTaskCreate(slowrf_task, "slowrf_task", 4096, NULL, 4, NULL);
     
     return ESP_OK;
 }

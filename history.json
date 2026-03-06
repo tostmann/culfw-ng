@@ -851,5 +851,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "static uint32_t isr_count = 0;\nstatic void IRAM_ATTR gpio_isr_handler(void* arg) {\n    int64_t current_time = esp_timer_get_time();\n    int64_t diff = current_time - last_time;\n    last_time = current_time;\n    \n    isr_count++;\n    // Simple filter: 200us < duration < 10ms\n    if (diff > 200 && diff < 10000) { \n        xQueueSendFromISR(pulse_queue, &diff, NULL);\n    }\n}\n\nvoid slowrf_task(void *pvParameters) {\n    int64_t pulse;\n    int bit_count = 0;\n    uint8_t current_data[10]; // FS20 is usually 5.5 bytes\n    \n    while (1) {\n        if (xQueueReceive(pulse_queue, &pulse, portMAX_DELAY)) {\n            // Extremely simplified decoder logic for debugging\n            // In a real CUL, we would use a more sophisticated state machine\n            if (pulse > 3000) {\n                // Sync Gap\n                bit_count = 0;\n            } else if (pulse > 300 && pulse < 900) {\n                // Potential bit pulse\n                bit_count++;\n            }\n            \n            // Periodically yield to prevent WDT\n            static int loop_cnt = 0;\n            if (++loop_cnt > 50) {\n                vTaskDelay(1);\n                loop_cnt = 0;\n            }\n        }\n    }\n}\n\nesp_err_t slowrf_init() {\n    pulse_queue = xQueueCreate(256, sizeof(int64_t));\n    \n    gpio_config_t io_conf = {\n        .intr_type = GPIO_INTR_ANYEDGE,\n        .pin_bit_mask = (1ULL << GPIO_GDO0),\n        .mode = GPIO_MODE_INPUT,\n        .pull_up_en = 0,\n        .pull_down_en = 0,\n    };\n    gpio_config(&io_conf);\n    \n    gpio_install_isr_service(0);\n    gpio_isr_handler_add(GPIO_GDO0, gpio_isr_handler, NULL);\n    \n    // Lowered priority from 15 to 4 (above LED, below parser)\n    xTaskCreate(slowrf_task, \"slowrf_task\", 4096, NULL, 4, NULL);\n    \n    return ESP_OK;\n}",
+            "path": "src/slowrf.c",
+            "original_text": "static uint32_t isr_count = 0;\nstatic void IRAM_ATTR gpio_isr_handler(void* arg) {\n    int64_t current_time = esp_timer_get_time();\n    int64_t diff = current_time - last_time;\n    last_time = current_time;\n    \n    isr_count++;\n    if (diff > 100) { // Ignore extremely short glitches\n        xQueueSendFromISR(pulse_queue, &diff, NULL);\n    }\n}\n\nvoid slowrf_task(void *pvParameters) {\n    int64_t pulse;\n    while (1) {\n        if (xQueueReceive(pulse_queue, &pulse, portMAX_DELAY)) {\n            // Filter noise\n            if (pulse < 200) continue; \n            \n            // For now, just a placeholder. \n            // In a real implementation, we would collect bits here.\n        }\n    }\n}\n\nesp_err_t slowrf_init() {\n    pulse_queue = xQueueCreate(100, sizeof(int64_t));\n    \n    gpio_config_t io_conf = {\n        .intr_type = GPIO_INTR_ANYEDGE,\n        .pin_bit_mask = (1ULL << GPIO_GDO0),\n        .mode = GPIO_MODE_INPUT,\n        .pull_up_en = 0,\n        .pull_down_en = 0,\n    };\n    gpio_config(&io_conf);\n    \n    gpio_install_isr_service(0);\n    gpio_isr_handler_add(GPIO_GDO0, gpio_isr_handler, NULL);\n    \n    xTaskCreate(slowrf_task, \"slowrf_task\", 4096, NULL, 15, NULL);\n    \n    return ESP_OK;\n}"
+          }
+        }
+      }
+    ]
   }
 ]
