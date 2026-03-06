@@ -95,6 +95,11 @@ static void handle_command(char *cmd) {
             cc1101_send_it_v1(is_data);
         }
         len = snprintf(out, sizeof(out), "is OK\r\n");
+    } else if (cmd[0] == 'H') {
+        if (strlen(cmd) >= 11) {
+            cc1101_send_hms(cmd + 1);
+            len = snprintf(out, sizeof(out), "H OK\r\n");
+        }
     } else if (cmd[0] == 'T') {
         if (cmd[1] == 'r') {
             len = snprintf(out, sizeof(out), "Tr START\r\n");

@@ -811,5 +811,87 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "        case 'H': // HMS\n            if (len >= 11) {\n                cc1101_send_hms(line + 1);\n            }\n            break;\n",
+            "path": "src/culfw_parser.c",
+            "original_text": "        case 'H': // HMS\n            // Not implemented yet\n            break;\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Error: 'original_text' not found. Use exact match."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "read_file",
+          "args": {
+            "path": "src/culfw_parser.c"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "read_file",
+          "response": {
+            "result": "#include <stdio.h>\n#include <string.h>\n#include \"freertos/FreeRTOS.h\"\n#include \"freertos/task.h\"\n#include \"culfw_parser.h\"\n#include \"esp_log.h\"\n#include \"esp_random.h\"\n#include \"nvs_flash.h\"\n#include \"nvs.h\"\n#include \"driver/gpio.h\"\n#include \"driver/usb_serial_jtag.h\"\n#include \"cc1101.h\"\n#include \"slowrf.h\"\n\nstatic const char *TAG = \"CULFW_PARSER\";\nstatic bool reporting_enabled = false;\n\nstatic void save_reporting_state(bool state) {\n    nvs_handle_t my_handle;\n    if (nvs_open(\"storage\", NVS_READWRITE, &my_handle) == ESP_OK) {\n        nvs_set_u8(my_handle, \"reporting\", state ? 1 : 0);\n        nvs_commit(my_handle);\n        nvs_close(my_handle);\n    }\n}\n\nstatic bool load_reporting_state() {\n    nvs_handle_t my_handle;\n    uint8_t state = 0;\n    if (nvs_open(\"storage\", NVS_READONLY, &my_handle) == ESP_OK) {\n        nvs_get_u8(my_handle, \"reporting\", &state);\n        nvs_close(my_handle);\n    }\n    return state != 0;\n}\n\nbool culfw_reporting_enabled() {\n    return reporting_enabled;\n}\n\nstatic void handle_command(char *cmd) {\n    char out[128];\n    int len = 0;\n    if (cmd[0] == 'V') {\n        bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);\n        len = snprintf(out, sizeof(out), \"V %s culfw-NG Build: %d (%s %s) CUL32-C6 (F-Band: %sMHz)\\r\\n\", \n                       FW_VERSION, BUILD_NUMBER, __DATE__, __TIME__, is_433 ? \"433\" : \"868\");\n    } else if (cmd[0] == 'X') {\n        if (cmd[1] == '0' && cmd[2] == '0') {\n            reporting_enabled = false;\n            slowrf_set_debug(false);\n            slowrf_set_reporting(false);\n        } else if (cmd[1] == '9' && cmd[2] == '9') {\n            slowrf_set_debug(true);\n            reporting_enabled = true;\n            slowrf_set_reporting(true);\n        } else {\n            reporting_enabled = true;\n            slowrf_set_debug(false);\n            slowrf_set_reporting(true);\n        }\n        save_reporting_state(reporting_enabled);\n        len = snprintf(out, sizeof(out), \"X%02d\\r\\n\", reporting_enabled ? 21 : 0);\n    } else if (cmd[0] == 'C') {\n        uint8_t part = cc1101_read_reg(CC1101_PARTNUM | CC1101_READ_BURST);\n        uint8_t vers = cc1101_read_reg(CC1101_VERSION | CC1101_READ_BURST);\n        uint8_t marc = cc1101_read_reg(0x35 | CC1101_READ_BURST);\n        len = snprintf(out, sizeof(out), \"C01 Part: 0x%02x, Vers: 0x%02x, MARC: 0x%02x\\r\\n\", part, vers, marc);\n    } else if (cmd[0] == 'R' && strlen(cmd) >= 3) {\n        uint8_t reg = strtol(cmd + 1, NULL, 16);\n        uint8_t val = cc1101_read_reg(reg | CC1101_READ_BURST);\n        len = snprintf(out, sizeof(out), \"R%02X%02X\\r\\n\", reg, val);\n    } else if (cmd[0] == 'W' && strlen(cmd) >= 5) {\n        uint8_t reg = strtol((char[]){cmd[1], cmd[2], 0}, NULL, 16);\n        uint8_t val = strtol(cmd + 3, NULL, 16);\n        cc1101_write_reg(reg, val);\n        len = snprintf(out, sizeof(out), \"W%02X%02X\\r\\n\", reg, val);\n    } else if (cmd[0] == 'F') {\n        if (strlen(cmd) == 9) {\n            char hc[5], ad[3], cm[3];\n            strncpy(hc, cmd + 1, 4); hc[4] = 0;\n            strncpy(ad, cmd + 5, 2); ad[2] = 0;\n            strncpy(cm, cmd + 7, 2); cm[2] = 0;\n            cc1101_send_fs20(hc, ad, cm);\n            len = snprintf(out, sizeof(out), \"F OK\\r\\n\");\n        } else {\n            cc1101_send_raw_slowrf(cmd + 1);\n            len = snprintf(out, sizeof(out), \"F OK (raw)\\r\\n\");\n        }\n    } else if (cmd[0] == 'i' && cmd[1] == 's') {\n        const char* is_data = cmd + 2;\n        if (strlen(is_data) == 32) {\n            cc1101_send_it_v3(is_data);\n        } else {\n            cc1101_send_it_v1(is_data);\n        }\n        len = snprintf(out, sizeof(out), \"is OK\\r\\n\");\n    } else if (cmd[0] == 'T') {\n        if (cmd[1] == 'r') {\n            len = snprintf(out, sizeof(out), \"Tr START\\r\\n\");\n            usb_serial_jtag_write_bytes(out, len, portMAX_DELAY);\n            for (int i = 0; i < 5; i++) {\n                char rnd_hex[11];\n                uint32_t r = esp_random();\n                snprintf(rnd_hex, sizeof(rnd_hex), \"%08X\", r);\n                char msg[64];\n                int mlen = snprintf(msg, sizeof(msg), \"TX: %s\\r\\n\", rnd_hex);\n                usb_serial_jtag_write_bytes(msg, mlen, portMAX_DELAY);\n                cc1101_send_raw_slowrf(rnd_hex);\n                vTaskDelay(pdMS_TO_TICKS(500));\n            }\n            len = snprintf(out, sizeof(out), \"Tr DONE\\r\\n\");\n        } else if (cmd[1] == 'X') {\n            if (cmd[2] == '1') {\n                cc1101_set_tx_mode();\n                gpio_set_level(GPIO_GDO0, 1);\n                len = snprintf(out, sizeof(out), \"TX ON\\r\\n\");\n            } else {\n                cc1101_set_rx_mode();\n                len = snprintf(out, sizeof(out), \"TX OFF\\r\\n\");\n            }\n        } else if (strlen(cmd) >= 7) {\n            cc1101_send_raw_slowrf(cmd + 1);\n            len = snprintf(out, sizeof(out), \"T OK\\r\\n\");\n        }\n    } else {\n        len = snprintf(out, sizeof(out), \"E %s unknown\\r\\n\", cmd);\n    }\n    \n    if (len > 0) {\n        usb_serial_jtag_write_bytes(out, len, portMAX_DELAY);\n    }\n}\n\nvoid culfw_parser_task(void *pvParameters) {\n    reporting_enabled = load_reporting_state();\n    slowrf_set_reporting(reporting_enabled);\n    ESP_LOGI(TAG, \"Loaded reporting state: %d\", reporting_enabled);\n\n    if (!usb_serial_jtag_is_driver_installed()) {\n        usb_serial_jtag_driver_config_t usb_serial_jtag_config = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();\n        usb_serial_jtag_driver_install(&usb_serial_jtag_config);\n    }\n\n    uint8_t buf[128];\n    char cmd_buf[128];\n    int cmd_pos = 0;\n\n    while (1) {\n        int n = usb_serial_jtag_read_bytes(buf, sizeof(buf), pdMS_TO_TICKS(50));\n        if (n > 0) {\n            for (int i = 0; i < n; i++) {\n                char c = (char)buf[i];\n                if (c == '\\r' || c == '\\n') {\n                    if (cmd_pos > 0) {\n                        cmd_buf[cmd_pos] = '\\0';\n                        handle_command(cmd_buf);\n                        cmd_pos = 0;\n                    }\n                } else if (cmd_pos < sizeof(cmd_buf) - 1) {\n                    cmd_buf[cmd_pos++] = c;\n                }\n            }\n        }\n        vTaskDelay(pdMS_TO_TICKS(10));\n    }\n}\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "    } else if (cmd[0] == 'i' && cmd[1] == 's') {\n        const char* is_data = cmd + 2;\n        if (strlen(is_data) == 32) {\n            cc1101_send_it_v3(is_data);\n        } else {\n            cc1101_send_it_v1(is_data);\n        }\n        len = snprintf(out, sizeof(out), \"is OK\\r\\n\");\n    } else if (cmd[0] == 'H') {\n        if (strlen(cmd) >= 11) {\n            cc1101_send_hms(cmd + 1);\n            len = snprintf(out, sizeof(out), \"H OK\\r\\n\");\n        }\n    } else if (cmd[0] == 'T') {\n",
+            "path": "src/culfw_parser.c",
+            "original_text": "    } else if (cmd[0] == 'i' && cmd[1] == 's') {\n        const char* is_data = cmd + 2;\n        if (strlen(is_data) == 32) {\n            cc1101_send_it_v3(is_data);\n        } else {\n            cc1101_send_it_v1(is_data);\n        }\n        len = snprintf(out, sizeof(out), \"is OK\\r\\n\");\n    } else if (cmd[0] == 'T') {\n"
+          }
+        }
+      }
+    ]
   }
 ]
