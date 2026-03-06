@@ -1165,5 +1165,111 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "ls include/cc1101.h\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\ninclude/cc1101.h\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "read_file",
+          "args": {
+            "path": "include/cc1101.h"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "read_file",
+          "response": {
+            "result": "#ifndef CC1101_H\n#define CC1101_H\n\n#include \"esp_err.h\"\n#include \"driver/spi_master.h\"\n\nesp_err_t cc1101_init();\nesp_err_t cc1101_write_reg(uint8_t reg, uint8_t val);\nuint8_t cc1101_read_reg(uint8_t reg);\nesp_err_t cc1101_cmd_strobe(uint8_t cmd);\nvoid cc1101_set_rx_mode();\nvoid cc1101_set_tx_mode();\nvoid cc1101_set_idle_mode();\nvoid cc1101_send_slowrf(const char* hex_data);\n\n#define CC1101_WRITE_BURST  0x40\n#define CC1101_READ_SINGLE  0x80\n#define CC1101_READ_BURST   0xC0\n\n// Status Registers\n#define CC1101_PARTNUM      0x30\n#define CC1101_VERSION      0x31\n\n// Command Strobes\n#define CC1101_SRES         0x30\n#define CC1101_SFSTX        0x31\n#define CC1101_SXOFF        0x32\n#define CC1101_SCAL         0x33\n#define CC1101_SRX          0x34\n#define CC1101_STX          0x35\n#define CC1101_SIDLE        0x36\n#define CC1101_SWOR         0x38\n#define CC1101_SPWD         0x39\n#define CC1101_SFTX         0x3B\n#define CC1101_SFRX         0x3C\n#define CC1101_SNOP         0x3D\n\n#endif\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "~/.platformio/penv/bin/pio run && \\\n~/.platformio/penv/bin/pio run --target upload --upload-port /dev/ttyACM2 && \\\n~/.platformio/penv/bin/pio run --target upload --upload-port /dev/ttyACM3\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 1\nOutput:\n\n... [OUTPUT TRUNCATED. Total size: 2523 bytes. Showing last 1500 bytes. Full output saved in 'last_execution.log'. Use 'grep' or 'read_file last_execution.log' to analyze!]\nLDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf\nLDF Modes: Finder ~ chain, Compatibility ~ soft\nFound 0 compatible libraries\nScanning dependencies...\nNo dependencies\nBuilding in release mode\nCompiling .pio/build/cul32-c6/src/cc1101.c.o\nsrc/cc1101.c: In function 'cc1101_init':\nsrc/cc1101.c:95:5: error: implicit declaration of function 'cc1101_write_burst'; did you mean 'cc1101_write_reg'? [-Wimplicit-function-declaration]\n   95 |     cc1101_write_burst(0x3E, patable, 2);\n      |     ^~~~~~~~~~~~~~~~~~\n      |     cc1101_write_reg\nsrc/cc1101.c: At top level:\nsrc/cc1101.c:183:11: error: conflicting types for 'cc1101_write_burst'; have 'esp_err_t(uint8_t,  const uint8_t *, size_t)' {aka 'int(unsigned char,  const unsigned char *, unsigned int)'}\n  183 | esp_err_t cc1101_write_burst(uint8_t reg, const uint8_t *data, size_t len) {\n      |           ^~~~~~~~~~~~~~~~~~\nsrc/cc1101.c:183:1: note: an argument type that has a default promotion cannot match an empty parameter name list declaration\n  183 | esp_err_t cc1101_write_burst(uint8_t reg, const uint8_t *data, size_t len) {\n      | ^~~~~~~~~\nsrc/cc1101.c:95:5: note: previous implicit declaration of 'cc1101_write_burst' with type 'int()'\n   95 |     cc1101_write_burst(0x3E, patable, 2);\n      |     ^~~~~~~~~~~~~~~~~~\n*** [.pio/build/cul32-c6/src/cc1101.c.o] Error 1\n========================== [FAILED] Took 8.72 seconds ==========================\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "esp_err_t cc1101_init();\nesp_err_t cc1101_write_reg(uint8_t reg, uint8_t val);\nesp_err_t cc1101_write_burst(uint8_t reg, const uint8_t *data, size_t len);\nuint8_t cc1101_read_reg(uint8_t reg);\n",
+            "path": "include/cc1101.h",
+            "original_text": "esp_err_t cc1101_init();\nesp_err_t cc1101_write_reg(uint8_t reg, uint8_t val);\nuint8_t cc1101_read_reg(uint8_t reg);\n"
+          }
+        }
+      }
+    ]
   }
 ]
