@@ -1165,5 +1165,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "                int bit = -1;\n                int bit_ready = 0;\n\n                // Tolerate missed edges (full bit instead of two pulses)\n                if (pulse >= 250 && pulse <= 520) { // Half-bit 0\n                    if (pulse_in_bit == 1 && last_bit == 0) {\n                        bit = 0;\n                        bit_ready = 1;\n                        pulse_in_bit = 0;\n                    } else {\n                        last_bit = 0;\n                        pulse_in_bit = 1;\n                    }\n                } else if (pulse > 520 && pulse <= 750) { // Half-bit 1 or Full-bit 0?\n                    // Usually FS20 '1' half-bit is 600. \n                    // Full-bit '0' is 800.\n                    // If we get 600, we treat as half-bit 1.\n                    if (pulse_in_bit == 1 && last_bit == 1) {\n                        bit = 1;\n                        bit_ready = 1;\n                        pulse_in_bit = 0;\n                    } else {\n                        last_bit = 1;\n                        pulse_in_bit = 1;\n                    }\n                } else if (pulse > 750 && pulse <= 1000) { // Full-bit 0 (missed edge)\n                    bit = 0;\n                    bit_ready = 1;\n                    pulse_in_bit = 0;\n                } else if (pulse > 1000 && pulse <= 1450) { // Full-bit 1 (missed edge)\n                    bit = 1;\n                    bit_ready = 1;\n                    pulse_in_bit = 0;\n                } else {\n                    pulse_in_bit = 0;\n                }\n\n                if (bit_ready) {\n                    dec.current_bits = (dec.current_bits << 1) | bit;\n                    dec.bit_cnt++;\n                    \n                    if (dec.bit_cnt == 9) {\n                        uint8_t data_byte = (dec.current_bits >> 1);\n                        uint8_t parity_bit = (dec.current_bits & 1);\n                        int ones = 0;\n                        for (int i = 0; i < 8; i++) {\n                            if ((data_byte >> i) & 1) ones++;\n                        }\n                        if (parity_bit == ((ones % 2) ? 0 : 1)) {\n                            if (dec.byte_cnt < sizeof(dec.data)) {\n                                dec.data[dec.byte_cnt++] = data_byte;\n                            }\n                        } else {\n                            reset_decoder(&dec);\n                        }\n                        dec.current_bits = 0;\n                        dec.bit_cnt = 0;\n                    }\n                }\n",
+            "path": "src/slowrf.c",
+            "original_text": "                int bit = -1;\n                // Wider tolerances for noise\n                if (pulse >= 250 && pulse <= 550) bit = 0;\n                else if (pulse >= 550 && pulse <= 950) bit = 1;\n\n                if (bit != -1) {\n                    if (pulse_in_bit == 0) {\n                        last_bit = bit;\n                        pulse_in_bit = 1;\n                    } else {\n                        if (bit == last_bit) {\n                            // Valid FS20 bit (two identical pulses)\n                            dec.current_bits = (dec.current_bits << 1) | bit;\n                            dec.bit_cnt++;\n                            \n                            // FS20: 8 data bits + 1 parity bit = 9 bits\n                            if (dec.bit_cnt == 9) {\n                                uint8_t data_byte = (dec.current_bits >> 1);\n                                uint8_t parity_bit = (dec.current_bits & 1);\n                                int ones = 0;\n                                for (int i = 0; i < 8; i++) {\n                                    if ((data_byte >> i) & 1) ones++;\n                                }\n                                // FS20 uses ODD parity: sum over 9 bits must be odd.\n                                // so parity_bit must be 1 if (ones % 2 == 0) and 0 if (ones % 2 != 0).\n                                // i.e. parity_bit == !(ones % 2).\n                                if (parity_bit == ((ones % 2) ? 0 : 1)) {\n                                    if (dec.byte_cnt < sizeof(dec.data)) {\n                                        dec.data[dec.byte_cnt++] = data_byte;\n                                    }\n                                } else {\n                                    // Parity error, discard packet\n                                    reset_decoder(&dec);\n                                }\n                                dec.current_bits = 0;\n                                dec.bit_cnt = 0;\n                            }\n                        }\n                        pulse_in_bit = 0;\n                    }\n                } else {\n                    pulse_in_bit = 0;\n                }\n"
+          }
+        }
+      }
+    ]
   }
 ]

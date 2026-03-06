@@ -76,47 +76,63 @@ void slowrf_task(void *pvParameters) {
                 pulse_in_bit = 0;
             } else {
                 int bit = -1;
-                // Wider tolerances for noise
-                if (pulse >= 250 && pulse <= 550) bit = 0;
-                else if (pulse >= 550 && pulse <= 950) bit = 1;
+                int bit_ready = 0;
 
-                if (bit != -1) {
-                    if (pulse_in_bit == 0) {
-                        last_bit = bit;
-                        pulse_in_bit = 1;
-                    } else {
-                        if (bit == last_bit) {
-                            // Valid FS20 bit (two identical pulses)
-                            dec.current_bits = (dec.current_bits << 1) | bit;
-                            dec.bit_cnt++;
-                            
-                            // FS20: 8 data bits + 1 parity bit = 9 bits
-                            if (dec.bit_cnt == 9) {
-                                uint8_t data_byte = (dec.current_bits >> 1);
-                                uint8_t parity_bit = (dec.current_bits & 1);
-                                int ones = 0;
-                                for (int i = 0; i < 8; i++) {
-                                    if ((data_byte >> i) & 1) ones++;
-                                }
-                                // FS20 uses ODD parity: sum over 9 bits must be odd.
-                                // so parity_bit must be 1 if (ones % 2 == 0) and 0 if (ones % 2 != 0).
-                                // i.e. parity_bit == !(ones % 2).
-                                if (parity_bit == ((ones % 2) ? 0 : 1)) {
-                                    if (dec.byte_cnt < sizeof(dec.data)) {
-                                        dec.data[dec.byte_cnt++] = data_byte;
-                                    }
-                                } else {
-                                    // Parity error, discard packet
-                                    reset_decoder(&dec);
-                                }
-                                dec.current_bits = 0;
-                                dec.bit_cnt = 0;
-                            }
-                        }
+                // Tolerate missed edges (full bit instead of two pulses)
+                if (pulse >= 250 && pulse <= 520) { // Half-bit 0
+                    if (pulse_in_bit == 1 && last_bit == 0) {
+                        bit = 0;
+                        bit_ready = 1;
                         pulse_in_bit = 0;
+                    } else {
+                        last_bit = 0;
+                        pulse_in_bit = 1;
                     }
+                } else if (pulse > 520 && pulse <= 750) { // Half-bit 1 or Full-bit 0?
+                    // Usually FS20 '1' half-bit is 600. 
+                    // Full-bit '0' is 800.
+                    // If we get 600, we treat as half-bit 1.
+                    if (pulse_in_bit == 1 && last_bit == 1) {
+                        bit = 1;
+                        bit_ready = 1;
+                        pulse_in_bit = 0;
+                    } else {
+                        last_bit = 1;
+                        pulse_in_bit = 1;
+                    }
+                } else if (pulse > 750 && pulse <= 1000) { // Full-bit 0 (missed edge)
+                    bit = 0;
+                    bit_ready = 1;
+                    pulse_in_bit = 0;
+                } else if (pulse > 1000 && pulse <= 1450) { // Full-bit 1 (missed edge)
+                    bit = 1;
+                    bit_ready = 1;
+                    pulse_in_bit = 0;
                 } else {
                     pulse_in_bit = 0;
+                }
+
+                if (bit_ready) {
+                    dec.current_bits = (dec.current_bits << 1) | bit;
+                    dec.bit_cnt++;
+                    
+                    if (dec.bit_cnt == 9) {
+                        uint8_t data_byte = (dec.current_bits >> 1);
+                        uint8_t parity_bit = (dec.current_bits & 1);
+                        int ones = 0;
+                        for (int i = 0; i < 8; i++) {
+                            if ((data_byte >> i) & 1) ones++;
+                        }
+                        if (parity_bit == ((ones % 2) ? 0 : 1)) {
+                            if (dec.byte_cnt < sizeof(dec.data)) {
+                                dec.data[dec.byte_cnt++] = data_byte;
+                            }
+                        } else {
+                            reset_decoder(&dec);
+                        }
+                        dec.current_bits = 0;
+                        dec.bit_cnt = 0;
+                    }
                 }
             }
 
