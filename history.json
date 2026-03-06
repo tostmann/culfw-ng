@@ -1199,5 +1199,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "                        // FS20 ODD Parity (Standard)\n                        if (parity_bit == ((ones % 2) ? 0 : 1)) {\n",
+            "path": "src/slowrf.c",
+            "original_text": "                        // FS20 EVEN Parity (culfw style)\n                        if (parity_bit == (ones % 2)) {\n"
+          }
+        }
+      }
+    ]
   }
 ]
