@@ -40,11 +40,9 @@ static void handle_command(char *cmd) {
         usb_serial_jtag_write_bytes(out, len, portMAX_DELAY);
         for (int i = 0; i < 5; i++) {
             char rnd_hex[11];
-            uint32_t r1 = esp_random();
-            uint16_t addr = (uint16_t)r1;
-            uint8_t cmd_val = (uint8_t)(r1 >> 16);
-            uint8_t ext = (uint8_t)(r1 >> 24);
-            snprintf(rnd_hex, sizeof(rnd_hex), "%04X%02X%02X", addr, cmd_val, ext);
+            uint32_t r = esp_random();
+            // Just use the bytes directly for simplicity
+            snprintf(rnd_hex, sizeof(rnd_hex), "%08X", r);
             
             char msg[64];
             int mlen = snprintf(msg, sizeof(msg), "TX: %s\r\n", rnd_hex);
