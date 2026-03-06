@@ -907,5 +907,218 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "~/.platformio/penv/bin/pio run && \\\n~/.platformio/penv/bin/pio run --target upload --upload-port /dev/ttyACM2 && \\\n~/.platformio/penv/bin/pio run --target upload --upload-port /dev/ttyACM3\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\n\n... [OUTPUT TRUNCATED. Total size: 15771 bytes. Showing last 1500 bytes. Full output saved in 'last_execution.log'. Use 'grep' or 'read_file last_execution.log' to analyze!]\nHash of data verified.\nCompressed 210880 bytes to 106796...\n\nWriting at 0x00010000 [\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]   0.0% 0/106796 bytes... \n\nWriting at 0x0001b85d [\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  15.3% 16384/106796 bytes... \n\nWriting at 0x00022677 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  30.7% 32768/106796 bytes... \n\nWriting at 0x0002979c [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  46.0% 49152/106796 bytes... \n\nWriting at 0x0003124e [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  61.4% 65536/106796 bytes... \n\nWriting at 0x00038198 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  76.7% 81920/106796 bytes... \n\nWriting at 0x0003f31a [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591]  92.0% 98304/106796 bytes... \n\nWriting at 0x000437c0 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588] 100.0% 106796/106796 bytes... \nWrote 210880 bytes (106796 compressed) at 0x00010000 in 1.1 seconds (1602.0 kbit/s).\nHash of data verified.\n\nHard resetting via RTS pin...\n========================= [SUCCESS] Took 10.45 seconds =========================\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "stty -F /dev/ttyACM2 115200 raw -echo\n(echo \"V\"; sleep 1) | timeout 2s cat /dev/ttyACM2\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 124\nOutput:\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "static void handle_command(char *cmd) {\n    char out[128];\n    int len = 0;\n    if (cmd[0] == 'V') {\n        bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);\n        len = snprintf(out, sizeof(out), \"V 1.0.1-NG CUL32-C6-%sMHz\\r\\n\", is_433 ? \"433\" : \"868\");\n    } else if (cmd[0] == 'X') {\n        len = snprintf(out, sizeof(out), \"X21\\r\\n\");\n    } else if (cmd[0] == 'C') {\n        len = snprintf(out, sizeof(out), \"C01\\r\\n\");\n    } else {\n        len = snprintf(out, sizeof(out), \"E Unknown command\\r\\n\");\n    }\n    \n    if (len > 0) {\n        usb_serial_jtag_write_bytes(out, len, portMAX_DELAY);\n    }\n}\n\nvoid culfw_parser_task(void *pvParameters) {\n    usb_serial_jtag_driver_config_t usb_serial_jtag_config = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();\n    usb_serial_jtag_driver_install(&usb_serial_jtag_config);\n\n    uint8_t buf[128];\n    char cmd_buf[128];\n    int cmd_pos = 0;\n\n    while (1) {\n        int n = usb_serial_jtag_read_bytes(buf, sizeof(buf), pdMS_TO_TICKS(10));\n        if (n > 0) {\n            for (int i = 0; i < n; i++) {\n                char c = (char)buf[i];\n                if (c == '\\r' || c == '\\n') {\n                    if (cmd_pos > 0) {\n                        cmd_buf[cmd_pos] = '\\0';\n                        handle_command(cmd_buf);\n                        cmd_pos = 0;\n                    }\n                } else if (cmd_pos < sizeof(cmd_buf) - 1) {\n                    cmd_buf[cmd_pos++] = c;\n                }\n            }\n        }\n        vTaskDelay(pdMS_TO_TICKS(10));\n    }\n}",
+            "path": "src/culfw_parser.c",
+            "original_text": "static void handle_command(char *cmd) {\n    if (cmd[0] == 'V') {\n        bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);\n        printf(\"V 1.0.1-NG CUL32-C6-%sMHz\\r\\n\", is_433 ? \"433\" : \"868\");\n        fflush(stdout);\n    } else if (cmd[0] == 'X') {\n        // X0x, X21, etc.\n        printf(\"X21\\r\\n\");\n    } else if (cmd[0] == 'C') {\n        // Cxx settings\n        printf(\"C01\\r\\n\");\n    } else if (cmd[0] == 'F') {\n        // FS20 / FHT / HMS etc.\n        // Send: F <addr> <cmd> <ext>\n        // Receive: F <hex_data>\n        ESP_LOGI(TAG, \"SlowRF command: %s\", cmd);\n    } else {\n        ESP_LOGI(TAG, \"Unknown command: %s\", cmd);\n    }\n}\n\nvoid culfw_parser_task(void *pvParameters) {\n    // Initialize USB-SERIAL-JTAG\n    usb_serial_jtag_driver_config_t usb_serial_jtag_config = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();\n    usb_serial_jtag_driver_install(&usb_serial_jtag_config);\n    esp_vfs_usb_serial_jtag_use_driver();\n\n    char buf[128];\n    int pos = 0;\n    \n    // Disable buffering for stdin\n    setvbuf(stdin, NULL, _IONBF, 0);\n\n    while (1) {\n        int c = getchar();\n        if (c != EOF && c != 0xFF) {\n            if (c == '\\r' || c == '\\n') {\n                if (pos > 0) {\n                    buf[pos] = '\\0';\n                    handle_command(buf);\n                    pos = 0;\n                }\n            } else if (pos < sizeof(buf) - 1) {\n                buf[pos++] = (char)c;\n            }\n        } else {\n            vTaskDelay(pdMS_TO_TICKS(10));\n        }\n    }\n}"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Error: 'original_text' not found. Use exact match."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "read_file",
+          "args": {
+            "path": "src/culfw_parser.c"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "read_file",
+          "response": {
+            "result": "#include <stdio.h>\n#include <string.h>\n#include \"freertos/FreeRTOS.h\"\n#include \"freertos/task.h\"\n#include \"culfw_parser.h\"\n#include \"esp_log.h\"\n#include \"driver/gpio.h\"\n#include \"cc1101.h\"\n\nstatic const char *TAG = \"CULFW_PARSER\";\n\nstatic void handle_command(char *cmd) {\n    if (cmd[0] == 'V') {\n        bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);\n        printf(\"V 1.0.1-NG CUL32-C6-%sMHz\\r\\n\", is_433 ? \"433\" : \"868\");\n        fflush(stdout);\n    } else if (cmd[0] == 'X') {\n        // X0x, X21, etc.\n        printf(\"X21\\r\\n\");\n    } else if (cmd[0] == 'C') {\n        // Cxx settings\n        printf(\"C01\\r\\n\");\n    } else if (cmd[0] == 'F') {\n        // FS20 / FHT / HMS etc.\n        // Send: F <addr> <cmd> <ext>\n        // Receive: F <hex_data>\n        ESP_LOGI(TAG, \"SlowRF command: %s\", cmd);\n    } else {\n        ESP_LOGI(TAG, \"Unknown command: %s\", cmd);\n    }\n}\n\n#include \"esp_vfs_dev.h\"\n#include \"esp_vfs_usb_serial_jtag.h\"\n#include \"driver/usb_serial_jtag.h\"\n\nvoid culfw_parser_task(void *pvParameters) {\n    // Initialize USB-SERIAL-JTAG\n    usb_serial_jtag_driver_config_t usb_serial_jtag_config = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();\n    usb_serial_jtag_driver_install(&usb_serial_jtag_config);\n    esp_vfs_usb_serial_jtag_use_driver();\n\n    char buf[128];\n    int pos = 0;\n    \n    // Disable buffering for stdin\n    setvbuf(stdin, NULL, _IONBF, 0);\n\n    while (1) {\n        int c = getchar();\n        if (c != EOF && c != 0xFF) {\n            if (c == '\\r' || c == '\\n') {\n                if (pos > 0) {\n                    buf[pos] = '\\0';\n                    handle_command(buf);\n                    pos = 0;\n                }\n            } else if (pos < sizeof(buf) - 1) {\n                buf[pos++] = (char)c;\n            }\n        } else {\n            vTaskDelay(pdMS_TO_TICKS(10));\n        }\n    }\n}\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "write_file",
+          "args": {
+            "content": "#include <stdio.h>\n#include <string.h>\n#include \"freertos/FreeRTOS.h\"\n#include \"freertos/task.h\"\n#include \"culfw_parser.h\"\n#include \"esp_log.h\"\n#include \"driver/gpio.h\"\n#include \"driver/usb_serial_jtag.h\"\n#include \"cc1101.h\"\n\nstatic const char *TAG = \"CULFW_PARSER\";\n\nstatic void handle_command(char *cmd) {\n    char out[128];\n    int len = 0;\n    if (cmd[0] == 'V') {\n        bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);\n        len = snprintf(out, sizeof(out), \"V 1.0.1-NG CUL32-C6-%sMHz\\r\\n\", is_433 ? \"433\" : \"868\");\n    } else if (cmd[0] == 'X') {\n        len = snprintf(out, sizeof(out), \"X21\\r\\n\");\n    } else if (cmd[0] == 'C') {\n        len = snprintf(out, sizeof(out), \"C01\\r\\n\");\n    } else {\n        len = snprintf(out, sizeof(out), \"E %s unknown\\r\\n\", cmd);\n    }\n    \n    if (len > 0) {\n        usb_serial_jtag_write_bytes(out, len, portMAX_DELAY);\n    }\n}\n\nvoid culfw_parser_task(void *pvParameters) {\n    // Check if driver is already installed (might be by another task or earlier boot stage)\n    if (!usb_serial_jtag_is_driver_installed()) {\n        usb_serial_jtag_driver_config_t usb_serial_jtag_config = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();\n        usb_serial_jtag_driver_install(&usb_serial_jtag_config);\n    }\n\n    uint8_t buf[128];\n    char cmd_buf[128];\n    int cmd_pos = 0;\n\n    while (1) {\n        int n = usb_serial_jtag_read_bytes(buf, sizeof(buf), pdMS_TO_TICKS(10));\n        if (n > 0) {\n            for (int i = 0; i < n; i++) {\n                char c = (char)buf[i];\n                if (c == '\\r' || c == '\\n') {\n                    if (cmd_pos > 0) {\n                        cmd_buf[cmd_pos] = '\\0';\n                        handle_command(cmd_buf);\n                        cmd_pos = 0;\n                    }\n                } else if (cmd_pos < sizeof(cmd_buf) - 1) {\n                    cmd_buf[cmd_pos++] = c;\n                }\n            }\n        } else {\n            vTaskDelay(pdMS_TO_TICKS(10));\n        }\n    }\n}\n",
+            "path": "src/culfw_parser.c"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "write_file",
+          "response": {
+            "result": "Wrote to src/culfw_parser.c"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "~/.platformio/penv/bin/pio run && \\\n~/.platformio/penv/bin/pio run --target upload --upload-port /dev/ttyACM3\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\n\n... [OUTPUT TRUNCATED. Total size: 9531 bytes. Showing last 1500 bytes. Full output saved in 'last_execution.log'. Use 'grep' or 'read_file last_execution.log' to analyze!]\nHash of data verified.\nCompressed 209568 bytes to 106247...\n\nWriting at 0x00010000 [\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]   0.0% 0/106247 bytes... \n\nWriting at 0x0001b817 [\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  15.4% 16384/106247 bytes... \n\nWriting at 0x00022622 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  30.8% 32768/106247 bytes... \n\nWriting at 0x00029736 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  46.3% 49152/106247 bytes... \n\nWriting at 0x0003118f [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  61.7% 65536/106247 bytes... \n\nWriting at 0x000380ed [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  77.1% 81920/106247 bytes... \n\nWriting at 0x0003f123 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591]  92.5% 98304/106247 bytes... \n\nWriting at 0x000432a0 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588] 100.0% 106247/106247 bytes... \nWrote 209568 bytes (106247 compressed) at 0x00010000 in 1.1 seconds (1585.8 kbit/s).\nHash of data verified.\n\nHard resetting via RTS pin...\n========================= [SUCCESS] Took 10.41 seconds =========================\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "stty -F /dev/ttyACM3 115200 raw -echo\n(sleep 2; echo \"V\"; sleep 1) | timeout 3s cat /dev/ttyACM3\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 124\nOutput:\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "#include \"driver/usb_serial_jtag.h\"\n\nvoid app_main(void) {\n    ESP_LOGI(TAG, \"Starting CUL32-C6 Firmware...\");\n    \n    // Install USB Serial JTAG early\n    if (!usb_serial_jtag_is_driver_installed()) {\n        usb_serial_jtag_driver_config_t config = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();\n        usb_serial_jtag_driver_install(&config);\n    }\n    const char* ready_msg = \"CUL32-C6 READY\\r\\n\";\n    usb_serial_jtag_write_bytes(ready_msg, strlen(ready_msg), portMAX_DELAY);\n\n    // Check 433MHz Marker\n    gpio_reset_pin(GPIO_433MARKER);\n    gpio_set_direction(GPIO_433MARKER, GPIO_MODE_INPUT);\n    gpio_set_pull_mode(GPIO_433MARKER, GPIO_PULLUP_ONLY);\n    bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);\n    ESP_LOGI(TAG, \"Hardware detection: %s MHz\", is_433 ? \"433\" : \"868\");\n\n    // Initialize Radio\n    if (cc1101_init() == ESP_OK) {\n        ESP_LOGI(TAG, \"CC1101 initialized successfully\");\n    } else {\n        ESP_LOGE(TAG, \"CC1101 initialization failed!\");\n    }\n\n    xTaskCreate(led_task, \"led_task\", 2048, NULL, 2, NULL);\n    \n    #include \"culfw_parser.h\"\n    #include \"slowrf.h\"\n    xTaskCreate(culfw_parser_task, \"culfw_parser_task\", 4096, NULL, 5, NULL);\n    slowrf_init();\n}",
+            "path": "src/main.c",
+            "original_text": "void app_main(void) {\n    ESP_LOGI(TAG, \"Starting CUL32-C6 Firmware...\");\n\n    // Check 433MHz Marker\n    gpio_reset_pin(GPIO_433MARKER);\n    gpio_set_direction(GPIO_433MARKER, GPIO_MODE_INPUT);\n    gpio_set_pull_mode(GPIO_433MARKER, GPIO_PULLUP_ONLY);\n    bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);\n    ESP_LOGI(TAG, \"Hardware detection: %s MHz\", is_433 ? \"433\" : \"868\");\n\n    // Initialize Radio\n    if (cc1101_init() == ESP_OK) {\n        ESP_LOGI(TAG, \"CC1101 initialized successfully\");\n    } else {\n        ESP_LOGE(TAG, \"CC1101 initialization failed!\");\n    }\n\n    xTaskCreate(led_task, \"led_task\", 2048, NULL, 2, NULL);\n    \n    #include \"culfw_parser.h\"\n    #include \"slowrf.h\"\n    xTaskCreate(culfw_parser_task, \"culfw_parser_task\", 4096, NULL, 5, NULL);\n    slowrf_init();\n}"
+          }
+        }
+      }
+    ]
   }
 ]

@@ -19,8 +19,18 @@ void led_task(void *pvParameters) {
     }
 }
 
+#include "driver/usb_serial_jtag.h"
+
 void app_main(void) {
     ESP_LOGI(TAG, "Starting CUL32-C6 Firmware...");
+    
+    // Install USB Serial JTAG early
+    if (!usb_serial_jtag_is_driver_installed()) {
+        usb_serial_jtag_driver_config_t config = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();
+        usb_serial_jtag_driver_install(&config);
+    }
+    const char* ready_msg = "CUL32-C6 READY\r\n";
+    usb_serial_jtag_write_bytes(ready_msg, strlen(ready_msg), portMAX_DELAY);
 
     // Check 433MHz Marker
     gpio_reset_pin(GPIO_433MARKER);
