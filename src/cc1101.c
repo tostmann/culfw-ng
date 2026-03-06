@@ -190,7 +190,7 @@ void cc1101_send_slowrf(const char* hex_data) {
     // Multi-transmit for reliability (standard culfw behavior)
     for (int repeat = 0; repeat < 6; repeat++) { // Increased repeats
         // 1. Preamble (standard culfw uses ~12-13 '0' bits)
-        for(int i=0; i<16; i++) fs20_send_bit(0); // slightly more
+        for(int i=0; i<24; i++) fs20_send_bit(0); 
         
         // 2. Sync bit (The sync bit is a '1' in FS20 protocol spec, culfw calls it 1)
         // Actually Spec says: 12-13 zero bits, then one '1' bit as sync.
