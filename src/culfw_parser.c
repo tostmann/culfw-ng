@@ -101,6 +101,15 @@ static void handle_command(char *cmd) {
                 vTaskDelay(pdMS_TO_TICKS(500));
             }
             len = snprintf(out, sizeof(out), "Tr DONE\r\n");
+        } else if (cmd[1] == 'X') {
+            if (cmd[2] == '1') {
+                cc1101_set_tx_mode();
+                gpio_set_level(GPIO_GDO0, 1);
+                len = snprintf(out, sizeof(out), "TX ON\r\n");
+            } else {
+                cc1101_set_rx_mode();
+                len = snprintf(out, sizeof(out), "TX OFF\r\n");
+            }
         } else if (strlen(cmd) >= 7) {
             cc1101_send_raw_slowrf(cmd + 1);
             len = snprintf(out, sizeof(out), "T OK\r\n");
