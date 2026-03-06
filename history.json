@@ -372,5 +372,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "    if (version == 0 || version == 0xFF) return ESP_FAIL;\n\n    // Default configuration for SlowRF (OOK/ASK)\n    gpio_set_direction(GPIO_433MARKER, GPIO_MODE_INPUT);\n    bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);\n\n    // Common SlowRF Setup (ASK, ~2.4k Baud, etc.)\n    cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Output\n    cc1101_write_reg(0x00, 0x2E); // IOCFG2: GDO2 High Impedance\n    cc1101_write_reg(0x0B, 0x06); // FSCTRL1\n    cc1101_write_reg(0x0C, 0x00); // FSCTRL0\n    \n    if (is_433) {\n        cc1101_write_reg(0x0D, 0x10); // FREQ2\n        cc1101_write_reg(0x0E, 0xB1); // FREQ1\n        cc1101_write_reg(0x0F, 0x3B); // FREQ0\n    } else {\n        cc1101_write_reg(0x0D, 0x21); // FREQ2\n        cc1101_write_reg(0x0E, 0x62); // FREQ1\n        cc1101_write_reg(0x0F, 0x76); // FREQ0\n    }\n    \n    cc1101_write_reg(0x10, 0xF8); // MDMCFG4\n    cc1101_write_reg(0x11, 0x93); // MDMCFG3\n    cc1101_write_reg(0x12, 0x30); // MDMCFG2: ASK/OOK, No sync\n    cc1101_write_reg(0x13, 0x22); // MDMCFG1\n    cc1101_write_reg(0x14, 0xF8); // MDMCFG0\n    cc1101_write_reg(0x15, 0x15); // DEVIATN\n    cc1101_write_reg(0x18, 0x18); // MCSM0\n    cc1101_write_reg(0x19, 0x16); // FOCCFG\n    cc1101_write_reg(0x1A, 0x6C); // BSCFG\n    cc1101_write_reg(0x1B, 0x03); // AGCCTRL2\n    cc1101_write_reg(0x1C, 0x40); // AGCCTRL1\n    cc1101_write_reg(0x1D, 0x91); // AGCCTRL0\n    cc1101_write_reg(0x21, 0x56); // FREND1\n    cc1101_write_reg(0x22, 0x10); // FREND0\n    cc1101_write_reg(0x23, 0xE9); // FSCAL3\n    cc1101_write_reg(0x24, 0x2A); // FSCAL2\n    cc1101_write_reg(0x25, 0x00); // FSCAL1\n    cc1101_write_reg(0x26, 0x1F); // FSCAL0\n\n    cc1101_cmd_strobe(CC1101_SRX); // Go to RX mode\n\n    return ESP_OK;\n}",
+            "path": "src/cc1101.c",
+            "original_text": "    if (version == 0 || version == 0xFF) return ESP_FAIL;\n\n    return ESP_OK;\n}"
+          }
+        }
+      }
+    ]
   }
 ]
