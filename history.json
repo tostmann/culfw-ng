@@ -934,5 +934,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "                    // IT-V1 Check\n                    if (it_dec.pos == 12) {\n                        char out[32];\n                        int len = snprintf(out, sizeof(out), \"is%s\\r\\n\", it_dec.s);\n                        usb_serial_jtag_write_bytes(out, len, 0);\n                    }\n                    // IT-V3 Check\n                    if (it3_dec.bit_pos == 32) {\n                        char out[64];\n                        int len = snprintf(out, sizeof(out), \"is%s\\r\\n\", it3_dec.s);\n                        usb_serial_jtag_write_bytes(out, len, 0);\n                    }\n                }\n                reset_decoder(&dec);\n                reset_it_v1(&it_dec);\n                reset_it_v3(&it3_dec);\n                pulse_in_bit = 0;\n            } else {\n                // 0. IT-V3 Decoder\n                if (pulse > 8000 && pulse < 11000) { // IT-V3 Sync Low (9300us)\n                    reset_it_v3(&it3_dec);\n                    it3_dec.sync_found = true;\n                } else if (it3_dec.sync_found) {\n                    it3_dec.pulse_buf[it3_dec.pulse_cnt % 4] = pulse;\n                    it3_dec.pulse_cnt++;\n                    if (it3_dec.pulse_cnt >= 4) {\n                        int64_t p1 = it3_dec.pulse_buf[0];\n                        int64_t p2 = it3_dec.pulse_buf[1];\n                        int64_t p3 = it3_dec.pulse_buf[2];\n                        int64_t p4 = it3_dec.pulse_buf[3];\n                        \n                        #define IS_T_V3(p) (p > 150 && p < 550)\n                        #define IS_3T_V3(p) (p >= 700 && p < 1300)\n\n                        if (IS_T_V3(p1) && IS_3T_V3(p2) && IS_T_V3(p3) && IS_3T_V3(p4)) {\n                            it3_dec.s[it3_dec.bit_pos++] = '0';\n                            it3_dec.pulse_cnt = 0;\n                        } else if (IS_T_V3(p1) && IS_3T_V3(p2) && IS_3T_V3(p3) && IS_T_V3(p4)) {\n                            it3_dec.s[it3_dec.bit_pos++] = '1';\n                            it3_dec.pulse_cnt = 0;\n                        } else {\n                            // Invalid IT-V3 sequence\n                            it3_dec.sync_found = false;\n                        }\n                        if (it3_dec.bit_pos == 32) {\n                             it3_dec.sync_found = false; // complete\n                        }\n                    }\n                }\n",
+            "path": "src/slowrf.c",
+            "original_text": "                    // IT-V1 Check\n                    if (it_dec.pos == 12) {\n                        char out[32];\n                        int len = snprintf(out, sizeof(out), \"is%s\\r\\n\", it_dec.s);\n                        usb_serial_jtag_write_bytes(out, len, 0);\n                    }\n                }\n                reset_decoder(&dec);\n                reset_it_v1(&it_dec);\n                pulse_in_bit = 0;\n            } else {\n"
+          }
+        }
+      }
+    ]
   }
 ]

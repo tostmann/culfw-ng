@@ -123,11 +123,49 @@ void slowrf_task(void *pvParameters) {
                         int len = snprintf(out, sizeof(out), "is%s\r\n", it_dec.s);
                         usb_serial_jtag_write_bytes(out, len, 0);
                     }
+                    // IT-V3 Check
+                    if (it3_dec.bit_pos == 32) {
+                        char out[64];
+                        int len = snprintf(out, sizeof(out), "is%s\r\n", it3_dec.s);
+                        usb_serial_jtag_write_bytes(out, len, 0);
+                    }
                 }
                 reset_decoder(&dec);
                 reset_it_v1(&it_dec);
+                reset_it_v3(&it3_dec);
                 pulse_in_bit = 0;
             } else {
+                // 0. IT-V3 Decoder
+                if (pulse > 8000 && pulse < 11000) { // IT-V3 Sync Low (9300us)
+                    reset_it_v3(&it3_dec);
+                    it3_dec.sync_found = true;
+                } else if (it3_dec.sync_found) {
+                    it3_dec.pulse_buf[it3_dec.pulse_cnt % 4] = pulse;
+                    it3_dec.pulse_cnt++;
+                    if (it3_dec.pulse_cnt >= 4) {
+                        int64_t p1 = it3_dec.pulse_buf[0];
+                        int64_t p2 = it3_dec.pulse_buf[1];
+                        int64_t p3 = it3_dec.pulse_buf[2];
+                        int64_t p4 = it3_dec.pulse_buf[3];
+                        
+                        #define IS_T_V3(p) (p > 150 && p < 550)
+                        #define IS_3T_V3(p) (p >= 700 && p < 1300)
+
+                        if (IS_T_V3(p1) && IS_3T_V3(p2) && IS_T_V3(p3) && IS_3T_V3(p4)) {
+                            it3_dec.s[it3_dec.bit_pos++] = '0';
+                            it3_dec.pulse_cnt = 0;
+                        } else if (IS_T_V3(p1) && IS_3T_V3(p2) && IS_3T_V3(p3) && IS_T_V3(p4)) {
+                            it3_dec.s[it3_dec.bit_pos++] = '1';
+                            it3_dec.pulse_cnt = 0;
+                        } else {
+                            // Invalid IT-V3 sequence
+                            it3_dec.sync_found = false;
+                        }
+                        if (it3_dec.bit_pos == 32) {
+                             it3_dec.sync_found = false; // complete
+                        }
+                    }
+                }
                 // 1. Intertechno V1 bit detection (on-the-fly)
                 it_dec.pulse_buf[it_dec.pulse_cnt % 4] = pulse;
                 it_dec.pulse_cnt++;
