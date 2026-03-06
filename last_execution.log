@@ -1,5 +1,5 @@
-I (107) esp_image: segment 1: paddr=0001b5e0 vaddr=40800000 sizeCUL32-C6 READY
-F0320
-F0500
-F0000
-I (107) esp_image: segment 1: paddr=0001b5e0 vaddr=40800000 sizeCUL32-C6 READY
+TX: F6D6D599
+TX: F4A4406F
+TX: 63329FAE
+TX: 7BC062AC
+Tr DONE
