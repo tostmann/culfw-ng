@@ -1360,5 +1360,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "        if (xQueueReceive(pulse_queue, &pulse, portMAX_DELAY)) {\n            if (pulse > SLOWRF_SYNC_MIN) {\n                if (dec.byte_cnt >= 2) {\n                    char out[64];\n                    int len = snprintf(out, sizeof(out), \"F\");\n                    for (int i = 0; i < dec.byte_cnt; i++) {\n                        len += snprintf(out + len, sizeof(out) - len, \"%02X\", dec.data[i]);\n                    }\n                    snprintf(out + len, sizeof(out) - len, \"\\r\\n\");\n                    usb_serial_jtag_write_bytes(out, strlen(out), 0);\n                }\n                reset_decoder(&dec);\n                pulse_in_bit = 0;\n            } else {",
+            "path": "src/slowrf.c",
+            "original_text": "        if (xQueueReceive(pulse_queue, &pulse, portMAX_DELAY)) {\n            if (pulse > SLOWRF_SYNC_MIN) {\n                if (dec.byte_cnt >= 4) {\n                    char out[64];\n                    int len = snprintf(out, sizeof(out), \"F\");\n                    for (int i = 0; i < dec.byte_cnt; i++) {\n                        len += snprintf(out + len, sizeof(out) - len, \"%02X\", dec.data[i]);\n                    }\n                    snprintf(out + len, sizeof(out) - len, \"\\r\\n\");\n                    usb_serial_jtag_write_bytes(out, strlen(out), 0);\n                }\n                reset_decoder(&dec);\n                pulse_in_bit = 0;\n            } else {"
+          }
+        }
+      }
+    ]
   }
 ]

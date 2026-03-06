@@ -53,7 +53,7 @@ void slowrf_task(void *pvParameters) {
     while (1) {
         if (xQueueReceive(pulse_queue, &pulse, portMAX_DELAY)) {
             if (pulse > SLOWRF_SYNC_MIN) {
-                if (dec.byte_cnt >= 4) {
+                if (dec.byte_cnt >= 2) {
                     char out[64];
                     int len = snprintf(out, sizeof(out), "F");
                     for (int i = 0; i < dec.byte_cnt; i++) {
