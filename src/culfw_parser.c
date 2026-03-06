@@ -31,10 +31,19 @@ static void handle_command(char *cmd) {
     } else if (cmd[0] == 'C') {
         len = snprintf(out, sizeof(out), "C01\r\n");
     } else if (cmd[0] == 'F') {
-        // F <hex_data>
-        // cmd is like "F1122334455"
         cc1101_send_slowrf(cmd + 1);
         len = snprintf(out, sizeof(out), "F OK\r\n");
+    } else if (cmd[0] == 'T' && cmd[1] == 'r') {
+        // Test Random: Send 5 random FS20 packets
+        for (int i = 0; i < 5; i++) {
+            char rnd_hex[11];
+            uint32_t r1 = esp_random();
+            uint32_t r2 = esp_random();
+            snprintf(rnd_hex, sizeof(rnd_hex), "%04X%04X%02X", (uint16_t)r1, (uint16_t)(r1 >> 16), (uint8_t)r2);
+            cc1101_send_slowrf(rnd_hex);
+            vTaskDelay(pdMS_TO_TICKS(200));
+        }
+        len = snprintf(out, sizeof(out), "Tr OK\r\n");
     } else {
         len = snprintf(out, sizeof(out), "E %s unknown\r\n", cmd);
     }
