@@ -36,15 +36,24 @@ static void handle_command(char *cmd) {
         len = snprintf(out, sizeof(out), "F OK\r\n");
     } else if (cmd[0] == 'T' && cmd[1] == 'r') {
         // Test Random: Send 5 random FS20 packets
+        len = snprintf(out, sizeof(out), "Tr START\r\n");
+        usb_serial_jtag_write_bytes(out, len, portMAX_DELAY);
         for (int i = 0; i < 5; i++) {
             char rnd_hex[11];
             uint32_t r1 = esp_random();
-            uint32_t r2 = esp_random();
-            snprintf(rnd_hex, sizeof(rnd_hex), "%04X%04X%02X", (uint16_t)r1, (uint16_t)(r1 >> 16), (uint8_t)r2);
+            uint16_t addr = (uint16_t)r1;
+            uint8_t cmd_val = (uint8_t)(r1 >> 16);
+            uint8_t ext = (uint8_t)(r1 >> 24);
+            snprintf(rnd_hex, sizeof(rnd_hex), "%04X%02X%02X", addr, cmd_val, ext);
+            
+            char msg[64];
+            int mlen = snprintf(msg, sizeof(msg), "TX: %s\r\n", rnd_hex);
+            usb_serial_jtag_write_bytes(msg, mlen, portMAX_DELAY);
+
             cc1101_send_slowrf(rnd_hex);
-            vTaskDelay(pdMS_TO_TICKS(200));
+            vTaskDelay(pdMS_TO_TICKS(500));
         }
-        len = snprintf(out, sizeof(out), "Tr OK\r\n");
+        len = snprintf(out, sizeof(out), "Tr DONE\r\n");
     } else {
         len = snprintf(out, sizeof(out), "E %s unknown\r\n", cmd);
     }
