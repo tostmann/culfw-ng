@@ -154,8 +154,8 @@ void cc1101_send_slowrf(const char* hex_data) {
                 fs20_send_bit(bit);
                 if (bit) parity++;
             }
-            // Parity bit (even parity)
-            fs20_send_bit(parity % 2);
+            // FS20 uses ODD parity: number of 1-bits in the 9 bits must be odd.
+            fs20_send_bit((parity % 2) ? 0 : 1);
         }
         
         // 4. End bit (bit 0)
