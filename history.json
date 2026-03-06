@@ -879,5 +879,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "    xTaskCreate(led_task, \"led_task\", 2048, NULL, 2, NULL);\n    \n    #include \"culfw_parser.h\"\n    #include \"slowrf.h\"\n    xTaskCreate(culfw_parser_task, \"culfw_parser_task\", 4096, NULL, 5, NULL);\n    slowrf_init();\n}",
+            "path": "src/main.c",
+            "original_text": "    xTaskCreate(led_task, \"led_task\", 2048, NULL, 5, NULL);\n    \n    #include \"culfw_parser.h\"\n    #include \"slowrf.h\"\n    xTaskCreate(culfw_parser_task, \"culfw_parser_task\", 4096, NULL, 10, NULL);\n    slowrf_init();\n}"
+          }
+        }
+      }
+    ]
   }
 ]
