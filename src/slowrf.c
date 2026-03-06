@@ -57,6 +57,11 @@ void slowrf_task(void *pvParameters) {
 
     while (1) {
         if (xQueueReceive(pulse_queue, &pulse, portMAX_DELAY)) {
+            if (slowrf_debug) {
+                char d[32];
+                int dlen = snprintf(d, sizeof(d), "P: %lld\r\n", (long long)pulse);
+                usb_serial_jtag_write_bytes(d, dlen, 0);
+            }
             if (pulse > SLOWRF_SYNC_MIN) {
                 if (dec.byte_cnt >= 2) {
                     char out[64];
