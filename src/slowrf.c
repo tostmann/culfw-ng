@@ -87,21 +87,23 @@ void slowrf_task(void *pvParameters) {
                 usb_serial_jtag_write_bytes(d, dlen, 0);
             }
             if (pulse > SLOWRF_SYNC_MIN) {
-                // FS20 Check
-                if (dec.byte_cnt >= 2) {
-                    char out[64];
-                    int len = snprintf(out, sizeof(out), "F");
-                    for (int i = 0; i < dec.byte_cnt; i++) {
-                        len += snprintf(out + len, sizeof(out) - len, "%02X", dec.data[i]);
+                if (slowrf_reporting) {
+                    // FS20 Check
+                    if (dec.byte_cnt >= 4) {
+                        char out[64];
+                        int len = snprintf(out, sizeof(out), "F");
+                        for (int i = 0; i < dec.byte_cnt; i++) {
+                            len += snprintf(out + len, sizeof(out) - len, "%02X", dec.data[i]);
+                        }
+                        snprintf(out + len, sizeof(out) - len, "\r\n");
+                        usb_serial_jtag_write_bytes(out, strlen(out), 0);
                     }
-                    snprintf(out + len, sizeof(out) - len, "\r\n");
-                    usb_serial_jtag_write_bytes(out, strlen(out), 0);
-                }
-                // IT-V1 Check
-                if (it_dec.pos == 12) {
-                    char out[32];
-                    int len = snprintf(out, sizeof(out), "is%s\r\n", it_dec.s);
-                    usb_serial_jtag_write_bytes(out, len, 0);
+                    // IT-V1 Check
+                    if (it_dec.pos == 12) {
+                        char out[32];
+                        int len = snprintf(out, sizeof(out), "is%s\r\n", it_dec.s);
+                        usb_serial_jtag_write_bytes(out, len, 0);
+                    }
                 }
                 reset_decoder(&dec);
                 reset_it_v1(&it_dec);
