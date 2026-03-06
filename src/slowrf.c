@@ -171,7 +171,7 @@ void slowrf_task(void *pvParameters) {
 }
 
 esp_err_t slowrf_init() {
-    pulse_queue = xQueueCreate(256, sizeof(int64_t));
+    pulse_queue = xQueueCreate(512, sizeof(int64_t));
     
     gpio_config_t io_conf = {
         .intr_type = GPIO_INTR_ANYEDGE,

@@ -1321,5 +1321,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "esp_err_t slowrf_init() {\n    pulse_queue = xQueueCreate(512, sizeof(int64_t));\n",
+            "path": "src/slowrf.c",
+            "original_text": "esp_err_t slowrf_init() {\n    pulse_queue = xQueueCreate(256, sizeof(int64_t));\n"
+          }
+        }
+      }
+    ]
   }
 ]
