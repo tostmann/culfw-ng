@@ -21,7 +21,7 @@ static void handle_command(char *cmd) {
     int len = 0;
     if (cmd[0] == 'V') {
         bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);
-        len = snprintf(out, sizeof(out), "V 1.0.1-NG CUL32-C6-%sMHz\r\n", is_433 ? "433" : "868");
+        len = snprintf(out, sizeof(out), "V %s-B%d CUL32-C6-%s\r\n", FW_VERSION, BUILD_NUMBER, is_433 ? "433" : "868");
     } else if (cmd[0] == 'X') {
         if (cmd[1] == '0' && cmd[2] == '0') {
             reporting_enabled = false;
