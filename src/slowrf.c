@@ -44,7 +44,7 @@ static void reset_decoder(slowrf_decoder_t *dec) {
     memset(dec->data, 0, sizeof(dec->data));
     dec->byte_cnt = 0;
     dec->bit_cnt = 0;
-    dec->current_byte = 0;
+    dec->current_bits = 0;
 }
 
 void slowrf_task(void *pvParameters) {
