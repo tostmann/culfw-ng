@@ -37,7 +37,7 @@ typedef struct {
     uint8_t data[16];
     int byte_cnt;
     int bit_cnt;
-    uint8_t current_byte;
+    uint32_t current_bits;
 } slowrf_decoder_t;
 
 static void reset_decoder(slowrf_decoder_t *dec) {

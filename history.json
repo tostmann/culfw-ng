@@ -1591,5 +1591,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "typedef struct {\n    uint8_t data[16];\n    int byte_cnt;\n    int bit_cnt;\n    uint32_t current_bits;\n} slowrf_decoder_t;\n",
+            "path": "src/slowrf.c",
+            "original_text": "typedef struct {\n    uint8_t data[16];\n    int byte_cnt;\n    int bit_cnt;\n    uint8_t current_byte;\n} slowrf_decoder_t;\n"
+          }
+        }
+      }
+    ]
   }
 ]
