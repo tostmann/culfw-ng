@@ -1619,5 +1619,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "                            // Valid FS20 bit (two identical pulses)\n                            dec.current_bits = (dec.current_bits << 1) | bit;\n                            dec.bit_cnt++;\n                            \n                            // FS20: 8 data bits + 1 parity bit = 9 bits\n                            if (dec.bit_cnt == 9) {\n                                uint8_t data_byte = (uint8_t)(dec.current_bits >> 1);\n                                uint8_t parity_bit = (uint8_t)(dec.current_bits & 1);\n                                int ones = 0;\n                                for (int i = 0; i < 8; i++) {\n                                    if ((data_byte >> i) & 1) ones++;\n                                }\n                                if ((ones % 2) != parity_bit) {\n                                    if (dec.byte_cnt < sizeof(dec.data)) {\n                                        dec.data[dec.byte_cnt++] = data_byte;\n                                    }\n                                } else {\n                                    // Parity error, discard packet\n                                    reset_decoder(&dec);\n                                }\n                                dec.current_bits = 0;\n                                dec.bit_cnt = 0;\n                            }\n",
+            "path": "src/slowrf.c",
+            "original_text": "                            // Valid FS20 bit (two identical pulses)\n                            dec.current_byte = (dec.current_byte << 1) | bit;\n                            dec.bit_cnt++;\n                            \n                            // FS20: 8 data bits + 1 parity bit = 9 bits\n                            if (dec.bit_cnt == 9) {\n                                uint8_t data_byte = (dec.current_byte >> 1);\n                                uint8_t parity_bit = (dec.current_byte & 1);\n                                int ones = 0;\n                                for (int i = 0; i < 8; i++) {\n                                    if ((data_byte >> i) & 1) ones++;\n                                }\n                                if ((ones % 2) != parity_bit) {\n                                    if (dec.byte_cnt < sizeof(dec.data)) {\n                                        dec.data[dec.byte_cnt++] = data_byte;\n                                    }\n                                } else {\n                                    // Parity error, discard packet\n                                    reset_decoder(&dec);\n                                }\n                                dec.current_byte = 0;\n                                dec.bit_cnt = 0;\n                            }\n"
+          }
+        }
+      }
+    ]
   }
 ]
