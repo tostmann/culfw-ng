@@ -27,10 +27,8 @@ static void IRAM_ATTR gpio_isr_handler(void* arg) {
     int64_t diff = current_time - last_time;
     last_time = current_time;
     
-    // Carrier Sense check (optional, but reduces noise processing)
-    if (gpio_get_level(GPIO_GDO2) == 0) { // Carrier not active
-        // Optional: return;
-    }
+    // Carrier Sense check (disabled for testing)
+    // if (gpio_get_level(GPIO_GDO2) == 0) return;
 
     if (diff > 150 && diff < 15000) {
         xQueueSendFromISR(pulse_queue, &diff, NULL);
