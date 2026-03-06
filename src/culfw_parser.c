@@ -28,12 +28,15 @@ static void handle_command(char *cmd) {
         if (cmd[1] == '0' && cmd[2] == '0') {
             reporting_enabled = false;
             slowrf_set_debug(false);
+            slowrf_set_reporting(false);
         } else if (cmd[1] == '9' && cmd[2] == '9') {
             slowrf_set_debug(true);
             reporting_enabled = true;
+            slowrf_set_reporting(true);
         } else {
             reporting_enabled = true;
             slowrf_set_debug(false);
+            slowrf_set_reporting(true);
         }
         len = snprintf(out, sizeof(out), "X21\r\n");
     } else if (cmd[0] == 'C') {
