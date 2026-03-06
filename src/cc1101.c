@@ -121,31 +121,37 @@ static void fs20_send_bit(int bit) {
 
 void cc1101_send_slowrf(const char* hex_data) {
     cc1101_set_tx_mode();
-    vTaskDelay(pdMS_TO_TICKS(1)); // Settling
+    vTaskDelay(pdMS_TO_TICKS(2)); // Settling
 
-    // 1. Preamble (13 bits of 0)
-    for(int i=0; i<13; i++) fs20_send_bit(0);
-    
-    // 2. Sync bit (bit 0)
-    fs20_send_bit(0);
+    // Multi-transmit for reliability (standard culfw behavior)
+    for (int repeat = 0; repeat < 3; repeat++) {
+        // 1. Preamble (13 bits of 0)
+        for(int i=0; i<13; i++) fs20_send_bit(0);
+        
+        // 2. Sync bit (bit 0)
+        fs20_send_bit(0);
 
-    // 3. Data (hex string to bits)
-    int hex_len = strlen(hex_data);
-    for(int i=0; i<hex_len; i+=2) {
-        char h[3] = {hex_data[i], hex_data[i+1], 0};
-        uint8_t b = (uint8_t)strtol(h, NULL, 16);
-        int parity = 0;
-        for(int j=7; j>=0; j--) {
-            int bit = (b >> j) & 1;
-            fs20_send_bit(bit);
-            if (bit) parity++;
+        // 3. Data (hex string to bits)
+        int hex_len = strlen(hex_data);
+        for(int i=0; i<hex_len; i+=2) {
+            char h[3] = {hex_data[i], hex_data[i+1], 0};
+            uint8_t b = (uint8_t)strtol(h, NULL, 16);
+            int parity = 0;
+            for(int j=7; j>=0; j--) {
+                int bit = (b >> j) & 1;
+                fs20_send_bit(bit);
+                if (bit) parity++;
+            }
+            // Parity bit (even parity)
+            fs20_send_bit(parity % 2);
         }
-        // Parity bit (even parity)
-        fs20_send_bit(parity % 2);
+        
+        // 4. End bit (bit 0)
+        fs20_send_bit(0);
+        
+        // Gap between repeats
+        ets_delay_us(10000);
     }
-    
-    // 4. End bit (bit 0)
-    fs20_send_bit(0);
     
     cc1101_set_rx_mode();
 }
