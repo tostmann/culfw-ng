@@ -89,6 +89,7 @@ void slowrf_task(void *pvParameters) {
                             // Valid FS20 bit (two identical pulses)
                             dec.current_byte = (dec.current_byte << 1) | bit;
                             dec.bit_cnt++;
+                            // ESP_LOGD(TAG, "Bit: %d, Cnt: %d", bit, dec.bit_cnt);
                             
                             // FS20: 8 data bits + 1 parity bit = 9 bits
                             if (dec.bit_cnt == 9) {
