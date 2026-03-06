@@ -1049,5 +1049,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "    // Carrier Sense check (High when RSSI > Threshold)\n    if (gpio_get_level(GPIO_GDO2) == 0) return;\n\n    if (diff > 150 && diff < 15000) {\n",
+            "path": "src/slowrf.c",
+            "original_text": "    // Carrier Sense check (disabled for testing)\n    // if (gpio_get_level(GPIO_GDO2) == 0) return;\n\n    if (diff > 150 && diff < 15000) {\n"
+          }
+        }
+      }
+    ]
   }
 ]
