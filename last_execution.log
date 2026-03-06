@@ -1,3 +1,33 @@
---- REFERENCE RX LOG ---
-F1234567848
-F4433221148
+Processing cul32-c6 (platform: espressif32; board: esp32-c6-devkitc-1; framework: espidf)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/espressif32/esp32-c6-devkitc-1.html
+PLATFORM: Espressif 32 (55.3.37) > Espressif ESP32-C6-DevKitC-1
+HARDWARE: ESP32C6 160MHz, 320KB RAM, 8MB Flash
+DEBUG: Current (cmsis-dap) External (cmsis-dap, esp-bridge, esp-builtin, esp-prog, iot-bus-jtag, jlink, minimodule, olimex-arm-usb-ocd, olimex-arm-usb-ocd-h, olimex-arm-usb-tiny-h, olimex-jtag-tiny, tumpa)
+PACKAGES: 
+ - contrib-piohome @ 3.4.4 
+ - framework-espidf @ 3.50502.0 (5.5.2) 
+ - tool-cmake @ 4.0.3 
+ - tool-esp-rom-elfs @ 2024.10.11 
+ - tool-esptoolpy @ 5.1.2 
+ - tool-ninja @ 1.13.1 
+ - tool-scons @ 4.40801.0 (4.8.1) 
+ - toolchain-riscv32-esp @ 14.2.0+20251107
+Reading CMake configuration...
+Warning! Flash memory size mismatch detected. Expected 8MB, found 2MB!
+Please select a proper value in your `sdkconfig.defaults` or via the `menuconfig` target!
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 0 compatible libraries
+Scanning dependencies...
+No dependencies
+Building in release mode
+Compiling .pio/build/cul32-c6/src/main.c.o
+Compiling .pio/build/cul32-c6/src/slowrf.c.o
+src/main.c: In function 'led_task':
+src/main.c:21:9: error: implicit declaration of function 'usb_serial_jtag_write_bytes' [-Wimplicit-function-declaration]
+   21 |         usb_serial_jtag_write_bytes(tick, strlen(tick), 0);
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+*** [.pio/build/cul32-c6/src/main.c.o] Error 1
+========================== [FAILED] Took 8.50 seconds ==========================

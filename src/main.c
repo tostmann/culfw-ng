@@ -6,6 +6,7 @@
 #include "esp_log.h"
 #include "nvs_flash.h"
 #include "cc1101.h"
+#include "driver/usb_serial_jtag.h"
 
 static const char *TAG = "CUL32-C6";
 
