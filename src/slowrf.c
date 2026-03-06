@@ -315,7 +315,11 @@ void slowrf_task(void *pvParameters) {
                             hms_dec.bit_cnt = 0;
                         }
                         hms_dec.pulse_state = 0;
-                    } else reset_sensor(&hms_dec);
+                    } else {
+                        // Keep current progress if we are just seeing more preamble
+                        if (hms_dec.nibble_cnt > 0) reset_sensor(&hms_dec);
+                        else hms_dec.pulse_state = 0; 
+                    }
                 }
             }
         }
