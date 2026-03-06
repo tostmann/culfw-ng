@@ -33,7 +33,9 @@ static void handle_command(char *cmd) {
     } else if (cmd[0] == 'C') {
         uint8_t part = cc1101_read_reg(CC1101_PARTNUM | CC1101_READ_SINGLE);
         uint8_t vers = cc1101_read_reg(CC1101_VERSION | CC1101_READ_SINGLE);
-        len = snprintf(out, sizeof(out), "C01 Part: 0x%02x, Vers: 0x%02x\r\n", part, vers);
+        uint8_t freq2 = cc1101_read_reg(0x0D | CC1101_READ_SINGLE);
+        uint8_t mode2 = cc1101_read_reg(0x12 | CC1101_READ_SINGLE);
+        len = snprintf(out, sizeof(out), "C01 Part: 0x%02x, Vers: 0x%02x, FREQ2: 0x%02x, MDMCFG2: 0x%02x\r\n", part, vers, freq2, mode2);
     } else if (cmd[0] == 'F') {
         cc1101_send_slowrf(cmd + 1);
         len = snprintf(out, sizeof(out), "F OK\r\n");

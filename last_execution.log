@@ -1,4 +1,4 @@
 I (107) esp_image: segment 1: paddr=0001b5e0 vaddr=40800000 sizeCUL32-C6 READY
-C01 Part: 0xe1, Vers: 0x0f
+C01 Part: 0x00, Vers: 0x00
 I (107) esp_image: segment 1: paddr=0001b5e0 vaddr=40800000 sizeCUL32-C6 READY
-C01 Part: 0xe1, Vers: 0x0f
+C01 Part: 0x00, Vers: 0x00
