@@ -4,5 +4,6 @@
 #include "esp_err.h"
 
 esp_err_t slowrf_init();
+void slowrf_set_debug(bool enable);
 
 #endif
