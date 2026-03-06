@@ -91,8 +91,8 @@ esp_err_t cc1101_init() {
     cc1101_write_reg(0x26, 0x1F); // FSCAL0
 
     // PATABLE: [0]=0x00 (for '0'), [1]=0xC0 (for '1' -> +10dBm)
-    uint8_t patable[] = {0x00, 0xC0};
-    cc1101_write_burst(0x3E, patable, 2);
+    uint8_t patable[8] = {0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    cc1101_write_burst(0x3E, patable, 8);
     
 
     cc1101_set_rx_mode();
