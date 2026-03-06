@@ -15,13 +15,14 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
     *   `culfw_parser_task`: Verarbeitet eingehende serielle Befehle (z.B. `V`, `X`, `F`, `is`).
     *   `slowrf_task`: Implementiert parallele Zustandsmaschinen/Decoder, um aus den vom CC1101 empfangenen Pulsfolgen gültige Datenpakete zu dekodieren.
         *   **FS20-Decoder:** Sync-Erkennung -> 9-Bit-Akkumulation (8 Daten + 1 Parität) -> Prüfung auf **ungerade Parität (Odd Parity)**. Der Decoder wurde robust gegen Timing-Schwankungen gemacht und kann "missed edges" (zwei kurze Pulse als ein langer Puls) verarbeiten.
-        *   **Intertechno V1 Decoder:** Verwendet ein 4-Puls-Schiebefenster, um das charakteristische IT-Timing-Muster (1xT, 3xT) zu erkennen und Trits zu dekodieren.
+        *   **Intertechno V1 Decoder:** Verwendet ein 4-Puls-Schiebefenster, um das charakteristische IT-Timing-Muster (1xT, 3xT) zu erkennen und Trits zu dekodieren. Die Timing-Toleranzen wurden erweitert, um auch Sender mit leichten Abweichungen zu erfassen.
 *   **Frequenzerkennung:** Automatische Erkennung der Modulfrequenz (433/868 MHz) über einen GPIO-Pin (`GPIO_433MARKER`) mit internem Pull-Up.
-*   **Signal-Erfassung (RX):** Der CC1101 wird im **asynchronen seriellen Modus** (`PKTCTRL0 = 0x32`) betrieben, um ein rohes, demoduliertes ASK/OOK-Signal am `GDO0_PIN` bereitzustellen. Dieser Pin wird als Interrupt-Quelle genutzt, um die Timestamps der Signalflanken per Queue (`slowrf_queue`) an den `slowrf_task` zu übergeben.
+*   **Signal-Erfassung (RX):** Der CC1101 wird im **asynchronen seriellen Modus** (`PKTCTRL0 = 0x32`) betrieben, um ein rohes, demoduliertes ASK/OOK-Signal am `GDO0_PIN` bereitzustellen. Dieser Pin wird als Interrupt-Quelle genutzt, um die Timestamps der Signalflanken per vergrößerter Queue (`slowrf_queue`, 512 Elemente) an den `slowrf_task` zu übergeben.
 *   **Signal-Aussendung (TX):**
     *   Der `GDO0_PIN` wird dynamisch als Output konfiguriert, um Sendesequenzen per Bit-Banging mit präzisen Microsekunden-Delays (`ets_delay_us`) zu erzeugen.
-    *   Für eine korrekte ASK-Modulation wird die `PATABLE` mit zwei Werten (`{0x00, 0xC0}`) initialisiert und das `FREND0`-Register auf `0x11` gesetzt, um "0" (keine Leistung) und "1" (maximale Leistung) klar zu definieren.
-    *   Pakete werden zur Erhöhung der Übertragungssicherheit mehrfach (üblicherweise 3x) gesendet.
+    *   Für eine korrekte ASK-Modulation wird die `PATABLE` mit zwei Werten (`{0x00, ...}`) und das `FREND0`-Register auf `0x11` gesetzt. Für Tests im Nahbereich wurde die Sendeleistung durch `0x50` (~0 dBm) statt `0xC0` (+10 dBm) reduziert, um Signalverzerrungen zu vermeiden.
+    *   **FS20-Frequenz:** Für FS20 wird die Frequenz präzise auf **868.3 MHz** eingestellt (`FREQ` Register: `0x21656A`), um die Kompatibilität zu maximieren.
+    *   **FS20-Paketstruktur:** Die Präambel wurde auf 16 '0'-Bits verlängert und Pakete werden zur Erhöhung der Übertragungssicherheit 6-fach wiederholt.
 *   **Versionierung:** Automatisierte Build-Nummer und detaillierter, culfw-kompatibler Versions-String (`V`-Kommando), um die Identifikation durch Host-Systeme (z.B. FHEM) sicherzustellen.
 *   **Test-Infrastruktur:** Ein `Tr`-Kommando generiert und sendet 5 zufällige FS20-Frames, um die TX/RX-Kette mit variierenden OOK-Pattern zu validieren.
 *   **Diagnose:**
@@ -38,7 +39,7 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 *   **[DONE]** Task Watchdog Timeout durch Umstellung auf nativen USB-JTAG-Treiber behoben.
 *   **[DONE]** SPI-Kommunikation stabilisiert: CC1101 wird auf beiden Frequenzbändern zuverlässig erkannt.
 *   **[DONE]** CC1101 für RX in asynchronen seriellen Modus konfiguriert.
-*   **[DONE]** SlowRF-Senden (TX) implementiert, inklusive Paket-Wiederholung und korrekter ASK-Modulation via `PATABLE` und `FREND0`.
+*   **[DONE]** SlowRF-Senden (TX) implementiert, inklusive Paket-Wiederholung und korrekter ASK-Modulation.
 *   **[DONE]** FS20-Paritätsprüfung (Odd Parity) im TX-Encoder und RX-Decoder korrigiert.
 *   **[DONE]** Erweiterter SlowRF-Empfang (RX) mit Zustandsmaschine, der erfolgreich FS20- und Intertechno-V1-Pakete dekodiert.
 *   **[DONE]** Implementierung des Sende-Befehls (`is...`) für Intertechno V1.
@@ -46,18 +47,21 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 *   **[DONE]** Test-Funktion (`Tr`) zum Senden von zufälligen, validen FS20-Paketen implementiert.
 *   **[DONE]** Build-System um eine automatische Build-Nummer und einen culfw-kompatiblen Versions-String erweitert.
 *   **[DONE]** RX-Debugging-Modus (`X99`) implementiert, der rohe Pulsdauern ausgibt und umschaltbar ist.
-*   **[PARTIAL]** End-to-End Test: Intertechno V1 (433MHz) RX/TX ist mit Referenz-CUL validiert. FS20 (868MHz) wird empfangen, aber der eigene Sender noch nicht vom Referenz-CUL dekodiert.
+*   **[DONE]** FS20-Sendefrequenz präzise auf 868.3 MHz kalibriert und Präambel verlängert.
+*   **[PARTIAL]** End-to-End Test: Intertechno V1 (433MHz) RX/TX ist mit Referenz-CUL validiert. FS20 (868MHz) wird empfangen, der eigene Sender wird nach Anpassungen von Frequenz, Sendeleistung und Präambel nun gegen den Referenz-CUL getestet.
 
 ## 4. Neue Erkenntnisse / Probleme
 
-*   **[INFO]** Eine korrekte ASK/OOK-Modulation auf dem CC1101 erfordert die Initialisierung der `PATABLE` mit zwei Werten (`{0x00, 0xC0}`) sowie die Konfiguration von `FREND0`, um die Sendeleistung für logisch '0' und '1' festzulegen.
-*   **[INFO]** Das FS20-Protokoll verwendet **ungerade Parität (Odd Parity)**. Eine Implementierung mit gerader Parität führt dazu, dass Pakete von Standard-Empfängern verworfen werden.
+*   **[INFO]** Eine korrekte ASK/OOK-Modulation auf dem CC1101 erfordert die Initialisierung der `PATABLE` mit zwei Werten sowie die Konfiguration von `FREND0`, um die Sendeleistung für logisch '0' und '1' festzulegen.
+*   **[INFO]** Das FS20-Protokoll verwendet **ungerade Parität (Odd Parity)**.
 *   **[INFO]** Die Dekodierung von Protokollen mit variablen Timings (wie Intertechno V1) erfordert einen anderen Ansatz (z.B. Puls-Pattern-Matching) als die feste Taktung von FS20.
-*   **[PROBLEM]** Der FS20-Sender (TX) wird vom Referenz-CUL noch nicht zuverlässig dekodiert. Ursachen könnten eine zu kurze Präambel oder leichte Timing-Abweichungen sein, die von der originalen Firmware nicht toleriert werden.
+*   **[INFO]** Für eine zuverlässige FS20-Kommunikation ist eine exakte Frequenz von **868.3 MHz** entscheidend, nicht nur die generelle 868-MHz-Bandeinstellung.
+*   **[INFO]** Bei Tests mit geringem Abstand können hohe Sendeleistungen (OOK/ASK) zu Signalverzerrungen führen. Eine Reduktion der Leistung (z.B. `PATABLE` auf `0x50` statt `0xC0`) verbessert die Signalqualität im Nahfeld erheblich.
 
 ## 5. Nächste Schritte
 
-*   **Feinabstimmung FS20-TX:** Anpassung der Präambel-Länge und der Pulsbreiten (`ets_delay_us`), um die Kompatibilität mit dem Referenz-CUL sicherzustellen.
+*   **Validierung FS20-TX:** Umfassende Tests, ob der Referenz-CUL die gesendeten FS20-Pakete nach den Anpassungen (Frequenz, Leistung, Präambel) nun zuverlässig dekodiert.
+*   **Rausch-Unterdrückung im RX-Pfad:** Implementierung eines RSSI-Schwellwerts oder einer Logik zur Mindest-Bit-Anzahl, um die Ausgabe von "Geister-Nachrichten" durch Rauschen zu unterdrücken.
 *   **Protokoll-Erweiterung:** Unterstützung für weitere SlowRF-Protokolle hinzufügen (z.B. Intertechno V3).
 *   **Konfigurations-Management:** Speichern von culfw-Einstellungen (z.B. Reporting-Modus `X21`) im Non-Volatile Storage (NVS) des ESP32, um sie nach einem Neustart zu erhalten.
 *   **FHEM-Integration:** Validierung der Firmware mit einem Host-System (FHEM) zur Sicherstellung der Kompatibilität und Langzeitstabilität.
