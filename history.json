@@ -1209,5 +1209,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "    cc1101_cmd_strobe(CC1101_SRES);\n    vTaskDelay(pdMS_TO_TICKS(50));\n\n    // Dummy read to clear anything\n    cc1101_read_reg(CC1101_PARTNUM | CC1101_READ_SINGLE);\n    \n    uint8_t partnum = cc1101_read_reg(CC1101_PARTNUM | CC1101_READ_SINGLE);\n    uint8_t version = cc1101_read_reg(CC1101_VERSION | CC1101_READ_SINGLE);\n",
+            "path": "src/cc1101.c",
+            "original_text": "    cc1101_cmd_strobe(CC1101_SRES);\n    vTaskDelay(pdMS_TO_TICKS(10));\n\n    uint8_t partnum = cc1101_read_reg(CC1101_PARTNUM | CC1101_READ_SINGLE);\n    uint8_t version = cc1101_read_reg(CC1101_VERSION | CC1101_READ_SINGLE);\n"
+          }
+        }
+      }
+    ]
   }
 ]

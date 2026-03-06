@@ -31,8 +31,11 @@ esp_err_t cc1101_init() {
     if (ret != ESP_OK) return ret;
 
     cc1101_cmd_strobe(CC1101_SRES);
-    vTaskDelay(pdMS_TO_TICKS(10));
+    vTaskDelay(pdMS_TO_TICKS(50));
 
+    // Dummy read to clear anything
+    cc1101_read_reg(CC1101_PARTNUM | CC1101_READ_SINGLE);
+    
     uint8_t partnum = cc1101_read_reg(CC1101_PARTNUM | CC1101_READ_SINGLE);
     uint8_t version = cc1101_read_reg(CC1101_VERSION | CC1101_READ_SINGLE);
 
