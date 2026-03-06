@@ -138,15 +138,15 @@ void slowrf_task(void *pvParameters) {
                 // 2. FS20 bit detection
                 int bit = -1;
                 int bit_ready = 0;
-                if (pulse >= 250 && pulse <= 520) { // Half-bit 0
+                if (pulse >= 200 && pulse <= 550) { // Half-bit 0 (400us)
                     if (pulse_in_bit == 1 && last_bit == 0) { bit = 0; bit_ready = 1; pulse_in_bit = 0; }
                     else { last_bit = 0; pulse_in_bit = 1; }
-                } else if (pulse > 520 && pulse <= 750) { // Half-bit 1
+                } else if (pulse > 550 && pulse <= 850) { // Half-bit 1 (600us)
                     if (pulse_in_bit == 1 && last_bit == 1) { bit = 1; bit_ready = 1; pulse_in_bit = 0; }
                     else { last_bit = 1; pulse_in_bit = 1; }
-                } else if (pulse > 750 && pulse <= 1000) { // Full-bit 0
+                } else if (pulse > 850 && pulse <= 1100) { // Full-bit 0 (missed edge)
                     bit = 0; bit_ready = 1; pulse_in_bit = 0;
-                } else if (pulse > 1000 && pulse <= 1450) { // Full-bit 1
+                } else if (pulse > 1100 && pulse <= 1500) { // Full-bit 1 (missed edge)
                     bit = 1; bit_ready = 1; pulse_in_bit = 0;
                 }
 

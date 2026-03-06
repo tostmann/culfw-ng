@@ -1467,5 +1467,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "                // 2. FS20 bit detection\n                int bit = -1;\n                int bit_ready = 0;\n                if (pulse >= 200 && pulse <= 550) { // Half-bit 0 (400us)\n                    if (pulse_in_bit == 1 && last_bit == 0) { bit = 0; bit_ready = 1; pulse_in_bit = 0; }\n                    else { last_bit = 0; pulse_in_bit = 1; }\n                } else if (pulse > 550 && pulse <= 850) { // Half-bit 1 (600us)\n                    if (pulse_in_bit == 1 && last_bit == 1) { bit = 1; bit_ready = 1; pulse_in_bit = 0; }\n                    else { last_bit = 1; pulse_in_bit = 1; }\n                } else if (pulse > 850 && pulse <= 1100) { // Full-bit 0 (missed edge)\n                    bit = 0; bit_ready = 1; pulse_in_bit = 0;\n                } else if (pulse > 1100 && pulse <= 1500) { // Full-bit 1 (missed edge)\n                    bit = 1; bit_ready = 1; pulse_in_bit = 0;\n                }\n",
+            "path": "src/slowrf.c",
+            "original_text": "                // 2. FS20 bit detection\n                int bit = -1;\n                int bit_ready = 0;\n                if (pulse >= 250 && pulse <= 520) { // Half-bit 0\n                    if (pulse_in_bit == 1 && last_bit == 0) { bit = 0; bit_ready = 1; pulse_in_bit = 0; }\n                    else { last_bit = 0; pulse_in_bit = 1; }\n                } else if (pulse > 520 && pulse <= 750) { // Half-bit 1\n                    if (pulse_in_bit == 1 && last_bit == 1) { bit = 1; bit_ready = 1; pulse_in_bit = 0; }\n                    else { last_bit = 1; pulse_in_bit = 1; }\n                } else if (pulse > 750 && pulse <= 1000) { // Full-bit 0\n                    bit = 0; bit_ready = 1; pulse_in_bit = 0;\n                } else if (pulse > 1000 && pulse <= 1450) { // Full-bit 1\n                    bit = 1; bit_ready = 1; pulse_in_bit = 0;\n                }\n"
+          }
+        }
+      }
+    ]
   }
 ]
