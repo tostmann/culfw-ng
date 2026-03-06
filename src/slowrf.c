@@ -22,11 +22,11 @@ void slowrf_task(void *pvParameters) {
     int64_t pulse;
     while (1) {
         if (xQueueReceive(pulse_queue, &pulse, portMAX_DELAY)) {
-            // Processing logic for FS20/EM would go here
-            // For now, we just monitor if pulses are in range
-            if (pulse > 300 && pulse < 1500) {
-                // Potential SlowRF pulse
-            }
+            // Filter noise
+            if (pulse < 200) continue; 
+            
+            // For now, just a placeholder. 
+            // In a real implementation, we would collect bits here.
         }
     }
 }
