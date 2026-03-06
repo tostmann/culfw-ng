@@ -66,8 +66,9 @@ void slowrf_task(void *pvParameters) {
                 pulse_in_bit = 0;
             } else {
                 int bit = -1;
-                if (pulse >= SLOWRF_BIT_S_MIN && pulse <= SLOWRF_BIT_S_MAX) bit = 0;
-                else if (pulse >= SLOWRF_BIT_L_MIN && pulse <= SLOWRF_BIT_L_MAX) bit = 1;
+                // Wider tolerances for noise
+                if (pulse >= 250 && pulse <= 550) bit = 0;
+                else if (pulse >= 550 && pulse <= 950) bit = 1;
 
                 if (bit != -1) {
                     if (pulse_in_bit == 0) {

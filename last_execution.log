@@ -1,4 +1,3 @@
 I (107) esp_image: segment 1: paddr=0001b510 vaddr=40800000 sizeCUL32-C6 READY
-X21
 Tr START
-TX: B4DC81FA
+TX: 37AFD441
