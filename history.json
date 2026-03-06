@@ -901,5 +901,247 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "bool slowrf_debug = false;\nbool slowrf_reporting = false;\n\nvoid slowrf_task(void *pvParameters) {\n    int64_t last_time = 0;\n    slowrf_decoder_t dec;\n    it_v1_decoder_t it_dec;\n    reset_decoder(&dec);\n    reset_it_v1(&it_dec);\n\n    while (1) {\n        int64_t current_time;\n        if (xQueueReceive(pulse_queue, &current_time, portMAX_DELAY)) {\n            int64_t pulse = current_time - last_time;\n            last_time = current_time;\n\n            if (slowrf_debug) {\n                char buf[32];\n                int len = snprintf(buf, sizeof(buf), \"P: %lld\\r\\n\", pulse);\n                usb_serial_jtag_write_bytes(buf, len, 0);\n            }\n\n            // --- 1. Intertechno V1 bit detection ---\n            it_dec.pulse_buf[it_dec.pulse_cnt % 4] = pulse;\n            it_dec.pulse_cnt++;\n            if (it_dec.pulse_cnt >= 4) {\n                int idx = (it_dec.pulse_cnt - 4) % 4;\n                int64_t p1 = it_dec.pulse_buf[idx];\n                int64_t p2 = it_dec.pulse_buf[(idx+1)%4];\n                int64_t p3 = it_dec.pulse_buf[(idx+2)%4];\n                int64_t p4 = it_dec.pulse_buf[(idx+3)%4];\n                \n                #define IS_T(p) (p >= 150 && p <= 750)\n                #define IS_3T(p) (p > 750 && p <= 1800)\n                \n                char it_bit = 0;\n                if (IS_T(p1) && IS_3T(p2) && IS_T(p3) && IS_3T(p4)) it_bit = '0';\n                else if (IS_3T(p1) && IS_T(p2) && IS_3T(p3) && IS_T(p4)) it_bit = '1';\n                else if (IS_T(p1) && IS_3T(p2) && IS_3T(p3) && IS_T(p4)) it_bit = 'F';\n                \n                if (it_bit && it_dec.pos < 12) {\n                    it_dec.s[it_dec.pos++] = it_bit;\n                    it_dec.pulse_cnt = 0; // consumed\n                }\n            }\n\n            if (it_dec.pos == 12) {\n                if (slowrf_reporting) {\n                    char out[32];\n                    int len = snprintf(out, sizeof(out), \"is%s\\r\\n\", it_dec.s);\n                    usb_serial_jtag_write_bytes(out, len, 0);\n                }\n                reset_it_v1(&it_dec);\n            }\n\n            // --- 2. FS20 / SlowRF Decoder ---\n            int bit = -1;\n            int num_bits = 0;\n\n            if (pulse >= 300 && pulse <= 500) { bit = 0; num_bits = 1; }\n            else if (pulse >= 500 && pulse <= 780) { bit = 1; num_bits = 1; }\n            else if (pulse > 780 && pulse <= 1000) { bit = 0; num_bits = 2; } // Missed edge for bit 0\n            else if (pulse > 1000 && pulse <= 1400) { bit = 1; num_bits = 2; } // Missed edge for bit 1\n\n            if (bit != -1) {\n                for (int b = 0; b < num_bits; b++) {\n                    if (dec.pulse_cnt == 0) {\n                        dec.last_bit = bit;\n                        dec.pulse_cnt = 1;\n                    } else {\n                        if (bit == dec.last_bit) {\n                            // Bit recognized (two pulses of same type)\n                            dec.current_bits = (dec.current_bits << 1) | bit;\n                            dec.bit_cnt++;\n                            if (dec.bit_cnt == 9) {\n                                uint8_t data_byte = (dec.current_bits >> 1);\n                                uint8_t parity_bit = (dec.current_bits & 1);\n                                int ones = 0;\n                                for (int i = 0; i < 8; i++) { if ((data_byte >> i) & 1) ones++; }\n                                // FS20 ODD Parity: Total bits must be odd.\n                                if (parity_bit == ((ones % 2) ? 0 : 1)) {\n                                    if (dec.byte_cnt < sizeof(dec.data)) { \n                                        dec.data[dec.byte_cnt++] = data_byte; \n                                    }\n                                } else { \n                                    if (dec.byte_cnt > 0) reset_decoder(&dec); \n                                    else { dec.bit_cnt = 0; dec.current_bits = 0; }\n                                }\n                                dec.current_bits = 0; dec.bit_cnt = 0;\n                            }\n                        }\n                        dec.pulse_cnt = 0;\n                    }\n                }\n            }\n\n            // --- 3. Sync / Gap Handling ---\n            if (pulse > 2000) {\n                if (dec.byte_cnt >= 4) {\n                    if (slowrf_reporting) {\n                        char out[64];\n                        int len = snprintf(out, sizeof(out), \"F\");\n                        for (int i = 0; i < dec.byte_cnt; i++) {\n                            len += snprintf(out + len, sizeof(out) - len, \"%02X\", dec.data[i]);\n                        }\n                        snprintf(out + len, sizeof(out) - len, \"\\r\\n\");\n                        usb_serial_jtag_write_bytes(out, strlen(out), 0);\n                    }\n                }\n                reset_decoder(&dec);\n                reset_it_v1(&it_dec);\n            }\n        }\n    }\n}\n",
+            "path": "src/slowrf.c",
+            "original_text": "bool slowrf_debug = false;\n\nvoid slowrf_task(void *pvParameters) {\n    int64_t last_time = 0;\n    slowrf_decoder_t dec;\n    it_v1_decoder_t it_dec;\n    reset_decoder(&dec);\n    reset_it_v1(&it_dec);\n\n    while (1) {\n        int64_t current_time;\n        if (xQueueReceive(pulse_queue, &current_time, portMAX_DELAY)) {\n            int64_t pulse = current_time - last_time;\n            last_time = current_time;\n\n            if (slowrf_debug) {\n                char buf[32];\n                int len = snprintf(buf, sizeof(buf), \"P: %lld\\r\\n\", pulse);\n                usb_serial_jtag_write_bytes(buf, len, 0);\n            }\n\n            // 1. Intertechno V1 bit detection (on-the-fly)\n            it_dec.pulse_buf[it_dec.pulse_cnt % 4] = pulse;\n            it_dec.pulse_cnt++;\n            if (it_dec.pulse_cnt >= 4) {\n                int idx = (it_dec.pulse_cnt - 4) % 4;\n                int64_t p1 = it_dec.pulse_buf[idx];\n                int64_t p2 = it_dec.pulse_buf[(idx+1)%4];\n                int64_t p3 = it_dec.pulse_buf[(idx+2)%4];\n                int64_t p4 = it_dec.pulse_buf[(idx+3)%4];\n                \n                #define IS_T(p) (p >= 200 && p <= 700)\n                #define IS_3T(p) (p > 800 && p <= 1700)\n                \n                if (it_dec.pos < 12) {\n                    char it_bit = 0;\n                    if (IS_T(p1) && IS_3T(p2) && IS_T(p3) && IS_3T(p4)) it_bit = '0';\n                    else if (IS_3T(p1) && IS_T(p2) && IS_3T(p3) && IS_T(p4)) it_bit = '1';\n                    else if (IS_T(p1) && IS_3T(p2) && IS_3T(p3) && IS_T(p4)) it_bit = 'F';\n                    \n                    if (it_bit) {\n                        it_dec.s[it_dec.pos++] = it_bit;\n                        it_dec.pulse_cnt = 0; // consumed\n                    }\n                }\n            }\n\n            if (it_dec.pos == 12) {\n                // Potential IT packet. Wait for sync/gap?\n                // For now just print.\n                char out[32];\n                int len = snprintf(out, sizeof(out), \"is%s\\r\\n\", it_dec.s);\n                usb_serial_jtag_write_bytes(out, len, 0);\n                reset_it_v1(&it_dec);\n            }\n\n            // 2. FS20 / SlowRF\n            int bit = -1;\n            if (pulse >= 300 && pulse <= 500) bit = 0;\n            else if (pulse >= 500 && pulse <= 750) bit = 1;\n\n            if (bit != -1) {\n                bool bit_ready = false;\n                if (dec.pulse_cnt == 0) {\n                    dec.last_bit = bit;\n                    dec.pulse_cnt = 1;\n                } else {\n                    if (bit == dec.last_bit) {\n                        bit_ready = true;\n                    }\n                    dec.pulse_cnt = 0;\n                }\n\n                if (bit_ready) {\n                    dec.current_bits = (dec.current_bits << 1) | bit;\n                    dec.bit_cnt++;\n                    if (dec.bit_cnt == 9) {\n                        uint8_t data_byte = (dec.current_bits >> 1);\n                        uint8_t parity_bit = (dec.current_bits & 1);\n                        int ones = 0;\n                        for (int i = 0; i < 8; i++) { if ((data_byte >> i) & 1) ones++; }\n                        // FS20 EVEN Parity (culfw style)\n                        if (parity_bit == (ones % 2)) {\n                            if (dec.byte_cnt < sizeof(dec.data)) { \n                                dec.data[dec.byte_cnt++] = data_byte; \n                            }\n                        } else { \n                            // Only reset if we already had some data, otherwise it's just noise\n                            if (dec.byte_cnt > 0) {\n                                if (slowrf_debug) usb_serial_jtag_write_bytes(\"PARERR\\r\\n\", 8, 0);\n                                reset_decoder(&dec); \n                            } else {\n                                dec.bit_cnt = 0;\n                                dec.current_bits = 0;\n                            }\n                        }\n                        dec.current_bits = 0; dec.bit_cnt = 0;\n                    }\n                }\n            } else if (pulse > 2000) {\n                // Gap - check if we have a full FS20 packet\n                if (dec.byte_cnt >= 4) {\n                    char out[64];\n                    int len = snprintf(out, sizeof(out), \"F\");\n                    for (int i = 0; i < dec.byte_cnt; i++) {\n                        len += snprintf(out + len, sizeof(out) - len, \"%02X\", dec.data[i]);\n                    }\n                    snprintf(out + len, sizeof(out) - len, \"\\r\\n\");\n                    usb_serial_jtag_write_bytes(out, strlen(out), 0);\n                }\n                reset_decoder(&dec);\n                reset_it_v1(&it_dec);\n            }\n        }\n    }\n}\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Error: 'original_text' not found. Use exact match."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "read_file",
+          "args": {
+            "path": "src/slowrf.c"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "read_file",
+          "response": {
+            "result": "#include \"slowrf.h\"\n#include \"driver/gpio.h\"\n#include \"driver/usb_serial_jtag.h\"\n#include \"esp_timer.h\"\n#include \"esp_log.h\"\n#include \"freertos/FreeRTOS.h\"\n#include \"freertos/queue.h\"\n#include \"culfw_parser.h\"\n\nstatic const char *TAG = \"SLOWRF\";\nstatic QueueHandle_t pulse_queue;\nstatic int64_t last_time = 0;\nstatic bool slowrf_debug = false;\n\nvoid slowrf_set_debug(bool enable) {\n    slowrf_debug = enable;\n}\n\nstatic void IRAM_ATTR gpio_isr_handler(void* arg) {\n    int64_t current_time = esp_timer_get_time();\n    int64_t diff = current_time - last_time;\n    last_time = current_time;\n    \n    // Simple filter for SlowRF: 200us < duration < 15ms\n    if (diff > 200 && diff < 15000) { \n        xQueueSendFromISR(pulse_queue, &diff, NULL);\n    }\n}\n\n#define SLOWRF_BIT_S_MIN 300\n#define SLOWRF_BIT_S_MAX 550\n#define SLOWRF_BIT_L_MIN 550\n#define SLOWRF_BIT_L_MAX 900\n#define SLOWRF_SYNC_MIN  8000\n\ntypedef struct {\n    uint8_t data[16];\n    int byte_cnt;\n    int bit_cnt;\n    uint32_t current_bits;\n    int last_bit;\n    int pulse_cnt;\n} slowrf_decoder_t;\n\nstatic void reset_decoder(slowrf_decoder_t *dec) {\n    memset(dec->data, 0, sizeof(dec->data));\n    dec->byte_cnt = 0;\n    dec->bit_cnt = 0;\n    dec->current_bits = 0;\n    dec->last_bit = -1;\n    dec->pulse_cnt = 0;\n}\n\ntypedef struct {\n    char s[13];\n    int pos;\n    int pulse_cnt;\n    int64_t pulse_buf[4];\n} it_v1_decoder_t;\n\nstatic void reset_it_v1(it_v1_decoder_t *it) {\n    it->pos = 0;\n    it->pulse_cnt = 0;\n    memset(it->s, 0, sizeof(it->s));\n}\n\nvoid slowrf_task(void *pvParameters) {\n    int64_t pulse;\n    slowrf_decoder_t dec;\n    it_v1_decoder_t it_dec;\n    reset_decoder(&dec);\n    reset_it_v1(&it_dec);\n    \n    int pulse_in_bit = 0;\n    int last_bit = -1;\n\n    while (1) {\n        if (xQueueReceive(pulse_queue, &pulse, portMAX_DELAY)) {\n            if (slowrf_debug) {\n                char d[32];\n                int dlen = snprintf(d, sizeof(d), \"P: %lld\\r\\n\", (long long)pulse);\n                usb_serial_jtag_write_bytes(d, dlen, 0);\n            }\n            if (pulse > SLOWRF_SYNC_MIN) {\n                // FS20 Check\n                if (dec.byte_cnt >= 2) {\n                    char out[64];\n                    int len = snprintf(out, sizeof(out), \"F\");\n                    for (int i = 0; i < dec.byte_cnt; i++) {\n                        len += snprintf(out + len, sizeof(out) - len, \"%02X\", dec.data[i]);\n                    }\n                    snprintf(out + len, sizeof(out) - len, \"\\r\\n\");\n                    usb_serial_jtag_write_bytes(out, strlen(out), 0);\n                }\n                // IT-V1 Check\n                if (it_dec.pos == 12) {\n                    char out[32];\n                    int len = snprintf(out, sizeof(out), \"is%s\\r\\n\", it_dec.s);\n                    usb_serial_jtag_write_bytes(out, len, 0);\n                }\n                reset_decoder(&dec);\n                reset_it_v1(&it_dec);\n                pulse_in_bit = 0;\n            } else {\n                // 1. Intertechno V1 bit detection (on-the-fly)\n                it_dec.pulse_buf[it_dec.pulse_cnt % 4] = pulse;\n                it_dec.pulse_cnt++;\n                if (it_dec.pulse_cnt >= 4) {\n                    int idx = (it_dec.pulse_cnt - 4) % 4;\n                    int64_t p1 = it_dec.pulse_buf[idx];\n                    int64_t p2 = it_dec.pulse_buf[(idx+1)%4];\n                    int64_t p3 = it_dec.pulse_buf[(idx+2)%4];\n                    int64_t p4 = it_dec.pulse_buf[(idx+3)%4];\n                    \n                    #define IS_T(p) (p >= 200 && p <= 700)\n                    #define IS_3T(p) (p > 800 && p <= 1700)\n                    \n                    if (it_dec.pos < 12) {\n                        char it_bit = 0;\n                        if (IS_T(p1) && IS_3T(p2) && IS_T(p3) && IS_3T(p4)) it_bit = '0';\n                        else if (IS_3T(p1) && IS_T(p2) && IS_3T(p3) && IS_T(p4)) it_bit = '1';\n                        else if (IS_T(p1) && IS_3T(p2) && IS_3T(p3) && IS_T(p4)) it_bit = 'F';\n                        \n                        if (it_bit) {\n                            it_dec.s[it_dec.pos++] = it_bit;\n                            it_dec.pulse_cnt = 0; // consumed\n                        }\n                    }\n                }\n\n                // 2. FS20 bit detection\n                int bit = -1;\n                int bit_ready = 0;\n                if (pulse >= 250 && pulse <= 520) { // Half-bit 0\n                    if (pulse_in_bit == 1 && last_bit == 0) { bit = 0; bit_ready = 1; pulse_in_bit = 0; }\n                    else { last_bit = 0; pulse_in_bit = 1; }\n                } else if (pulse > 520 && pulse <= 750) { // Half-bit 1\n                    if (pulse_in_bit == 1 && last_bit == 1) { bit = 1; bit_ready = 1; pulse_in_bit = 0; }\n                    else { last_bit = 1; pulse_in_bit = 1; }\n                } else if (pulse > 750 && pulse <= 1000) { // Full-bit 0\n                    bit = 0; bit_ready = 1; pulse_in_bit = 0;\n                } else if (pulse > 1000 && pulse <= 1450) { // Full-bit 1\n                    bit = 1; bit_ready = 1; pulse_in_bit = 0;\n                }\n\n                if (bit_ready) {\n                    dec.current_bits = (dec.current_bits << 1) | bit;\n                    dec.bit_cnt++;\n                    if (dec.bit_cnt == 9) {\n                        uint8_t data_byte = (dec.current_bits >> 1);\n                        uint8_t parity_bit = (dec.current_bits & 1);\n                        int ones = 0;\n                        for (int i = 0; i < 8; i++) { if ((data_byte >> i) & 1) ones++; }\n                        // FS20 EVEN Parity (culfw style)\n                        if (parity_bit == (ones % 2)) {\n                            if (dec.byte_cnt < sizeof(dec.data)) { \n                                dec.data[dec.byte_cnt++] = data_byte; \n                            }\n                        } else { \n                            // Only reset if we already had some data, otherwise it's just noise\n                            if (dec.byte_cnt > 0) {\n                                if (slowrf_debug) usb_serial_jtag_write_bytes(\"PARERR\\r\\n\", 8, 0);\n                                reset_decoder(&dec); \n                            } else {\n                                dec.bit_cnt = 0;\n                                dec.current_bits = 0;\n                            }\n                        }\n                        dec.current_bits = 0; dec.bit_cnt = 0;\n                    }\n                }\n            }\n        }\n    }\n}\n\nesp_err_t slowrf_init() {\n    pulse_queue = xQueueCreate(512, sizeof(int64_t));\n    \n    gpio_config_t io_conf = {\n        .intr_type = GPIO_INTR_ANYEDGE,\n        .pin_bit_mask = (1ULL << GPIO_GDO0),\n        .mode = GPIO_MODE_INPUT,\n        .pull_up_en = 0,\n        .pull_down_en = 0,\n    };\n    gpio_config(&io_conf);\n    \n    gpio_install_isr_service(0);\n    gpio_isr_handler_add(GPIO_GDO0, gpio_isr_handler, NULL);\n    \n    // Lowered priority from 15 to 4 (above LED, below parser)\n    xTaskCreate(slowrf_task, \"slowrf_task\", 4096, NULL, 4, NULL);\n    \n    return ESP_OK;\n}\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "void slowrf_set_debug(bool enable);\nvoid slowrf_set_reporting(bool enable);\nesp_err_t slowrf_init();\n",
+            "path": "src/slowrf.h",
+            "original_text": "void slowrf_set_debug(bool enable);\nesp_err_t slowrf_init();\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "File not found."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "ls src/slowrf.h"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 2\nOutput:\nls: cannot access 'src/slowrf.h': No such file or directory\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "ls src/"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\ncc1101.c\nCMakeLists.txt\nculfw_parser.c\nmain.c\nslowrf.c\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "ls include/"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\ncc1101.h\nculfw_parser.h\nslowrf.h\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "void slowrf_set_debug(bool enable);\nvoid slowrf_set_reporting(bool enable);\nesp_err_t slowrf_init();\n",
+            "path": "include/slowrf.h",
+            "original_text": "void slowrf_set_debug(bool enable);\nesp_err_t slowrf_init();\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Error: 'original_text' not found. Use exact match."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "read_file",
+          "args": {
+            "path": "include/slowrf.h"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "read_file",
+          "response": {
+            "result": "#ifndef SLOWRF_H\n#define SLOWRF_H\n\n#include \"esp_err.h\"\n#include <stdbool.h>\n\nesp_err_t slowrf_init();\nvoid slowrf_set_debug(bool enable);\n\n#endif\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "void slowrf_set_debug(bool enable);\nvoid slowrf_set_reporting(bool enable);\n",
+            "path": "include/slowrf.h",
+            "original_text": "void slowrf_set_debug(bool enable);\n"
+          }
+        }
+      }
+    ]
   }
 ]

@@ -6,5 +6,6 @@
 
 esp_err_t slowrf_init();
 void slowrf_set_debug(bool enable);
+void slowrf_set_reporting(bool enable);
 
 #endif
