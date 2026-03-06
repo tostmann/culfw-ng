@@ -1185,5 +1185,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "    } else if (cmd[0] == 'F') {\n        // F <housecode 4> <addr 2> <cmd 2>\n        if (strlen(cmd) == 9) {\n            char hc[5], ad[3], cm[3];\n            strncpy(hc, cmd + 1, 4); hc[4] = 0;\n            strncpy(ad, cmd + 5, 2); ad[2] = 0;\n            strncpy(cm, cmd + 7, 2); cm[2] = 0;\n            cc1101_send_fs20(hc, ad, cm);\n            len = snprintf(out, sizeof(out), \"F OK\\r\\n\");\n        } else {\n            cc1101_send_raw_slowrf(cmd + 1);\n            len = snprintf(out, sizeof(out), \"F OK (raw)\\r\\n\");\n        }\n    } else if (cmd[0] == 'i' && cmd[1] == 's') {\n        const char* is_data = cmd + 2;\n        if (strlen(is_data) == 32) {\n            cc1101_send_it_v3(is_data);\n        } else {\n            cc1101_send_it_v1(is_data);\n        }\n        len = snprintf(out, sizeof(out), \"is OK\\r\\n\");\n    } else if (cmd[0] == 'T') {\n        if (cmd[1] == 'r') {\n            // Test Random: Send 5 random FS20 packets\n            len = snprintf(out, sizeof(out), \"Tr START\\r\\n\");\n            usb_serial_jtag_write_bytes(out, len, portMAX_DELAY);\n            for (int i = 0; i < 5; i++) {\n                char rnd_hex[11];\n                uint32_t r = esp_random();\n                snprintf(rnd_hex, sizeof(rnd_hex), \"%08X\", r);\n                char msg[64];\n                int mlen = snprintf(msg, sizeof(msg), \"TX: %s\\r\\n\", rnd_hex);\n                usb_serial_jtag_write_bytes(msg, mlen, portMAX_DELAY);\n                cc1101_send_raw_slowrf(rnd_hex);\n                vTaskDelay(pdMS_TO_TICKS(500));\n            }\n            len = snprintf(out, sizeof(out), \"Tr DONE\\r\\n\");\n        } else if (strlen(cmd) >= 7) {\n            // T <housecode 4> <addr 2> -> T010101 (for compatibility with some systems)\n            cc1101_send_raw_slowrf(cmd + 1);\n            len = snprintf(out, sizeof(out), \"T OK\\r\\n\");\n        }\n",
+            "path": "src/culfw_parser.c",
+            "original_text": "    } else if (cmd[0] == 'F') {\n        cc1101_send_slowrf(cmd + 1);\n        len = snprintf(out, sizeof(out), \"F OK\\r\\n\");\n    } else if (cmd[0] == 'i' && cmd[1] == 's') {\n        cc1101_send_it_v1(cmd + 2);\n        len = snprintf(out, sizeof(out), \"is OK\\r\\n\");\n    } else if (cmd[0] == 'T' && cmd[1] == 'r') {\n"
+          }
+        }
+      }
+    ]
   }
 ]

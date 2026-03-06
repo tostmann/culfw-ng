@@ -67,12 +67,47 @@ static void handle_command(char *cmd) {
         uint8_t marc = cc1101_read_reg(0x35 | CC1101_READ_BURST);
         len = snprintf(out, sizeof(out), "C01 Part: 0x%02x, Vers: 0x%02x, MARC: 0x%02x\r\n", part, vers, marc);
     } else if (cmd[0] == 'F') {
-        cc1101_send_slowrf(cmd + 1);
-        len = snprintf(out, sizeof(out), "F OK\r\n");
+        // F <housecode 4> <addr 2> <cmd 2>
+        if (strlen(cmd) == 9) {
+            char hc[5], ad[3], cm[3];
+            strncpy(hc, cmd + 1, 4); hc[4] = 0;
+            strncpy(ad, cmd + 5, 2); ad[2] = 0;
+            strncpy(cm, cmd + 7, 2); cm[2] = 0;
+            cc1101_send_fs20(hc, ad, cm);
+            len = snprintf(out, sizeof(out), "F OK\r\n");
+        } else {
+            cc1101_send_raw_slowrf(cmd + 1);
+            len = snprintf(out, sizeof(out), "F OK (raw)\r\n");
+        }
     } else if (cmd[0] == 'i' && cmd[1] == 's') {
-        cc1101_send_it_v1(cmd + 2);
+        const char* is_data = cmd + 2;
+        if (strlen(is_data) == 32) {
+            cc1101_send_it_v3(is_data);
+        } else {
+            cc1101_send_it_v1(is_data);
+        }
         len = snprintf(out, sizeof(out), "is OK\r\n");
-    } else if (cmd[0] == 'T' && cmd[1] == 'r') {
+    } else if (cmd[0] == 'T') {
+        if (cmd[1] == 'r') {
+            // Test Random: Send 5 random FS20 packets
+            len = snprintf(out, sizeof(out), "Tr START\r\n");
+            usb_serial_jtag_write_bytes(out, len, portMAX_DELAY);
+            for (int i = 0; i < 5; i++) {
+                char rnd_hex[11];
+                uint32_t r = esp_random();
+                snprintf(rnd_hex, sizeof(rnd_hex), "%08X", r);
+                char msg[64];
+                int mlen = snprintf(msg, sizeof(msg), "TX: %s\r\n", rnd_hex);
+                usb_serial_jtag_write_bytes(msg, mlen, portMAX_DELAY);
+                cc1101_send_raw_slowrf(rnd_hex);
+                vTaskDelay(pdMS_TO_TICKS(500));
+            }
+            len = snprintf(out, sizeof(out), "Tr DONE\r\n");
+        } else if (strlen(cmd) >= 7) {
+            // T <housecode 4> <addr 2> -> T010101 (for compatibility with some systems)
+            cc1101_send_raw_slowrf(cmd + 1);
+            len = snprintf(out, sizeof(out), "T OK\r\n");
+        }
         // Test Random: Send 5 random FS20 packets
         len = snprintf(out, sizeof(out), "Tr START\r\n");
         usb_serial_jtag_write_bytes(out, len, portMAX_DELAY);
