@@ -1023,5 +1023,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "void culfw_parser_task(void *pvParameters) {\n    reporting_enabled = load_reporting_state();\n    slowrf_set_reporting(reporting_enabled);\n    ESP_LOGI(TAG, \"Loaded reporting state: %d\", reporting_enabled);\n\n    // Check if driver is already installed (might be by another task or earlier boot stage)\n    if (!usb_serial_jtag_is_driver_installed()) {\n        usb_serial_jtag_driver_config_t usb_serial_jtag_config = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();\n        usb_serial_jtag_driver_install(&usb_serial_jtag_config);\n    }\n\n    uint8_t buf[128];\n",
+            "path": "src/culfw_parser.c",
+            "original_text": "void culfw_parser_task(void *pvParameters) {\n    // Check if driver is already installed (might be by another task or earlier boot stage)\n    if (!usb_serial_jtag_is_driver_installed()) {\n        usb_serial_jtag_driver_config_t usb_serial_jtag_config = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();\n        usb_serial_jtag_driver_install(&usb_serial_jtag_config);\n    }\n\n    uint8_t buf[128];\n"
+          }
+        }
+      }
+    ]
   }
 ]

@@ -100,6 +100,10 @@ static void handle_command(char *cmd) {
 }
 
 void culfw_parser_task(void *pvParameters) {
+    reporting_enabled = load_reporting_state();
+    slowrf_set_reporting(reporting_enabled);
+    ESP_LOGI(TAG, "Loaded reporting state: %d", reporting_enabled);
+
     // Check if driver is already installed (might be by another task or earlier boot stage)
     if (!usb_serial_jtag_is_driver_installed()) {
         usb_serial_jtag_driver_config_t usb_serial_jtag_config = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();
