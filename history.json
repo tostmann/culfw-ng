@@ -814,13 +814,39 @@
     ]
   },
   {
+    "role": "user",
+    "parts": [
+      {
+        "text": "SYSTEM ALERT: Execution limit reached (30 steps). STOP fixing. Summarize current status."
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "text": "Die Firmware f\u00fcr den ESP32-C6 (CUL32-C6) wurde erfolgreich initialisiert, kompiliert und auf beide Zielger\u00e4te geflasht.\n\n### Aktueller Status:\n*   **Plattform:** ESP-IDF Projekt mit PlatformIO.\n*   **Hardware-Anbindung:** SPI-Kommunikation mit CC1101 (Pins gem\u00e4\u00df FACTS.md) ist implementiert.\n*   **Auto-Detektion:** Erkennt 433MHz/868MHz Marker via GPIO4.\n*   **Protokoll-Emulation:**\n    *   `culfw_parser_task`: Erstes Grundger\u00fcst f\u00fcr die Kommando-Emulation (`V`, `X`, `C`) \u00fcber USB-JTAG/CDC.\n    *   `slowrf_task`: Grundger\u00fcst f\u00fcr die Pulsweiten-Erfassung via ISR an GDO0/GPIO2.\n*   **Build-Status:** Projekt kompiliert fehlerfrei (`pio run`).\n*   **Deployment:** Firmware wurde auf `/dev/ttyACM2` (433MHz) und `/dev/ttyACM3` (868MHz) geflasht.\n\n### N\u00e4chste Schritte:\n1.  **USB-CDC Kommunikation fixen:** Der aktuelle `getchar()`/`printf()` Ansatz im RTOS-Task scheint \u00fcber das ESP32-C6 USB-JTAG-Serial Interface noch nicht zuverl\u00e4ssig zu antworten (Task-Watchdog oder Puffer-Thematik).\n2.  **SlowRF Logik:** Implementierung der Dekodierung f\u00fcr FS20/EM (Puls-L\u00e4ngen-Validierung).\n3.  **CC1101 Tuning:** Verfeinerung der Register-Settings f\u00fcr optimale OOK-Empfindlichkeit.\n\n**Ready for next phase.**"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "text": "go"
+      }
+    ]
+  },
+  {
     "role": "model",
     "parts": [
       {
         "function_call": {
-          "name": "execute_shell",
+          "name": "edit_file",
           "args": {
-            "command": "(echo -e \"V\\n\"; sleep 2) | timeout 3s pio monitor -p /dev/ttyACM3 --baud 115200\n"
+            "replacement_text": "#include \"esp_vfs_dev.h\"\n#include \"esp_vfs_usb_serial_jtag.h\"\n#include \"driver/usb_serial_jtag.h\"\n\nvoid culfw_parser_task(void *pvParameters) {\n    // Initialize USB-SERIAL-JTAG\n    usb_serial_jtag_driver_config_t usb_serial_jtag_config = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();\n    usb_serial_jtag_driver_install(&usb_serial_jtag_config);\n    esp_vfs_usb_serial_jtag_use_driver();\n\n    char buf[128];\n    int pos = 0;\n    \n    // Disable buffering for stdin\n    setvbuf(stdin, NULL, _IONBF, 0);\n\n    while (1) {\n        int c = getchar();\n        if (c != EOF && c != 0xFF) {\n            if (c == '\\r' || c == '\\n') {\n                if (pos > 0) {\n                    buf[pos] = '\\0';\n                    handle_command(buf);\n                    pos = 0;\n                }\n            } else if (pos < sizeof(buf) - 1) {\n                buf[pos++] = (char)c;\n            }\n        } else {\n            vTaskDelay(pdMS_TO_TICKS(10));\n        }\n    }\n}",
+            "path": "src/culfw_parser.c",
+            "original_text": "void culfw_parser_task(void *pvParameters) {\n    char buf[128];\n    int pos = 0;\n    while (1) {\n        int c = getchar();\n        if (c != EOF) {\n            if (c == '\\r' || c == '\\n') {\n                if (pos > 0) {\n                    buf[pos] = '\\0';\n                    handle_command(buf);\n                    pos = 0;\n                }\n            } else if (pos < sizeof(buf) - 1) {\n                buf[pos++] = (char)c;\n            }\n        } else {\n            vTaskDelay(pdMS_TO_TICKS(10));\n        }\n    }\n}"
           }
         }
       }

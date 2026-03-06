@@ -30,12 +30,25 @@ static void handle_command(char *cmd) {
     }
 }
 
+#include "esp_vfs_dev.h"
+#include "esp_vfs_usb_serial_jtag.h"
+#include "driver/usb_serial_jtag.h"
+
 void culfw_parser_task(void *pvParameters) {
+    // Initialize USB-SERIAL-JTAG
+    usb_serial_jtag_driver_config_t usb_serial_jtag_config = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();
+    usb_serial_jtag_driver_install(&usb_serial_jtag_config);
+    esp_vfs_usb_serial_jtag_use_driver();
+
     char buf[128];
     int pos = 0;
+    
+    // Disable buffering for stdin
+    setvbuf(stdin, NULL, _IONBF, 0);
+
     while (1) {
         int c = getchar();
-        if (c != EOF) {
+        if (c != EOF && c != 0xFF) {
             if (c == '\r' || c == '\n') {
                 if (pos > 0) {
                     buf[pos] = '\0';
