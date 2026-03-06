@@ -275,7 +275,8 @@ void slowrf_task(void *pvParameters) {
             // --- HMS / S300TH DECODING (868 MHz) ---
             if (!cc1101_is_433()) {
                 // S300TH Sync
-                if (!s300_dec.sync_found && pulse > 1000 && pulse < 1500) {
+                if (!s300_dec.sync_found && pulse > 950 && pulse < 1350) {
+                    reset_sensor(&s300_dec);
                     s300_dec.sync_found = true;
                     s300_dec.pulse_state = 0;
                 } else if (s300_dec.sync_found) {
@@ -284,8 +285,8 @@ void slowrf_task(void *pvParameters) {
                         s300_dec.pulse_state = 1;
                     } else {
                         int bit = -1;
-                        if (s300_dec.last_pulse < 600 && pulse > 600) bit = 0;      // 400/800
-                        else if (s300_dec.last_pulse < 600 && pulse < 600) bit = 1; // 400/400
+                        if (s300_dec.last_pulse < 600 && pulse > 600) bit = 0;      // 0: 400/800
+                        else if (s300_dec.last_pulse < 600 && pulse < 600) bit = 1; // 1: 400/400
                         
                         if (bit != -1) {
                             s300_dec.current_nibble |= (bit << s300_dec.bit_cnt);
@@ -294,7 +295,10 @@ void slowrf_task(void *pvParameters) {
                                 s300_dec.current_nibble = 0;
                                 s300_dec.bit_cnt = 0;
                             }
-                        } else s300_dec.sync_found = false;
+                        } else {
+                            if (s300_dec.nibble_cnt < 9) reset_sensor(&s300_dec);
+                            else s300_dec.sync_found = false; // keep for reporting
+                        }
                         s300_dec.pulse_state = 0;
                     }
                 }

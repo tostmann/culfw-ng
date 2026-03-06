@@ -47,3 +47,7 @@ usb-Espressif_USB_JTAG_serial_debug_unit_58:E6:C5:E6:90:B0-if00 - 433MHz Zielhar
 *HINT*
 
 ignoriere normalen Funktraffic während der Test wie: F666666xxx
+
+*GITHUB*
+
+ssh git@github.com:tostmann/culfw-ng.git
