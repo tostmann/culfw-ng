@@ -1109,5 +1109,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "void cc1101_send_slowrf(const char* hex_data);\nvoid cc1101_send_it_v1(const char* data);\n",
+            "path": "include/cc1101.h",
+            "original_text": "void cc1101_send_slowrf(const char* hex_data);\n"
+          }
+        }
+      }
+    ]
   }
 ]
