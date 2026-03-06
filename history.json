@@ -1287,5 +1287,87 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "#include \"culfw_parser.h\"\n#include \"cc1101.h\"\n#include \"slowrf.h\"\n#include \"driver/usb_serial_jtag.h\"\n#include \"esp_system.h\"\n#include \"esp_random.h\"\n#include <string.h>\n#include <stdio.h>\n#include <stdlib.h>\n",
+            "path": "src/culfw_parser.c",
+            "original_text": "#include \"culfw_parser.h\"\n#include \"cc1101.h\"\n#include \"driver/usb_serial_jtag.h\"\n#include \"esp_system.h\"\n#include \"esp_random.h\"\n#include <string.h>\n#include <stdio.h>\n#include <stdlib.h>\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Error: 'original_text' not found. Use exact match."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "read_file",
+          "args": {
+            "path": "src/culfw_parser.c"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "read_file",
+          "response": {
+            "result": "#include <stdio.h>\n#include <string.h>\n#include \"freertos/FreeRTOS.h\"\n#include \"freertos/task.h\"\n#include \"culfw_parser.h\"\n#include \"esp_log.h\"\n#include \"esp_random.h\"\n#include \"driver/gpio.h\"\n#include \"driver/usb_serial_jtag.h\"\n#include \"cc1101.h\"\n\nstatic const char *TAG = \"CULFW_PARSER\";\nstatic bool reporting_enabled = false;\n\nbool culfw_reporting_enabled() {\n    return reporting_enabled;\n}\n\nstatic void handle_command(char *cmd) {\n    char out[128];\n    int len = 0;\n    if (cmd[0] == 'V') {\n        bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);\n        len = snprintf(out, sizeof(out), \"V %s culfw-NG Build: %d (%s %s) CUL32-C6 (F-Band: %sMHz)\\r\\n\", \n                       FW_VERSION, BUILD_NUMBER, __DATE__, __TIME__, is_433 ? \"433\" : \"868\");\n    } else if (cmd[0] == 'X') {\n        if (cmd[1] == '0' && cmd[2] == '0') {\n            reporting_enabled = false;\n        } else {\n            reporting_enabled = true;\n        }\n        len = snprintf(out, sizeof(out), \"X21\\r\\n\");\n    } else if (cmd[0] == 'C') {\n        uint8_t part = cc1101_read_reg(CC1101_PARTNUM | CC1101_READ_BURST);\n        uint8_t vers = cc1101_read_reg(CC1101_VERSION | CC1101_READ_BURST);\n        len = snprintf(out, sizeof(out), \"C01 Part: 0x%02x, Vers: 0x%02x\\r\\n\", part, vers);\n    } else if (cmd[0] == 'F') {\n        cc1101_send_slowrf(cmd + 1);\n        len = snprintf(out, sizeof(out), \"F OK\\r\\n\");\n    } else if (cmd[0] == 'T' && cmd[1] == 'r') {\n        // Test Random: Send 5 random FS20 packets\n        len = snprintf(out, sizeof(out), \"Tr START\\r\\n\");\n        usb_serial_jtag_write_bytes(out, len, portMAX_DELAY);\n        for (int i = 0; i < 5; i++) {\n            char rnd_hex[11];\n            uint32_t r = esp_random();\n            // Just use the bytes directly for simplicity\n            snprintf(rnd_hex, sizeof(rnd_hex), \"%08X\", r);\n            \n            char msg[64];\n            int mlen = snprintf(msg, sizeof(msg), \"TX: %s\\r\\n\", rnd_hex);\n            usb_serial_jtag_write_bytes(msg, mlen, portMAX_DELAY);\n\n            cc1101_send_slowrf(rnd_hex);\n            vTaskDelay(pdMS_TO_TICKS(500));\n        }\n        len = snprintf(out, sizeof(out), \"Tr DONE\\r\\n\");\n    } else {\n        len = snprintf(out, sizeof(out), \"E %s unknown\\r\\n\", cmd);\n    }\n    \n    if (len > 0) {\n        usb_serial_jtag_write_bytes(out, len, portMAX_DELAY);\n    }\n}\n\nvoid culfw_parser_task(void *pvParameters) {\n    // Check if driver is already installed (might be by another task or earlier boot stage)\n    if (!usb_serial_jtag_is_driver_installed()) {\n        usb_serial_jtag_driver_config_t usb_serial_jtag_config = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();\n        usb_serial_jtag_driver_install(&usb_serial_jtag_config);\n    }\n\n    uint8_t buf[128];\n    char cmd_buf[128];\n    int cmd_pos = 0;\n\n    while (1) {\n        int n = usb_serial_jtag_read_bytes(buf, sizeof(buf), pdMS_TO_TICKS(50));\n        if (n > 0) {\n            for (int i = 0; i < n; i++) {\n                char c = (char)buf[i];\n                if (c == '\\r' || c == '\\n') {\n                    if (cmd_pos > 0) {\n                        cmd_buf[cmd_pos] = '\\0';\n                        handle_command(cmd_buf);\n                        cmd_pos = 0;\n                    }\n                } else if (cmd_pos < sizeof(cmd_buf) - 1) {\n                    cmd_buf[cmd_pos++] = c;\n                }\n            }\n        }\n        vTaskDelay(pdMS_TO_TICKS(10));\n    }\n}\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "#include \"cc1101.h\"\n#include \"slowrf.h\"\n\nstatic const char *TAG = \"CULFW_PARSER\";\n",
+            "path": "src/culfw_parser.c",
+            "original_text": "#include \"cc1101.h\"\n\nstatic const char *TAG = \"CULFW_PARSER\";\n"
+          }
+        }
+      }
+    ]
   }
 ]

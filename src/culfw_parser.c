@@ -8,6 +8,7 @@
 #include "driver/gpio.h"
 #include "driver/usb_serial_jtag.h"
 #include "cc1101.h"
+#include "slowrf.h"
 
 static const char *TAG = "CULFW_PARSER";
 static bool reporting_enabled = false;
