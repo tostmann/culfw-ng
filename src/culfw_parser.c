@@ -75,7 +75,7 @@ void culfw_parser_task(void *pvParameters) {
     int cmd_pos = 0;
 
     while (1) {
-        int n = usb_serial_jtag_read_bytes(buf, sizeof(buf), pdMS_TO_TICKS(10));
+        int n = usb_serial_jtag_read_bytes(buf, sizeof(buf), pdMS_TO_TICKS(50));
         if (n > 0) {
             for (int i = 0; i < n; i++) {
                 char c = (char)buf[i];
@@ -89,8 +89,7 @@ void culfw_parser_task(void *pvParameters) {
                     cmd_buf[cmd_pos++] = c;
                 }
             }
-        } else {
-            vTaskDelay(pdMS_TO_TICKS(10));
         }
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
