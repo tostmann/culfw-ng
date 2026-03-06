@@ -44,6 +44,9 @@ static void handle_command(char *cmd) {
     } else if (cmd[0] == 'F') {
         cc1101_send_slowrf(cmd + 1);
         len = snprintf(out, sizeof(out), "F OK\r\n");
+    } else if (cmd[0] == 'i' && cmd[1] == 's') {
+        cc1101_send_it_v1(cmd + 2);
+        len = snprintf(out, sizeof(out), "is OK\r\n");
     } else if (cmd[0] == 'T' && cmd[1] == 'r') {
         // Test Random: Send 5 random FS20 packets
         len = snprintf(out, sizeof(out), "Tr START\r\n");
