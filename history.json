@@ -939,5 +939,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "void app_main(void) {\n    ESP_LOGI(TAG, \"Starting CUL32-C6 Firmware...\");\n\n    // Initialize NVS\n    esp_err_t ret = nvs_flash_init();\n    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {\n        ESP_ERROR_CHECK(nvs_flash_erase());\n        ret = nvs_flash_init();\n    }\n    ESP_ERROR_CHECK(ret);\n    \n    // Install USB Serial JTAG early\n",
+            "path": "src/main.c",
+            "original_text": "void app_main(void) {\n    ESP_LOGI(TAG, \"Starting CUL32-C6 Firmware...\");\n    \n    // Install USB Serial JTAG early\n"
+          }
+        }
+      }
+    ]
   }
 ]
