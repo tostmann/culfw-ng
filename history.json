@@ -1252,5 +1252,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "    cc1101_write_reg(0x3E, 0xC0); // PATABLE: For ASK/OOK, first byte is the value for \"1\"\n\n    cc1101_set_rx_mode();\n\n    return ESP_OK;\n}\n\nvoid cc1101_set_rx_mode() {\n    cc1101_cmd_strobe(CC1101_SIDLE);\n    cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Output\n    gpio_set_direction(GPIO_GDO0, GPIO_MODE_INPUT);\n    cc1101_cmd_strobe(CC1101_SRX);\n}\n\nvoid cc1101_set_tx_mode() {\n    cc1101_cmd_strobe(CC1101_SIDLE);\n    cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Input (actually 0x0D is same pin but CC1101 will use it as input in TX)\n    gpio_set_direction(GPIO_GDO0, GPIO_MODE_OUTPUT);\n    cc1101_cmd_strobe(CC1101_STX);\n}\n\nvoid cc1101_set_idle_mode() {\n    cc1101_cmd_strobe(CC1101_SIDLE);\n}\n\nesp_err_t cc1101_write_reg(uint8_t reg, uint8_t val) {",
+            "path": "src/cc1101.c",
+            "original_text": "    cc1101_cmd_strobe(CC1101_SRX); // Go to RX mode\n\n    return ESP_OK;\n}\n\nesp_err_t cc1101_write_reg(uint8_t reg, uint8_t val) {"
+          }
+        }
+      }
+    ]
   }
 ]

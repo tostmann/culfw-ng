@@ -78,9 +78,29 @@ esp_err_t cc1101_init() {
     cc1101_write_reg(0x25, 0x00); // FSCAL1
     cc1101_write_reg(0x26, 0x1F); // FSCAL0
 
-    cc1101_cmd_strobe(CC1101_SRX); // Go to RX mode
+    cc1101_write_reg(0x3E, 0xC0); // PATABLE: For ASK/OOK, first byte is the value for "1"
+
+    cc1101_set_rx_mode();
 
     return ESP_OK;
+}
+
+void cc1101_set_rx_mode() {
+    cc1101_cmd_strobe(CC1101_SIDLE);
+    cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Output
+    gpio_set_direction(GPIO_GDO0, GPIO_MODE_INPUT);
+    cc1101_cmd_strobe(CC1101_SRX);
+}
+
+void cc1101_set_tx_mode() {
+    cc1101_cmd_strobe(CC1101_SIDLE);
+    cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Input (actually 0x0D is same pin but CC1101 will use it as input in TX)
+    gpio_set_direction(GPIO_GDO0, GPIO_MODE_OUTPUT);
+    cc1101_cmd_strobe(CC1101_STX);
+}
+
+void cc1101_set_idle_mode() {
+    cc1101_cmd_strobe(CC1101_SIDLE);
 }
 
 esp_err_t cc1101_write_reg(uint8_t reg, uint8_t val) {
