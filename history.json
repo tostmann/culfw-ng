@@ -1589,5 +1589,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "            } else {\n                // 1. Intertechno V1 bit detection (on-the-fly)\n                it_dec.pulse_buf[it_dec.pulse_cnt % 4] = pulse;\n                it_dec.pulse_cnt++;\n                if (it_dec.pulse_cnt >= 4) {\n                    int idx = (it_dec.pulse_cnt - 4) % 4;\n                    int64_t p1 = it_dec.pulse_buf[idx];\n                    int64_t p2 = it_dec.pulse_buf[(idx+1)%4];\n                    int64_t p3 = it_dec.pulse_buf[(idx+2)%4];\n                    int64_t p4 = it_dec.pulse_buf[(idx+3)%4];\n                    \n                    #define IS_T(p) (p >= 200 && p <= 700)\n                    #define IS_3T(p) (p > 800 && p <= 1700)\n                    \n                    if (it_dec.pos < 12) {\n                        char it_bit = 0;\n                        if (IS_T(p1) && IS_3T(p2) && IS_T(p3) && IS_3T(p4)) it_bit = '0';\n                        else if (IS_3T(p1) && IS_T(p2) && IS_3T(p3) && IS_T(p4)) it_bit = '1';\n                        else if (IS_T(p1) && IS_3T(p2) && IS_3T(p3) && IS_T(p4)) it_bit = 'F';\n                        \n                        if (it_bit) {\n                            it_dec.s[it_dec.pos++] = it_bit;\n                            it_dec.pulse_cnt = 0; // consumed\n                        }\n                    }\n                }\n",
+            "path": "src/slowrf.c",
+            "original_text": "            } else {\n                // 1. Intertechno V1 bit detection (on-the-fly)\n                dec.pulse_buf[dec.pulse_cnt % 4] = pulse;\n                dec.pulse_cnt++;\n                if (dec.pulse_cnt >= 4) {\n                    int idx = (dec.pulse_cnt - 4) % 4;\n                    int64_t p1 = dec.pulse_buf[idx];\n                    int64_t p2 = dec.pulse_buf[(idx+1)%4];\n                    int64_t p3 = dec.pulse_buf[(idx+2)%4];\n                    int64_t p4 = dec.pulse_buf[(idx+3)%4];\n                    \n                    #define IS_T(p) (p >= 250 && p <= 650)\n                    #define IS_3T(p) (p > 900 && p <= 1600)\n                    \n                    if (it_dec.pos < 12) {\n                        char it_bit = 0;\n                        if (IS_T(p1) && IS_3T(p2) && IS_T(p3) && IS_3T(p4)) it_bit = '0';\n                        else if (IS_3T(p1) && IS_T(p2) && IS_3T(p3) && IS_T(p4)) it_bit = '1';\n                        else if (IS_T(p1) && IS_3T(p2) && IS_3T(p3) && IS_T(p4)) it_bit = 'F';\n                        \n                        if (it_bit) {\n                            it_dec.s[it_dec.pos++] = it_bit;\n                            dec.pulse_cnt = 0; // consumed\n                        }\n                    }\n                }\n"
+          }
+        }
+      }
+    ]
   }
 ]

@@ -99,17 +99,17 @@ void slowrf_task(void *pvParameters) {
                 pulse_in_bit = 0;
             } else {
                 // 1. Intertechno V1 bit detection (on-the-fly)
-                dec.pulse_buf[dec.pulse_cnt % 4] = pulse;
-                dec.pulse_cnt++;
-                if (dec.pulse_cnt >= 4) {
-                    int idx = (dec.pulse_cnt - 4) % 4;
-                    int64_t p1 = dec.pulse_buf[idx];
-                    int64_t p2 = dec.pulse_buf[(idx+1)%4];
-                    int64_t p3 = dec.pulse_buf[(idx+2)%4];
-                    int64_t p4 = dec.pulse_buf[(idx+3)%4];
+                it_dec.pulse_buf[it_dec.pulse_cnt % 4] = pulse;
+                it_dec.pulse_cnt++;
+                if (it_dec.pulse_cnt >= 4) {
+                    int idx = (it_dec.pulse_cnt - 4) % 4;
+                    int64_t p1 = it_dec.pulse_buf[idx];
+                    int64_t p2 = it_dec.pulse_buf[(idx+1)%4];
+                    int64_t p3 = it_dec.pulse_buf[(idx+2)%4];
+                    int64_t p4 = it_dec.pulse_buf[(idx+3)%4];
                     
-                    #define IS_T(p) (p >= 250 && p <= 650)
-                    #define IS_3T(p) (p > 900 && p <= 1600)
+                    #define IS_T(p) (p >= 200 && p <= 700)
+                    #define IS_3T(p) (p > 800 && p <= 1700)
                     
                     if (it_dec.pos < 12) {
                         char it_bit = 0;
@@ -119,7 +119,7 @@ void slowrf_task(void *pvParameters) {
                         
                         if (it_bit) {
                             it_dec.s[it_dec.pos++] = it_bit;
-                            dec.pulse_cnt = 0; // consumed
+                            it_dec.pulse_cnt = 0; // consumed
                         }
                     }
                 }
