@@ -10,12 +10,20 @@ static const char *TAG = "CULFW_PARSER";
 
 static void handle_command(char *cmd) {
     if (cmd[0] == 'V') {
-        printf("V 1.0.0 CUL32-C6\n");
+        gpio_set_direction(GPIO_433MARKER, GPIO_MODE_INPUT);
+        bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);
+        printf("V 1.0.1-NG CUL32-C6-%sMHz\r\n", is_433 ? "433" : "868");
     } else if (cmd[0] == 'X') {
-        printf("X01\n"); // Just as a placeholder for reporting
+        // X0x, X21, etc.
+        printf("X21\r\n");
     } else if (cmd[0] == 'C') {
-        // Radio config logic would go here
-        printf("C00\n");
+        // Cxx settings
+        printf("C01\r\n");
+    } else if (cmd[0] == 'F') {
+        // FS20 / FHT / HMS etc.
+        // Send: F <addr> <cmd> <ext>
+        // Receive: F <hex_data>
+        ESP_LOGI(TAG, "SlowRF command: %s", cmd);
     } else {
         ESP_LOGI(TAG, "Unknown command: %s", cmd);
     }
