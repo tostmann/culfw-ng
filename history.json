@@ -951,5 +951,163 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "~/.platformio/penv/bin/pio run && \\\n~/.platformio/penv/bin/pio run --target upload --upload-port /dev/ttyACM2 && \\\n~/.platformio/penv/bin/pio run --target upload --upload-port /dev/ttyACM3\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\n\n... [OUTPUT TRUNCATED. Total size: 15021 bytes. Showing last 1500 bytes. Full output saved in 'last_execution.log'. Use 'grep' or 'read_file last_execution.log' to analyze!]\nHash of data verified.\nCompressed 211456 bytes to 107324...\n\nWriting at 0x00010000 [\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]   0.0% 0/107324 bytes... \n\nWriting at 0x0001b882 [\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  15.3% 16384/107324 bytes... \n\nWriting at 0x000221c9 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  30.5% 32768/107324 bytes... \n\nWriting at 0x000295fb [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  45.8% 49152/107324 bytes... \n\nWriting at 0x000311d4 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  61.1% 65536/107324 bytes... \n\nWriting at 0x00037fbd [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  76.3% 81920/107324 bytes... \n\nWriting at 0x0003f0d8 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591]  91.6% 98304/107324 bytes... \n\nWriting at 0x00043a00 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588] 100.0% 107324/107324 bytes... \nWrote 211456 bytes (107324 compressed) at 0x00010000 in 1.1 seconds (1591.2 kbit/s).\nHash of data verified.\n\nHard resetting via RTS pin...\n========================= [SUCCESS] Took 10.40 seconds =========================\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "# Prepare Reference CUL 868\necho \"X21\" > /dev/ttyACM1\n# Listen\ntimeout 10s cat /dev/ttyACM1 > /tmp/ref868.log &\nsleep 2\n# Send FS20 command from ESP32 868\necho \"F12340111\" > /dev/ttyACM3\nsleep 8\ncat /tmp/ref868.log\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "# Enable X99 on ESP32 868\n(printf \"X99\\n\"; sleep 10) > /dev/ttyACM3 &\n# Listen\ntimeout 10s cat /dev/ttyACM3 > /tmp/esp868_pulse.log &\nsleep 2\n# Send from Reference CUL 868\necho \"F12340111\" > /dev/ttyACM1\nsleep 6\necho \"--- Pulse Log ---\"\ncat /tmp/esp868_pulse.log\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\n--- Pulse Log ---\nF OK\r\nF58000000\r\nX21\r\nP: 12633\r\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "echo \"V\" > /dev/ttyACM3 && timeout 2s cat /dev/ttyACM3\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\nV 1.0.2-NG culfw-NG Build: 2 (Mar  6 2026 17:36:15) CUL32-C6 (F-Band: 868MHz)\r\nP: 6200\r\nP: 2120\r\nP: 734\r\nP: 839\r\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "# Enable X99 on ESP32 868\n(printf \"X99\\n\"; sleep 10) > /dev/ttyACM3 &\nsleep 2\n# Listen\ntimeout 10s cat /dev/ttyACM3 > /tmp/esp868_pulse.log &\nsleep 1\n# Send from Reference CUL 868\necho \"F12340111\" > /dev/ttyACM1\nsleep 7\necho \"--- Pulse Log ---\"\ncat /tmp/esp868_pulse.log\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\n--- Pulse Log ---\nP: 2773\r\nP: 8999\r\nP: 380\r\nP: 3649\r\nP: 339\r\nP: 1061\r\nP: 1647\r\nP: 6803\r\nP: 4291\r\nP: 1459\r\nP: 5680\r\nP: 1786\r\nP: 3365\r\nP: 1859\r\nP: 325\r\nP: 386\r\nP: 380\r\nP: 741\r\nP: 276\r\nP: 215\r\nP: 263\r\nP: 580\r\nP: 340\r\nP: 234\r\nP: 239\r\nP: 229\r\nP: 417\r\nP: 290\r\nP: 355\r\nP: 252\r\nP: 201\r\nX21\r\nP: 10220\r\nP: 580\r\nP: 235\r\nP: 303\r\nP: 728\r\nP: 6811\r\nP: 997\r\nP: 1290\r\nP: 876\r\nP: 2075\r\nP: 3782\r\nP: 7187\r\nP: 3785\r\nP: 252\r\nP: 229\r\nP: 336\r\nP: 210\r\nP: 229\r\nP: 262\r\nP: 411\r\nP: 316\r\nP: 265\r\nP: 337\r\nP: 274\r\nP: 253\r\nP: 312\r\nP: 314\r\nP: 341\r\nP: 330\r\nP: 278\r\nP: 211\r\nP: 437\r\nP: 266\r\nP: 351\r\nP: 364\r\nP: 291\r\nP: 426\r\nP: 256\r\nP: 240\r\nP: 201\r\nP: 337\r\nP: 392\r\nP: 565\r\nP: 242\r\nP: 291\r\nP: 380\r\nP: 300\r\nP: 685\r\nP: 645\r\nP: 504\r\nP: 223\r\nP: 387\r\nP: 212\r\nP: 266\r\nP: 214\r\nP: 249\r\nP: 310\r\nP: 262\r\nP: 262\r\nP: 362\r\nP: 223\r\nP: 343\r\nP: 203\r\nP: 215\r\nP: 235\r\nP: 201\r\nP: 286\r\nP: 309\r\nP: 288\r\nP: 277\r\nP: 227\r\nP: 302\r\nP: 301\r\nP: 315\r\nP: 315\r\nP: 317\r\nP: 442\r\nP: 216\r\nP: 499\r\nP: 355\r\nP: 204\r\nP: 321\r\nP: 249\r\nP: 238\r\nP: 349\r\nP: 295\r\nP: 211\r\nP: 240\r\nP: 317\r\nP: 286\r\nP: 299\r\nP: 264\r\nP: 411\r\nP: 278\r\nP: 287\r\nP: 286\r\nP: 275\r\nP: 286\r\nP: 203\r\nP: 289\r\nP: 217\r\nP: 240\r\nP: 339\r\nP: 212\r\nP: 211\r\nP: 249\r\nP: 261\r\nP: 3561\r\nP: 204\r\nP: 567\r\nP: 203\r\nP: 367\r\nP: 239\r\nP: 237\r\nP: 202\r\nP: 280\r\nP: 330\r\nP: 305\r\nP: 226\r\nP: 201\r\nP: 248\r\nP: 293\r\nP: 290\r\nP: 250\r\nP: 249\r\nP: 707\r\nP: 266\r\nP: 487\r\nP: 483\r\nP: 226\r\nP: 818\r\nP: 288\r\nP: 647\r\nP: 247\r\nP: 795\r\nP: 737\r\nP: 583\r\nP: 337\r\nP: 437\r\nP: 446\r\nP: 849\r\nP: 201\r\nP: 493\r\nP: 277\r\nP: 802\r\nP: 467\r\nP: 346\r\nP: 577\r\nP: 344\r\nP: 264\r\nP: 274\r\nP: 241\r\nP: 224\r\nP: 310\r\nP: 237\r\nP: 264\r\nP: 284\r\nP: 228\r\nP: 273\r\nP: 406\r\nP: 251\r\nP: 394\r\nP: 267\r\nP: 319\r\nP: 277\r\nP: 375\r\nP: 374\r\nP: 327\r\nP: 290\r\nP: 272\r\nP: 270\r\nP: 359\r\nP: 732\r\nP: 250\r\nP: 275\r\nP: 248\r\nP: 628\r\nP: 448\r\nP: 352\r\nP: 436\r\nP: 722\r\nP: 212\r\nP: 215\r\nP: 213\r\nP: 387\r\nP: 306\r\nP: 419\r\nP: 756\r\nP: 213\r\nP: 646\r\nP: 317\r\nP: 343\r\nP: 306\r\nP: 216\r\nP: 251\r\nP: 253\r\nP: 344\r\nP: 289\r\nP: 287\r\nP: 236\r\nP: 503\r\nP: 241\r\nP: 314\r\nP: 238\r\nP: 212\r\nP: 211\r\nP: 396\r\nP: 334\r\nP: 871\r\nP: 377\r\nP: 287\r\nP: 785\r\nP: 633\r\nP: 212\r\nP: 214\r\nP: 462\r\nP: 374\r\nP: 800\r\nP: 269\r\nP: 618\r\nP: 863\r\nP: 422\r\nP: 272\r\nP: 772\r\nP: 229\r\nP: 340\r\nP: 331\r\nP: 266\r\nP: 274\r\nP: 243\r\nP: 792\r\nP: 408\r\nP: 201\r\nP: 696\r\nP: 237\r\nP: 264\r\nP: 238\r\nP: 211\r\nP: 624\r\nP: 858\r\nP: 377\r\nP: 393\r\nP: 236\r\nP: 424\r\nP: 500\r\nP: 292\r\nP: 242\r\nP: 469\r\nP: 373\r\nP: 537\r\nP: 210\r\nP: 204\r\nP: 290\r\nP: 241\r\nP: 275\r\nP: 442\r\nP: 294\r\nP: 507\r\nP: 532\r\nP: 289\r\nP: 238\r\nP: 380\r\nP: 236\r\nP: 285\r\nP: 280\r\nP: 355\r\nP: 318\r\nP: 202\r\nP: 367\r\nP: 267\r\nP: 581\r\nP: 278\r\nP: 218\r\nP: 252\r\nP: 544\r\nP: 392\r\nP: 218\r\nP: 241\r\nP: 221\r\nP: 536\r\nP: 202\r\nP: 223\r\nP: 202\r\nP: 415\r\nP: 506\r\nP: 238\r\nP: 347\r\nP: 668\r\nP: 885\r\nP: 329\r\nP: 537\r\nP: 203\r\nP: 631\r\nP: 371\r\nP: 435\r\nP: 355\r\nP: 229\r\nP: 280\r\nP: 212\r\nP: 213\r\nP: 797\r\nP: 285\r\nP: 1756\r\nP: 358\r\nP: 203\r\nP: 354\r\nP: 729\r\nP: 341\r\nP: 236\r\nP: 408\r\nP: 766\r\nP: 202\r\nP: 886\r\nP: 224\r\nP: 707\r\nP: 385\r\nP: 346\r\nP: 833\r\nP: 644\r\nP: 202\r\nP: 428\r\nP: 240\r\nP: 355\r\nP: 661\r\nP: 416\r\nP: 352\r\nP: 203\r\nP: 416\r\nP: 416\r\nP: 228\r\nP: 295\r\nP: 533\r\nP: 280\r\nP: 505\r\nP: 203\r\nP: 484\r\nP: 201\r\nP: 708\r\nP: 760\r\nP: 312\r\nP: 454\r\nP: 363\r\nP: 440\r\nP: 300\r\nP: 546\r\nP: 379\r\nP: 630\r\nP: 348\r\nP: 400\r\nP: 289\r\nP: 379\r\nP: 365\r\nP: 777\r\nP: 651\r\nP: 675\r\nP: 311\r\nP: 311\r\nP: 728\r\nP: 669\r\nP: 204\r\nP: 292\r\nP: 250\r\nP: 215\r\nP: 574\r\nP: 339\r\nP: 214\r\nP: 1000\r\nP: 213\r\nP: 438\r\nP: 705\r\nP: 284\r\nP: 846\r\nP: 505\r\nP: 315\r\nP: 771\r\nP: 652\r\nP: 739\r\nP: 224\r\nP: 738\r\nP: 524\r\nP: 249\r\nP: 270\r\nP: 639\r\nP: 216\r\nP: 397\r\nP: 253\r\nP: 322\r\nP: 211\r\nP: 697\r\nP: 288\r\nP: 308\r\nP: 519\r\nP: 474\r\nP: 238\r\nP: 313\r\nP: 822\r\nP: 672\r\nP: 720\r\nP: 597\r\nP: 326\r\nP: 483\r\nP: 431\r\nP: 253\r\nP: 659\r\nP: 204\r\nP: 722\r\nP: 857\r\nP: 384\r\nP: 413\r\nP: 406\r\nP: 341\r\nP: 489\r\nP: 490\r\nP: 214\r\nP: 468\r\nP: 334\r\nP: 204\r\nP: 217\r\nP: 241\r\nP: 481\r\nP: 212\r\nP: 438\r\nP: 323\r\nP: 348\r\nP: 366\r\nP: 495\r\nP: 800\r\nP: 238\r\nP: 450\r\nP: 731\r\nP: 707\r\nP: 215\r\nP: 506\r\nP: 273\r\nP: 362\r\nP: 548\r\nP: 346\r\nP: 406\r\nP: 228\r\nP: 215\r\nP: 518\r\nP: 657\r\nP: 665\r\nP: 202\r\nP: 346\r\nP: 235\r\nP: 288\r\nP: 202\r\nP: 231\r\nP: 201\r\nP: 242\r\nP: 239\r\nP: 321\r\nP: 445\r\nP: 297\r\nP: 328\r\nP: 230\r\nP: 204\r\nP: 214\r\nP: 277\r\nP: 405\r\nP: 315\r\nP: 294\r\nP: 203\r\nP: 517\r\nP: 254\r\nP: 304\r\nP: 266\r\nP: 388\r\nP: 254\r\nP: 722\r\nP: 305\r\nP: 267\r\nP: 202\r\nP: 443\r\nP: 222\r\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "    cc1101_write_reg(0x25, 0x00); // FSCAL1\n    cc1101_write_reg(0x26, 0x1F); // FSCAL0\n\n    // PATABLE: [0]=0x00 (for '0'), [1]=0xC0 (for '1')\n    uint8_t patable[] = {0x00, 0xC0};\n    for(int i=0; i<2; i++) {\n        cc1101_write_reg(0x3E, patable[i]);\n    }\n\n    cc1101_set_rx_mode();\n",
+            "path": "src/cc1101.c",
+            "original_text": "    cc1101_write_reg(0x25, 0x00); // FSCAL1\n    cc1101_write_reg(0x26, 0x1F); // FSCAL0\n\n    cc1101_write_reg(0x3E, 0xC0); // PATABLE: For ASK/OOK, first byte is the value for \"1\"\n\n    cc1101_set_rx_mode();\n"
+          }
+        }
+      }
+    ]
   }
 ]

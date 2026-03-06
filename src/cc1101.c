@@ -90,7 +90,11 @@ esp_err_t cc1101_init() {
     cc1101_write_reg(0x25, 0x00); // FSCAL1
     cc1101_write_reg(0x26, 0x1F); // FSCAL0
 
-    cc1101_write_reg(0x3E, 0xC0); // PATABLE: For ASK/OOK, first byte is the value for "1"
+    // PATABLE: [0]=0x00 (for '0'), [1]=0xC0 (for '1')
+    uint8_t patable[] = {0x00, 0xC0};
+    for(int i=0; i<2; i++) {
+        cc1101_write_reg(0x3E, patable[i]);
+    }
 
     cc1101_set_rx_mode();
 
