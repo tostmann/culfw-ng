@@ -73,8 +73,8 @@ esp_err_t cc1101_init() {
         cc1101_write_reg(0x0F, 0x3B); // FREQ0 (433.92 MHz)
     } else {
         cc1101_write_reg(0x0D, 0x21); // FREQ2
-        cc1101_write_reg(0x0E, 0x62); // FREQ1
-        cc1101_write_reg(0x0F, 0x76); // FREQ0 (868.300 MHz)
+        cc1101_write_reg(0x0E, 0x65); // FREQ1
+        cc1101_write_reg(0x0F, 0x6A); // FREQ0 (868.3 MHz)
     }
     
     cc1101_write_reg(0x10, 0x58); // MDMCFG4: BW 325kHz

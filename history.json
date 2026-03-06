@@ -1133,5 +1133,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "    if (is_433) {\n        cc1101_write_reg(0x0D, 0x10); // FREQ2\n        cc1101_write_reg(0x0E, 0xB3); // FREQ1\n        cc1101_write_reg(0x0F, 0x3B); // FREQ0 (433.92 MHz)\n    } else {\n        cc1101_write_reg(0x0D, 0x21); // FREQ2\n        cc1101_write_reg(0x0E, 0x65); // FREQ1\n        cc1101_write_reg(0x0F, 0x6A); // FREQ0 (868.3 MHz)\n    }\n",
+            "path": "src/cc1101.c",
+            "original_text": "    if (is_433) {\n        cc1101_write_reg(0x0D, 0x10); // FREQ2\n        cc1101_write_reg(0x0E, 0xB3); // FREQ1\n        cc1101_write_reg(0x0F, 0x3B); // FREQ0 (433.92 MHz)\n    } else {\n        cc1101_write_reg(0x0D, 0x21); // FREQ2\n        cc1101_write_reg(0x0E, 0x62); // FREQ1\n        cc1101_write_reg(0x0F, 0x76); // FREQ0 (868.300 MHz)\n    }\n"
+          }
+        }
+      }
+    ]
   }
 ]
