@@ -107,7 +107,10 @@ void slowrf_task(void *pvParameters) {
             if (pulse > SLOWRF_SYNC_MIN) {
                 if (slowrf_reporting) {
                     uint8_t rssi = cc1101_read_rssi();
-                    if (fs_dec.byte_cnt >= 4) {
+                    bool is_433 = cc1101_is_433();
+
+                    // FS20 (868MHz only)
+                    if (!is_433 && fs_dec.byte_cnt >= 4) {
                         char out[64];
                         int len = snprintf(out, sizeof(out), "F");
                         for (int i = 0; i < fs_dec.byte_cnt; i++) {
@@ -116,15 +119,18 @@ void slowrf_task(void *pvParameters) {
                         len += snprintf(out + len, sizeof(out) - len, "%02X\r\n", rssi);
                         usb_serial_jtag_write_bytes(out, len, 0);
                     }
-                    if (it1_dec.pos == 12) {
-                        char out[64];
-                        int len = snprintf(out, sizeof(out), "is%s%02X\r\n", it1_dec.s, rssi);
-                        usb_serial_jtag_write_bytes(out, len, 0);
-                    }
-                    if (it3_dec.bit_pos == 32) {
-                        char out[128];
-                        int len = snprintf(out, sizeof(out), "is%s%02X\r\n", it3_dec.s, rssi);
-                        usb_serial_jtag_write_bytes(out, len, 0);
+                    // IT (433MHz only)
+                    if (is_433) {
+                        if (it1_dec.pos == 12) {
+                            char out[64];
+                            int len = snprintf(out, sizeof(out), "is%s%02X\r\n", it1_dec.s, rssi);
+                            usb_serial_jtag_write_bytes(out, len, 0);
+                        }
+                        if (it3_dec.bit_pos == 32) {
+                            char out[128];
+                            int len = snprintf(out, sizeof(out), "is%s%02X\r\n", it3_dec.s, rssi);
+                            usb_serial_jtag_write_bytes(out, len, 0);
+                        }
                     }
                 }
                 reset_fs20(&fs_dec);

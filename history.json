@@ -1077,5 +1077,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "            // --- SYNC / END DETECTION ---\n            if (pulse > SLOWRF_SYNC_MIN) {\n                if (slowrf_reporting) {\n                    uint8_t rssi = cc1101_read_rssi();\n                    bool is_433 = cc1101_is_433();\n\n                    // FS20 (868MHz only)\n                    if (!is_433 && fs_dec.byte_cnt >= 4) {\n                        char out[64];\n                        int len = snprintf(out, sizeof(out), \"F\");\n                        for (int i = 0; i < fs_dec.byte_cnt; i++) {\n                            len += snprintf(out + len, sizeof(out) - len, \"%02X\", fs_dec.data[i]);\n                        }\n                        len += snprintf(out + len, sizeof(out) - len, \"%02X\\r\\n\", rssi);\n                        usb_serial_jtag_write_bytes(out, len, 0);\n                    }\n                    // IT (433MHz only)\n                    if (is_433) {\n                        if (it1_dec.pos == 12) {\n                            char out[64];\n                            int len = snprintf(out, sizeof(out), \"is%s%02X\\r\\n\", it1_dec.s, rssi);\n                            usb_serial_jtag_write_bytes(out, len, 0);\n                        }\n                        if (it3_dec.bit_pos == 32) {\n                            char out[128];\n                            int len = snprintf(out, sizeof(out), \"is%s%02X\\r\\n\", it3_dec.s, rssi);\n                            usb_serial_jtag_write_bytes(out, len, 0);\n                        }\n                    }\n                }\n                reset_fs20(&fs_dec);\n",
+            "path": "src/slowrf.c",
+            "original_text": "            // --- SYNC / END DETECTION ---\n            if (pulse > SLOWRF_SYNC_MIN) {\n                if (slowrf_reporting) {\n                    uint8_t rssi = cc1101_read_rssi();\n                    if (fs_dec.byte_cnt >= 4) {\n                        char out[64];\n                        int len = snprintf(out, sizeof(out), \"F\");\n                        for (int i = 0; i < fs_dec.byte_cnt; i++) {\n                            len += snprintf(out + len, sizeof(out) - len, \"%02X\", fs_dec.data[i]);\n                        }\n                        len += snprintf(out + len, sizeof(out) - len, \"%02X\\r\\n\", rssi);\n                        usb_serial_jtag_write_bytes(out, len, 0);\n                    }\n                    if (it1_dec.pos == 12) {\n                        char out[64];\n                        int len = snprintf(out, sizeof(out), \"is%s%02X\\r\\n\", it1_dec.s, rssi);\n                        usb_serial_jtag_write_bytes(out, len, 0);\n                    }\n                    if (it3_dec.bit_pos == 32) {\n                        char out[128];\n                        int len = snprintf(out, sizeof(out), \"is%s%02X\\r\\n\", it3_dec.s, rssi);\n                        usb_serial_jtag_write_bytes(out, len, 0);\n                    }\n                }\n                reset_fs20(&fs_dec);\n"
+          }
+        }
+      }
+    ]
   }
 ]
