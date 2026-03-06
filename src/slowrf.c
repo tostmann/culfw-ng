@@ -62,6 +62,16 @@ typedef struct {
     bool sync_found;
 } itv3_dec_t;
 
+typedef struct {
+    uint8_t nibbles[24];
+    int nibble_cnt;
+    int bit_cnt;
+    uint8_t current_nibble;
+    int pulse_state; // 0: wait for pulse, 1: got first pulse
+    int64_t last_pulse;
+    bool sync_found;
+} sensor_dec_t;
+
 static void reset_fs20(fs20_dec_t *dec) {
     memset(dec->data, 0, sizeof(dec->data));
     dec->byte_cnt = 0;
