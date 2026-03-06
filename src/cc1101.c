@@ -81,7 +81,7 @@ esp_err_t cc1101_init() {
     cc1101_write_reg(0x19, 0x16); // FOCCFG
     cc1101_write_reg(0x1A, 0x6C); // BSCFG
     cc1101_write_reg(0x1B, 0x03); // AGCCTRL2
-    cc1101_write_reg(0x1C, 0x40); // AGCCTRL1
+    cc1101_write_reg(0x1C, 0x00); // AGCCTRL1: LNA Gain 0, Carrier Sense relative to threshold
     cc1101_write_reg(0x1D, 0x91); // AGCCTRL0
     cc1101_write_reg(0x21, 0x56); // FREND1
     cc1101_write_reg(0x22, 0x11); // FREND0: ASK/OOK use PATABLE[1] for '1'

@@ -859,5 +859,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "    cc1101_write_reg(0x1B, 0x03); // AGCCTRL2\n    cc1101_write_reg(0x1C, 0x00); // AGCCTRL1: LNA Gain 0, Carrier Sense relative to threshold\n    cc1101_write_reg(0x1D, 0x91); // AGCCTRL0\n",
+            "path": "src/cc1101.c",
+            "original_text": "    cc1101_write_reg(0x1B, 0x03); // AGCCTRL2\n    cc1101_write_reg(0x1C, 0x40); // AGCCTRL1\n    cc1101_write_reg(0x1D, 0x91); // AGCCTRL0\n"
+          }
+        }
+      }
+    ]
   }
 ]
