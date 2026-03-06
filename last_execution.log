@@ -1,17 +1,8 @@
-E (10290) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
-E (10290) task_wdt:  - IDLE (CPU 0)
-E (10290) task_wdt: Tasks currently running:
-E (10290) task_wdt: CPU 0: slowrf_task
-E (10290) task_wdt: Print CPU 0 (current core) registers
-Core  0 register dump:
-MEPC    : 0x40807af6  RA      : 0x40807b88  SP      : 0x408155a0  GP      : 0x4080e834  
-TP      : 0x40815640  T0      : 0x00000000  T1      : 0x00000000  T2      : 0x00000000  
-S0/FP   : 0x4087ee5c  S1      : 0x00000063  A0      : 0x00000001  A1      : 0x4087eed0  
-A2      : 0x00000000  A3      : 0x40815600  A4      : 0x00000000  A5      : 0x20001000  
-A6      : 0x00000008  A7      : 0x00000000  S2      : 0x00000000  S3      : 0x408155f8  
-S4      : 0x00000000  S5      : 0x00000000  S6      : 0x00000000  S7      : 0x00000000  
-S8      : 0x00000000  S9      : 0x00000000  S10     : 0x00000000  S11     : 0x00000000  
-T3      : 0x00000000  T4      : 0x00000000  T5      : 0x00000000  T6      : 0x00000000  
-MSTATUS : 0x00001889  MTVEC   : 0x40800001  MCAUSE  : 0xdeadc0de  MTVAL   : 0xdeadc0de  
-MHARTID : 0x00000000  
-Please enable CONFIG_ESP_SYSTEM_USE_FRAME_POINTER option to have a full backtrace.
+Traceback (most recent call last):
+  File "/opt/ai_builder_data/users/763684262/projects/CULFW-NG/test_serial.py", line 1, in <module>
+    import serial
+ModuleNotFoundError: No module named 'serial'
+Traceback (most recent call last):
+  File "/opt/ai_builder_data/users/763684262/projects/CULFW-NG/test_serial.py", line 1, in <module>
+    import serial
+ModuleNotFoundError: No module named 'serial'
