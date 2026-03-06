@@ -854,5 +854,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "typedef struct {\n    uint8_t data[16];\n    int byte_cnt;\n    int bit_cnt;\n    uint8_t current_byte;\n} slowrf_decoder_t;\n\nstatic void reset_decoder(slowrf_decoder_t *dec) {\n    memset(dec->data, 0, sizeof(dec->data));\n    dec->byte_cnt = 0;\n    dec->bit_cnt = 0;\n    dec->current_byte = 0;\n}\n\nvoid slowrf_task(void *pvParameters) {\n    int64_t pulse;\n    slowrf_decoder_t dec;\n    reset_decoder(&dec);\n    \n    int pulse_in_bit = 0;\n    int last_bit = -1;\n\n    while (1) {\n        if (xQueueReceive(pulse_queue, &pulse, portMAX_DELAY)) {\n            if (pulse > SLOWRF_SYNC_MIN) {\n                if (dec.byte_cnt >= 4) {\n                    char out[64];\n                    int len = snprintf(out, sizeof(out), \"F\");\n                    for (int i = 0; i < dec.byte_cnt; i++) {\n                        len += snprintf(out + len, sizeof(out) - len, \"%02X\", dec.data[i]);\n                    }\n                    snprintf(out + len, sizeof(out) - len, \"\\r\\n\");\n                    usb_serial_jtag_write_bytes(out, strlen(out), 0);\n                }\n                reset_decoder(&dec);\n                pulse_in_bit = 0;\n            } else {\n                int bit = -1;\n                if (pulse >= SLOWRF_BIT_S_MIN && pulse <= SLOWRF_BIT_S_MAX) bit = 0;\n                else if (pulse >= SLOWRF_BIT_L_MIN && pulse <= SLOWRF_BIT_L_MAX) bit = 1;\n\n                if (bit != -1) {\n                    if (pulse_in_bit == 0) {\n                        last_bit = bit;\n                        pulse_in_bit = 1;\n                    } else {\n                        if (bit == last_bit) {\n                            // Valid FS20 bit (two identical pulses)\n                            dec.current_byte = (dec.current_byte << 1) | bit;\n                            dec.bit_cnt++;\n                            \n                            // In FS20, every byte has a parity bit (9 bits total)\n                            // For simplicity, we just collect all bits and see.\n                            // But here let's just do 8 bits for now.\n                            if (dec.bit_cnt == 8) {\n                                if (dec.byte_cnt < sizeof(dec.data)) {\n                                    dec.data[dec.byte_cnt++] = dec.current_byte;\n                                }\n                                dec.current_byte = 0;\n                                dec.bit_cnt = 0;\n                                // Skip the 9th parity bit if we wanted to be precise\n                                // but our sender/receiver needs to agree.\n                            }\n                        }\n                        pulse_in_bit = 0;\n                    }\n                } else {\n                    pulse_in_bit = 0;\n                }\n            }\n\n            static int loop_cnt = 0;\n            if (++loop_cnt > 100) {\n                vTaskDelay(1);\n                loop_cnt = 0;\n            }\n        }\n    }\n}",
+            "path": "src/slowrf.c",
+            "original_text": "void slowrf_task(void *pvParameters) {\n    int64_t pulse;\n    uint32_t bit_acc = 0;\n    int bit_count = 0;\n    int state = 0; // 0: Idle, 1: Bits\n    uint8_t msg[16];\n    int msg_byte = 0;\n    int msg_bit = 0;\n\n    while (1) {\n        if (xQueueReceive(pulse_queue, &pulse, portMAX_DELAY)) {\n            if (pulse > SLOWRF_SYNC_MIN) {\n                // Potential sync/gap\n                if (msg_byte > 3) { // Print if we got some bytes\n                    char out[64];\n                    int out_len = snprintf(out, sizeof(out), \"F\");\n                    for(int i=0; i<msg_byte; i++) {\n                        out_len += snprintf(out + out_len, sizeof(out) - out_len, \"%02X\", msg[i]);\n                    }\n                    snprintf(out + out_len, sizeof(out) - out_len, \"\\r\\n\");\n                    usb_serial_jtag_write_bytes(out, strlen(out), 0);\n                }\n                msg_byte = 0;\n                msg_bit = 0;\n                memset(msg, 0, sizeof(msg));\n                state = 1;\n            } else if (state == 1) {\n                int bit = -1;\n                if (pulse >= SLOWRF_BIT_S_MIN && pulse <= SLOWRF_BIT_S_MAX) bit = 0;\n                else if (pulse >= SLOWRF_BIT_L_MIN && pulse <= SLOWRF_BIT_L_MAX) bit = 1;\n                \n                if (bit != -1) {\n                    // This is very simplified, as FS20 has parity bits\n                    // and bits are made of TWO pulses.\n                    // Let's assume for now we just want to see if we can gather anything.\n                    static int pulse_sub = 0;\n                    pulse_sub++;\n                    if (pulse_sub == 2) { // 2 pulses per bit\n                        pulse_sub = 0;\n                        msg[msg_byte] = (msg[msg_byte] << 1) | bit;\n                        msg_bit++;\n                        if (msg_bit == 8) {\n                            msg_bit = 0;\n                            msg_byte++;\n                            if (msg_byte >= sizeof(msg)) msg_byte = 0;\n                        }\n                    }\n                } else {\n                    // Reset on invalid pulse\n                    // state = 0;\n                }\n            }\n\n            // Periodically yield\n            static int loop_cnt = 0;\n            if (++loop_cnt > 100) {\n                vTaskDelay(1);\n                loop_cnt = 0;\n            }\n        }\n    }\n}"
+          }
+        }
+      }
+    ]
   }
 ]

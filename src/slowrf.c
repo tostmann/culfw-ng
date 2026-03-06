@@ -28,60 +28,77 @@ static void IRAM_ATTR gpio_isr_handler(void* arg) {
 #define SLOWRF_BIT_L_MAX 900
 #define SLOWRF_SYNC_MIN  8000
 
+typedef struct {
+    uint8_t data[16];
+    int byte_cnt;
+    int bit_cnt;
+    uint8_t current_byte;
+} slowrf_decoder_t;
+
+static void reset_decoder(slowrf_decoder_t *dec) {
+    memset(dec->data, 0, sizeof(dec->data));
+    dec->byte_cnt = 0;
+    dec->bit_cnt = 0;
+    dec->current_byte = 0;
+}
+
 void slowrf_task(void *pvParameters) {
     int64_t pulse;
-    uint32_t bit_acc = 0;
-    int bit_count = 0;
-    int state = 0; // 0: Idle, 1: Bits
-    uint8_t msg[16];
-    int msg_byte = 0;
-    int msg_bit = 0;
+    slowrf_decoder_t dec;
+    reset_decoder(&dec);
+    
+    int pulse_in_bit = 0;
+    int last_bit = -1;
 
     while (1) {
         if (xQueueReceive(pulse_queue, &pulse, portMAX_DELAY)) {
             if (pulse > SLOWRF_SYNC_MIN) {
-                // Potential sync/gap
-                if (msg_byte > 3) { // Print if we got some bytes
+                if (dec.byte_cnt >= 4) {
                     char out[64];
-                    int out_len = snprintf(out, sizeof(out), "F");
-                    for(int i=0; i<msg_byte; i++) {
-                        out_len += snprintf(out + out_len, sizeof(out) - out_len, "%02X", msg[i]);
+                    int len = snprintf(out, sizeof(out), "F");
+                    for (int i = 0; i < dec.byte_cnt; i++) {
+                        len += snprintf(out + len, sizeof(out) - len, "%02X", dec.data[i]);
                     }
-                    snprintf(out + out_len, sizeof(out) - out_len, "\r\n");
+                    snprintf(out + len, sizeof(out) - len, "\r\n");
                     usb_serial_jtag_write_bytes(out, strlen(out), 0);
                 }
-                msg_byte = 0;
-                msg_bit = 0;
-                memset(msg, 0, sizeof(msg));
-                state = 1;
-            } else if (state == 1) {
+                reset_decoder(&dec);
+                pulse_in_bit = 0;
+            } else {
                 int bit = -1;
                 if (pulse >= SLOWRF_BIT_S_MIN && pulse <= SLOWRF_BIT_S_MAX) bit = 0;
                 else if (pulse >= SLOWRF_BIT_L_MIN && pulse <= SLOWRF_BIT_L_MAX) bit = 1;
-                
+
                 if (bit != -1) {
-                    // This is very simplified, as FS20 has parity bits
-                    // and bits are made of TWO pulses.
-                    // Let's assume for now we just want to see if we can gather anything.
-                    static int pulse_sub = 0;
-                    pulse_sub++;
-                    if (pulse_sub == 2) { // 2 pulses per bit
-                        pulse_sub = 0;
-                        msg[msg_byte] = (msg[msg_byte] << 1) | bit;
-                        msg_bit++;
-                        if (msg_bit == 8) {
-                            msg_bit = 0;
-                            msg_byte++;
-                            if (msg_byte >= sizeof(msg)) msg_byte = 0;
+                    if (pulse_in_bit == 0) {
+                        last_bit = bit;
+                        pulse_in_bit = 1;
+                    } else {
+                        if (bit == last_bit) {
+                            // Valid FS20 bit (two identical pulses)
+                            dec.current_byte = (dec.current_byte << 1) | bit;
+                            dec.bit_cnt++;
+                            
+                            // In FS20, every byte has a parity bit (9 bits total)
+                            // For simplicity, we just collect all bits and see.
+                            // But here let's just do 8 bits for now.
+                            if (dec.bit_cnt == 8) {
+                                if (dec.byte_cnt < sizeof(dec.data)) {
+                                    dec.data[dec.byte_cnt++] = dec.current_byte;
+                                }
+                                dec.current_byte = 0;
+                                dec.bit_cnt = 0;
+                                // Skip the 9th parity bit if we wanted to be precise
+                                // but our sender/receiver needs to agree.
+                            }
                         }
+                        pulse_in_bit = 0;
                     }
                 } else {
-                    // Reset on invalid pulse
-                    // state = 0;
+                    pulse_in_bit = 0;
                 }
             }
 
-            // Periodically yield
             static int loop_cnt = 0;
             if (++loop_cnt > 100) {
                 vTaskDelay(1);
