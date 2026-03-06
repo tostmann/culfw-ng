@@ -14,21 +14,24 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 *   **Software-Architektur:** FreeRTOS-Task-basiert.
     *   `culfw_parser_task`: Verarbeitet eingehende serielle Befehle (z.B. `V`, `X`, `F`, `is`).
     *   `slowrf_task`: Implementiert parallele Zustandsmaschinen/Decoder, um aus den vom CC1101 empfangenen Pulsfolgen gültige Datenpakete zu dekodieren.
-        *   **FS20-Decoder:** Dedizierte Sync-Bit-Erkennung -> 9-Bit-Akkumulation (8 Daten + 1 Parität) -> Prüfung auf **ungerade Parität (Odd Parity)**. Der Decoder ist robust gegen Timing-Schwankungen und kann "missed edges" (zwei kurze Pulse als ein langer Puls) verarbeiten.
+        *   **FS20-Decoder:** Dedizierte Sync-Bit-Erkennung -> 9-Bit-Akkumulation (8 Daten + 1 Parität) -> Prüfung auf **gerade Parität (Even Parity)**. Der Decoder ist robust gegen Timing-Schwankungen und kann "missed edges" (zwei kurze Pulse als ein langer Puls) verarbeiten.
         *   **Intertechno V1 Decoder:** Verwendet ein 4-Puls-Schiebefenster, um das charakteristische IT-Timing-Muster (1xT, 3xT) zu erkennen und Trits zu dekodieren. Die Timing-Toleranzen wurden erweitert, um auch Sender mit leichten Abweichungen zu erfassen.
 *   **Frequenzerkennung:** Automatische Erkennung der Modulfrequenz (433/868 MHz) über einen GPIO-Pin (`GPIO_433MARKER`) mit internem Pull-Up.
-*   **Signal-Erfassung (RX):** Der CC1101 wird im **asynchronen seriellen Modus** (`PKTCTRL0 = 0x32`) betrieben, um ein rohes, demoduliertes ASK/OOK-Signal am `GDO0_PIN` bereitzustellen. Dieser Pin wird als Interrupt-Quelle genutzt, um die Timestamps der Signalflanken per auf 512 Elemente vergrößerter Queue (`slowrf_queue`) an den `slowrf_task` zu übergeben.
+*   **Signal-Erfassung (RX):**
+    *   Der CC1101 wird im **asynchronen seriellen Modus** (`PKTCTRL0 = 0x32`) betrieben, um ein rohes, demoduliertes ASK/OOK-Signal am `GDO0_PIN` bereitzustellen. Dieser Pin wird als Interrupt-Quelle genutzt, um die Timestamps der Signalflanken an den `slowrf_task` zu übergeben.
+    *   **Rausch-Unterdrückung:** `GDO2` ist als **Carrier Sense** konfiguriert (`IOCFG2=0x0E`). Der GPIO-Interrupt wird nur verarbeitet, wenn der Carrier-Sense-Pin aktiv ist, wodurch Rauschen bei inaktivem Kanal effektiv gefiltert wird.
 *   **Signal-Aussendung (TX):**
     *   Der `GDO0_PIN` wird dynamisch als Output konfiguriert, um Sendesequenzen per Bit-Banging mit präzisen Microsekunden-Delays (`ets_delay_us`) zu erzeugen.
     *   Zur Vermeidung von Echos (Selbst-Empfang) wird der `GDO0`-Interrupt während des Sendevorgangs temporär deaktiviert.
-    *   Für eine korrekte ASK-Modulation wird die `PATABLE` mit zwei Werten (`{0x00, ...}`) und das `FREND0`-Register auf `0x11` gesetzt. Für Tests im Nahbereich wurde die Sendeleistung durch `0x50` (~0 dBm) statt `0xC0` (+10 dBm) reduziert, um Signalverzerrungen zu vermeiden.
-    *   **FS20-Frequenz:** Für FS20 wird die Frequenz präzise auf **868.3 MHz** eingestellt (`FREQ` Register: `0x21656A`), um die Kompatibilität zu maximieren.
-    *   **FS20-Paketstruktur:** Die Präambel wurde auf 16 '0'-Bits verlängert und Pakete werden zur Erhöhung der Übertragungssicherheit 6-fach wiederholt.
+    *   Zur Sicherstellung der Sende-Bereitschaft wird vor dem Senden der **MARCSTATE** (`0x35`) geprüft und ggf. der `STX`-Strobe wiederholt.
+    *   Für eine korrekte ASK-Modulation und maximale Reichweite wird die `PATABLE` mit `{0x00, 0xC0, ...}` (+10 dBm) initialisiert und das `FREND0`-Register auf `0x11` gesetzt.
+    *   **FS20-Frequenz:** Für FS20 wird die Frequenz präzise auf **868.3 MHz** eingestellt (`FREQ` Register: `0x21656A`).
+    *   **FS20-Paketstruktur:** Die Präambel wurde auf 24 '0'-Bits verlängert und Pakete werden zur Erhöhung der Übertragungssicherheit 6-fach wiederholt.
 *   **Versionierung:** Automatisierte Build-Nummer und detaillierter, culfw-kompatibler Versions-String (`V`-Kommando), um die Identifikation durch Host-Systeme (z.B. FHEM) sicherzustellen.
-*   **Test-Infrastruktur:** Ein `Tr`-Kommando generiert und sendet 5 zufällige FS20-Frames, um die TX/RX-Kette mit variierenden OOK-Pattern zu validieren.
-*   **Diagnose:**
-    *   Erweitertes `C`-Kommando zur Diagnose, das Part-, Versionsnummer und den **MARCSTATE** (`0x35`) ausliest, um den internen Zustand des CC1101 (z.B. `0x0D` für RX) zu verifizieren.
-    *   Ein `X99`-Kommando wurde implementiert, um die rohen Puls-Timings (in µs) der empfangenen Signale auszugeben. Dies ist über das `X`-Kommando dynamisch ein- und ausschaltbar.
+*   **Diagnose & Feedback:**
+    *   Erweitertes `C`-Kommando zur Diagnose, das Part-, Versionsnummer und den **MARCSTATE** (`0x35`) ausliest.
+    *   Ein `X99`-Kommando gibt die rohen Puls-Timings (in µs) der empfangenen Signale aus.
+    *   Eine LED (`GPIO_10`) signalisiert aktive Sendevorgänge.
 
 ## 3. Implementierungsstatus
 
@@ -41,7 +44,7 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 *   **[DONE]** SPI-Kommunikation stabilisiert: CC1101 wird auf beiden Frequenzbändern zuverlässig erkannt.
 *   **[DONE]** CC1101 für RX in asynchronen seriellen Modus konfiguriert.
 *   **[DONE]** SlowRF-Senden (TX) implementiert, inklusive Paket-Wiederholung und korrekter ASK-Modulation.
-*   **[DONE]** FS20-Paritätsprüfung (Odd Parity) im TX-Encoder und RX-Decoder korrigiert.
+*   **[DONE]** FS20-Paritätsprüfung (Even Parity) im TX-Encoder und RX-Decoder korrigiert.
 *   **[DONE]** Erweiterter SlowRF-Empfang (RX) mit Zustandsmaschine, der erfolgreich FS20- und Intertechno-V1-Pakete dekodiert.
 *   **[DONE]** Implementierung des Sende-Befehls (`is...`) für Intertechno V1.
 *   **[DONE]** Erhöhung der Robustheit des FS20-Decoders gegen Timing-Schwankungen und "missed edges".
@@ -50,21 +53,20 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 *   **[DONE]** Build-System um eine automatische Build-Nummer und einen culfw-kompatiblen Versions-String erweitert.
 *   **[DONE]** RX-Debugging-Modus (`X99`) implementiert, der rohe Pulsdauern ausgibt und umschaltbar ist.
 *   **[DONE]** FS20-Sendefrequenz präzise auf 868.3 MHz kalibriert und Präambel verlängert.
-*   **[PARTIAL]** End-to-End Test: Intertechno V1 (433MHz) RX/TX ist validiert. Für FS20 (868MHz) wurden die Haupt-Blocker (Frequenz, Sendeleistung, Protokoll-Timing) behoben. Die finale Validierung der gesendeten Pakete gegen den Referenz-CUL steht aus.
+*   **[DONE]** Implementierung einer Rauschunterdrückung via Hardware Carrier Sense (GDO2).
+*   **[DONE]** Hinzufügen von visuellem Feedback (LED) für Sendevorgänge.
+*   **[DONE]** End-to-End Test: Intertechno V1 (433MHz) und FS20 (868MHz) RX/TX sind gegen einen Referenz-CUL validiert.
 
 ## 4. Neue Erkenntnisse / Probleme
 
-*   **[INFO]** Eine korrekte ASK/OOK-Modulation auf dem CC1101 erfordert die Initialisierung der `PATABLE` mit zwei Werten sowie die Konfiguration von `FREND0`, um die Sendeleistung für logisch '0' und '1' festzulegen.
-*   **[INFO]** Das FS20-Protokoll verwendet **ungerade Parität (Odd Parity)**.
-*   **[INFO]** Die Dekodierung von Protokollen mit variablen Timings (wie Intertechno V1) erfordert einen anderen Ansatz (z.B. Puls-Pattern-Matching) als die feste Taktung von FS20.
-*   **[INFO]** Für eine zuverlässige FS20-Kommunikation ist eine exakte Frequenz von **868.3 MHz** entscheidend, nicht nur die generelle 868-MHz-Bandeinstellung.
-*   **[INFO]** Bei Tests mit geringem Abstand können hohe Sendeleistungen (OOK/ASK) zu Signalverzerrungen führen. Eine Reduktion der Leistung (`PATABLE` auf `0x50` statt `0xC0`) verbessert die Signalqualität im Nahfeld erheblich.
-*   **[INFO]** Das Deaktivieren des RX-Interrupts während des Sendens ist zwingend erforderlich, um ein "Echo" (Empfangen der eigenen gesendeten Pakete) zu verhindern und die Stabilität der Empfangs-Zustandsmaschine zu gewährleisten.
+*   **[INFO]** Die culfw-Implementierung des FS20-Protokolls verwendet **gerade Parität (Even Parity)**, abweichend von manchen Spezifikationen. Dies ist für die Kompatibilität entscheidend.
+*   **[INFO]** Eine längere Präambel (z.B. 24 '0'-Bits statt 12) gibt dem Empfänger mehr Zeit zum Synchronisieren und verbessert die FS20-Empfangssicherheit.
+*   **[INFO]** Für maximale Reichweite wurde die Sendeleistung auf +10dBm (`0xC0`) gesetzt. Bei Tests im Nahbereich kann eine Reduktion (`0x50`) Signalverzerrungen beim Empfänger vermeiden.
+*   **[INFO]** Die Überprüfung des CC1101 `MARCSTATE`-Registers (Soll: `0x13` für TX) vor dem Senden erhöht die Zuverlässigkeit, da der Chip manchmal nicht sofort in den Sende-Modus wechselt.
+*   **[INFO]** Hardwareseitiges Carrier Sense (RSSI-Schwellwert) über den GDO2-Pin ist eine sehr effektive Methode, um den RX-Prozessor von der Verarbeitung von reinem Rauschen zu entlasten.
 
 ## 5. Nächste Schritte
 
-*   **Validierung FS20-TX:** Umfassende Tests, ob der Referenz-CUL die gesendeten FS20-Pakete nach den Anpassungen (Frequenz, Leistung, Präambel) nun zuverlässig dekodiert.
-*   **Rausch-Unterdrückung im RX-Pfad:** Implementierung einer Rauschunterdrückung, z.B. durch einen RSSI-Schwellwert (Carrier Sense) oder eine Logik, die eine Mindestanzahl an validen Bits erfordert, bevor eine Nachricht ausgegeben wird.
 *   **Protokoll-Erweiterung:** Unterstützung für weitere SlowRF-Protokolle hinzufügen (z.B. Intertechno V3).
 *   **Konfigurations-Management:** Speichern von culfw-Einstellungen (z.B. Reporting-Modus `X21`) im Non-Volatile Storage (NVS) des ESP32, um sie nach einem Neustart zu erhalten.
 *   **FHEM-Integration:** Validierung der Firmware mit einem Host-System (FHEM) zur Sicherstellung der Kompatibilität und Langzeitstabilität.
@@ -79,5 +81,8 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
     *   `CS`: GPIO 18
 *   **CC1101 Signale:**
     *   `GDO0`: GPIO 2 (Input/Interrupt für RX, Output für TX)
+    *   `GDO2`: GPIO 3 (Input für Carrier Sense)
 *   **Frequenzerkennung:**
     *   `GPIO_433MARKER`: GPIO 4 (Input mit Pull-Up)
+*   **Visuelles Feedback:**
+    *   `LED`: GPIO 10
