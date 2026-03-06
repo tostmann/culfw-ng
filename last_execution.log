@@ -1,8 +1,103 @@
-The following files/directories have been created in /opt/ai_builder_data/users/763684262/projects/CULFW-NG
-include - Put project header files here
-lib - Put project specific (private) libraries here
-src - Put project source files here
-platformio.ini - Project Configuration File
-Resolving esp32-c6-devkitc-1 dependencies...
-Already up-to-date.
-Project has been successfully initialized!
+Processing cul32-c6 (platform: espressif32; board: esp32-c6-devkitc-1; framework: espidf)
+--------------------------------------------------------------------------------
+Tool Manager: Installing https://github.com/pioarduino/esp-idf/releases/download/v5.5.2.260206/esp-idf-v5.5.2.tar.xz
+Downloading 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
+Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
+Tool Manager: framework-espidf@3.50502.0 has been installed!
+Tool Manager: Installing https://github.com/pioarduino/registry/releases/download/0.0.1/cmake-4.0.3.zip
+Downloading 0% 10%
+Unpacking 0% 10% 20%
+Tool Manager: tool-cmake@4.0.3 has been installed!
+Tool Manager: Installing https://github.com/pioarduino/registry/releases/download/0.0.1/esp-rom-elfs-20241011.zip
+Downloading 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
+Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
+Tool Manager: tool-esp-rom-elfs@2024.10.11 has been installed!
+Tool Manager: Installing https://github.com/pioarduino/registry/releases/download/0.0.1/ninja-1.13.1.zip
+Downloading 0% 10%
+Unpacking 0% 10% 20%
+Tool Manager: tool-ninja@1.13.1 has been installed!
+Tool Manager: Installing file:///root/.platformio/tools/tool-cmake
+Tool Manager: tool-cmake@4.0.3 has been installed!
+Tool Manager: Installing file:///root/.platformio/tools/tool-ninja
+Tool Manager: tool-ninja@1.13.1 has been installed!
+Tool Manager: Installing file:///root/.platformio/tools/tool-esp-rom-elfs
+Tool Manager: tool-esp-rom-elfs@2024.10.11 has been installed!
+Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/espressif32/esp32-c6-devkitc-1.html
+PLATFORM: Espressif 32 (55.3.37) > Espressif ESP32-C6-DevKitC-1
+HARDWARE: ESP32C6 160MHz, 320KB RAM, 8MB Flash
+DEBUG: Current (cmsis-dap) External (cmsis-dap, esp-bridge, esp-builtin, esp-prog, iot-bus-jtag, jlink, minimodule, olimex-arm-usb-ocd, olimex-arm-usb-ocd-h, olimex-arm-usb-tiny-h, olimex-jtag-tiny, tumpa)
+PACKAGES: 
+ - contrib-piohome @ 3.4.4 
+ - framework-espidf @ 3.50502.0 (5.5.2) 
+ - tool-cmake @ 4.0.3 
+ - tool-esp-rom-elfs @ 2024.10.11 
+ - tool-esptoolpy @ 5.1.2 
+ - tool-ninja @ 1.13.1 
+ - tool-scons @ 4.40801.0 (4.8.1) 
+ - toolchain-riscv32-esp @ 14.2.0+20251107
+Creating a new virtual environment for IDF Python dependencies using uv
+Using Python 3.13.5 environment at: /root/.platformio/penv/.espidf-5.5.2
+Installing ESP-IDF's Python dependencies with uv
+Using Python 3.13.5 environment at: /root/.platformio/penv/.espidf-5.5.2
+Resolved 27 packages in 754ms
+Downloading cryptography (3.8MiB)
+Downloading pydantic-core (1.8MiB)
+ Downloaded pydantic-core
+ Downloaded cryptography
+Prepared 27 packages in 180ms
+Installed 27 packages in 7ms
+ + annotated-types==0.7.0
+ + certifi==2026.2.25
+ + cffi==2.0.0
+ + charset-normalizer==3.4.5
+ + click==8.3.1
+ + colorama==0.4.6
+ + cryptography==44.0.3
+ + esp-idf-kconfig==2.5.3
+ + idf-component-manager==2.4.7
+ + idna==3.11
+ + jsonref==1.1.0
+ + psutil==7.2.2
+ + pycparser==3.0
+ + pydantic==2.12.5
+ + pydantic-core==2.41.5
+ + pydantic-settings==2.13.1
+ + pyparsing==3.3.2
+ + python-dotenv==1.2.2
+ + requests==2.32.5
+ + requests-file==3.0.1
+ + requests-toolbelt==1.0.0
+ + ruamel-yaml==0.19.1
+ + tqdm==4.67.3
+ + truststore==0.10.4
+ + typing-extensions==4.15.0
+ + typing-inspection==0.4.2
+ + urllib3==1.26.20
+Reading CMake configuration...
+Generating assembly for certificate bundle...
+Warning! Flash memory size mismatch detected. Expected 8MB, found 2MB!
+Please select a proper value in your `sdkconfig.defaults` or via the `menuconfig` target!
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 0 compatible libraries
+Scanning dependencies...
+No dependencies
+Building in release mode
+Compiling .pio/build/cul32-c6/src/cc1101.c.o
+Compiling .pio/build/cul32-c6/src/culfw_parser.c.o
+Compiling .pio/build/cul32-c6/src/main.c.o
+Compiling .pio/build/cul32-c6/src/slowrf.c.o
+src/culfw_parser.c: In function 'handle_command':
+src/culfw_parser.c:13:9: error: implicit declaration of function 'gpio_set_direction' [-Wimplicit-function-declaration]
+   13 |         gpio_set_direction(GPIO_433MARKER, GPIO_MODE_INPUT);
+      |         ^~~~~~~~~~~~~~~~~~
+src/culfw_parser.c:13:44: error: 'GPIO_MODE_INPUT' undeclared (first use in this function)
+   13 |         gpio_set_direction(GPIO_433MARKER, GPIO_MODE_INPUT);
+      |                                            ^~~~~~~~~~~~~~~
+src/culfw_parser.c:13:44: note: each undeclared identifier is reported only once for each function it appears in
+src/culfw_parser.c:14:24: error: implicit declaration of function 'gpio_get_level' [-Wimplicit-function-declaration]
+   14 |         bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);
+      |                        ^~~~~~~~~~~~~~
+*** [.pio/build/cul32-c6/src/culfw_parser.c.o] Error 1
+========================= [FAILED] Took 47.96 seconds =========================

@@ -4,6 +4,7 @@
 #include "freertos/task.h"
 #include "culfw_parser.h"
 #include "esp_log.h"
+#include "driver/gpio.h"
 #include "cc1101.h"
 
 static const char *TAG = "CULFW_PARSER";
