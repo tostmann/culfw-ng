@@ -1,1 +1,8 @@
 .pio
+*.log
+history.json
+*.py
+binaries/
+build/
+.vscode/
+.gcc-flags.json
