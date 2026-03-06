@@ -95,15 +95,28 @@ static void reset_itv3(itv3_dec_t *it) {
     memset(it->s, 0, sizeof(it->s));
 }
 
+static void reset_sensor(sensor_dec_t *sd) {
+    memset(sd->nibbles, 0, sizeof(sd->nibbles));
+    sd->nibble_cnt = 0;
+    sd->bit_cnt = 0;
+    sd->current_nibble = 0;
+    sd->pulse_state = 0;
+    sd->sync_found = false;
+}
+
 void slowrf_task(void *pvParameters) {
     int64_t pulse;
     fs20_dec_t fs_dec;
     itv1_dec_t it1_dec;
     itv3_dec_t it3_dec;
+    sensor_dec_t hms_dec;
+    sensor_dec_t s300_dec;
     
     reset_fs20(&fs_dec);
     reset_itv1(&it1_dec);
     reset_itv3(&it3_dec);
+    reset_sensor(&hms_dec);
+    reset_sensor(&s300_dec);
 
     while (1) {
         if (xQueueReceive(pulse_queue, &pulse, portMAX_DELAY)) {

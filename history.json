@@ -565,5 +565,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "static void reset_itv3(itv3_dec_t *it) {\n    it->bit_pos = 0;\n    it->pulse_cnt = 0;\n    it->sync_found = false;\n    memset(it->s, 0, sizeof(it->s));\n}\n\nstatic void reset_sensor(sensor_dec_t *sd) {\n    memset(sd->nibbles, 0, sizeof(sd->nibbles));\n    sd->nibble_cnt = 0;\n    sd->bit_cnt = 0;\n    sd->current_nibble = 0;\n    sd->pulse_state = 0;\n    sd->sync_found = false;\n}\n\nvoid slowrf_task(void *pvParameters) {\n    int64_t pulse;\n    fs20_dec_t fs_dec;\n    itv1_dec_t it1_dec;\n    itv3_dec_t it3_dec;\n    sensor_dec_t hms_dec;\n    sensor_dec_t s300_dec;\n    \n    reset_fs20(&fs_dec);\n    reset_itv1(&it1_dec);\n    reset_itv3(&it3_dec);\n    reset_sensor(&hms_dec);\n    reset_sensor(&s300_dec);\n",
+            "path": "src/slowrf.c",
+            "original_text": "static void reset_itv3(itv3_dec_t *it) {\n    it->bit_pos = 0;\n    it->pulse_cnt = 0;\n    it->sync_found = false;\n    memset(it->s, 0, sizeof(it->s));\n}\n\nvoid slowrf_task(void *pvParameters) {\n    int64_t pulse;\n    fs20_dec_t fs_dec;\n    itv1_dec_t it1_dec;\n    itv3_dec_t it3_dec;\n    \n    reset_fs20(&fs_dec);\n    reset_itv1(&it1_dec);\n    reset_itv3(&it3_dec);\n"
+          }
+        }
+      }
+    ]
   }
 ]
