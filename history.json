@@ -1400,5 +1400,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "void cc1101_send_raw_slowrf(const char* hex_data) {\n    gpio_set_level(GPIO_LED, 0); // LED ON\n    cc1101_set_tx_mode();\n    vTaskDelay(pdMS_TO_TICKS(5));\n\n    for (int repeat = 0; repeat < 10; repeat++) {\n",
+            "path": "src/cc1101.c",
+            "original_text": "void cc1101_send_raw_slowrf(const char* hex_data) {\n    gpio_set_level(GPIO_LED, 0); // LED ON\n    cc1101_set_tx_mode();\n    vTaskDelay(pdMS_TO_TICKS(5));\n\n    for (int repeat = 0; repeat < 6; repeat++) {\n"
+          }
+        }
+      }
+    ]
   }
 ]

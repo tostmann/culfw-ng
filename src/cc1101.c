@@ -189,7 +189,7 @@ void cc1101_send_raw_slowrf(const char* hex_data) {
     cc1101_set_tx_mode();
     vTaskDelay(pdMS_TO_TICKS(5));
 
-    for (int repeat = 0; repeat < 6; repeat++) {
+    for (int repeat = 0; repeat < 10; repeat++) {
         for(int i=0; i<24; i++) fs20_send_bit(0); 
         fs20_send_bit(1); 
 
