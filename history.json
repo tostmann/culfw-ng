@@ -1109,5 +1109,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "esp_err_t cc1101_write_reg(uint8_t reg, uint8_t val) {\n    spi_transaction_t t = {\n        .length = 16,\n        .tx_data = {reg, val},\n        .flags = SPI_TRANS_USE_TXDATA\n    };\n    return spi_device_transmit(spi, &t);\n}\n\nesp_err_t cc1101_write_burst(uint8_t reg, const uint8_t *data, size_t len) {\n    uint8_t tx_data[65];\n    tx_data[0] = reg | CC1101_WRITE_BURST;\n    memcpy(tx_data + 1, data, len);\n    spi_transaction_t t = {\n        .length = (len + 1) * 8,\n        .tx_buffer = tx_data,\n    };\n    return spi_device_transmit(spi, &t);\n}\n",
+            "path": "src/cc1101.c",
+            "original_text": "esp_err_t cc1101_write_reg(uint8_t reg, uint8_t val) {\n    spi_transaction_t t = {\n        .length = 16,\n        .tx_data = {reg, val},\n        .flags = SPI_TRANS_USE_TXDATA\n    };\n    return spi_device_transmit(spi, &t);\n}\n"
+          }
+        }
+      }
+    ]
   }
 ]
