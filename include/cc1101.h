@@ -11,6 +11,7 @@ esp_err_t cc1101_cmd_strobe(uint8_t cmd);
 void cc1101_set_rx_mode();
 void cc1101_set_tx_mode();
 void cc1101_set_idle_mode();
+void cc1101_send_slowrf(const char* hex_data);
 
 #define CC1101_WRITE_BURST  0x40
 #define CC1101_READ_SINGLE  0x80

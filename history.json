@@ -1444,5 +1444,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "void cc1101_set_idle_mode();\nvoid cc1101_send_slowrf(const char* hex_data);\n\n#define CC1101_WRITE_BURST  0x40",
+            "path": "include/cc1101.h",
+            "original_text": "void cc1101_set_idle_mode();\n\n#define CC1101_WRITE_BURST  0x40"
+          }
+        }
+      }
+    ]
   }
 ]
