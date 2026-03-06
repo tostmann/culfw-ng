@@ -5,6 +5,11 @@
 
 static const char *TAG = "CC1101";
 static spi_device_handle_t spi;
+static bool cc1101_is_433_flag = false;
+
+bool cc1101_is_433() {
+    return cc1101_is_433_flag;
+}
 
 esp_err_t cc1101_init() {
     spi_bus_config_t buscfg = {

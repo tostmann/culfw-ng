@@ -993,5 +993,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "static const char *TAG = \"CC1101\";\nstatic spi_device_handle_t spi;\nstatic bool cc1101_is_433_flag = false;\n\nbool cc1101_is_433() {\n    return cc1101_is_433_flag;\n}\n\nesp_err_t cc1101_init() {\n",
+            "path": "src/cc1101.c",
+            "original_text": "static const char *TAG = \"CC1101\";\nstatic spi_device_handle_t spi;\n\nesp_err_t cc1101_init() {\n"
+          }
+        }
+      }
+    ]
   }
 ]
