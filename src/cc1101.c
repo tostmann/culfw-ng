@@ -199,8 +199,8 @@ void cc1101_send_slowrf(const char* hex_data) {
                 fs20_send_bit(bit);
                 if (bit) parity++;
             }
-            // FS20: ODD parity (Total bits in 9-bit group must be odd)
-            fs20_send_bit((parity % 2) ? 0 : 1);
+            // FS20: EVEN parity (Total bits in 9-bit group must be even)
+            fs20_send_bit(parity % 2);
         }
         
         // 4. End bit (bit 0)

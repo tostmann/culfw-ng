@@ -887,5 +887,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "            // FS20: EVEN parity (Total bits in 9-bit group must be even)\n            fs20_send_bit(parity % 2);\n",
+            "path": "src/cc1101.c",
+            "original_text": "            // FS20: ODD parity (Total bits in 9-bit group must be odd)\n            fs20_send_bit((parity % 2) ? 0 : 1);\n"
+          }
+        }
+      }
+    ]
   }
 ]
