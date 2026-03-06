@@ -160,6 +160,7 @@ static void it_v1_send_bit(char bit) {
 }
 
 void cc1101_send_it_v1(const char* data) {
+    gpio_set_level(GPIO_LED, 0); // LED ON
     cc1101_set_tx_mode();
     vTaskDelay(pdMS_TO_TICKS(5));
     

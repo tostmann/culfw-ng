@@ -1593,5 +1593,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "void cc1101_send_it_v1(const char* data) {\n    gpio_set_level(GPIO_LED, 0); // LED ON\n    cc1101_set_tx_mode();\n    vTaskDelay(pdMS_TO_TICKS(5));\n",
+            "path": "src/cc1101.c",
+            "original_text": "void cc1101_send_it_v1(const char* data) {\n    cc1101_set_tx_mode();\n    vTaskDelay(pdMS_TO_TICKS(5));\n"
+          }
+        }
+      }
+    ]
   }
 ]
