@@ -1,6 +1,4 @@
-src/:
-cc1101.c
-CMakeLists.txt
-culfw_parser.c
-main.c
-slowrf.c
+include/:
+cc1101.h
+culfw_parser.h
+slowrf.h

@@ -1051,5 +1051,111 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "read_file",
+          "args": {
+            "path": "src/cc1101.h"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "read_file",
+          "response": {
+            "result": "File not found."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "ls -R include/"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\ninclude/:\ncc1101.h\nculfw_parser.h\nslowrf.h\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "read_file",
+          "args": {
+            "path": "include/cc1101.h"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "read_file",
+          "response": {
+            "result": "#ifndef CC1101_H\n#define CC1101_H\n\n#include \"esp_err.h\"\n#include \"driver/spi_master.h\"\n\nesp_err_t cc1101_init();\nesp_err_t cc1101_write_reg(uint8_t reg, uint8_t val);\nesp_err_t cc1101_write_burst(uint8_t reg, const uint8_t *data, size_t len);\nuint8_t cc1101_read_reg(uint8_t reg);\nesp_err_t cc1101_cmd_strobe(uint8_t cmd);\nvoid cc1101_set_rx_mode();\nvoid cc1101_set_tx_mode();\nvoid cc1101_set_idle_mode();\nvoid cc1101_send_slowrf(const char* hex_data);\nvoid cc1101_send_it_v1(const char* data);\n\n#define CC1101_WRITE_BURST  0x40\n#define CC1101_READ_SINGLE  0x80\n#define CC1101_READ_BURST   0xC0\n\n// Status Registers\n#define CC1101_PARTNUM      0x30\n#define CC1101_VERSION      0x31\n\n// Command Strobes\n#define CC1101_SRES         0x30\n#define CC1101_SFSTX        0x31\n#define CC1101_SXOFF        0x32\n#define CC1101_SCAL         0x33\n#define CC1101_SRX          0x34\n#define CC1101_STX          0x35\n#define CC1101_SIDLE        0x36\n#define CC1101_SWOR         0x38\n#define CC1101_SPWD         0x39\n#define CC1101_SFTX         0x3B\n#define CC1101_SFRX         0x3C\n#define CC1101_SNOP         0x3D\n\n#endif\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "void cc1101_send_fs20(const char* housecode, const char* addr, const char* cmd);\nvoid cc1101_send_it_v1(const char* data);\nvoid cc1101_send_it_v3(const char* data);\nvoid cc1101_send_raw_slowrf(const char* hex_data);\n",
+            "path": "include/cc1101.h",
+            "original_text": "void cc1101_send_slowrf(const char* hex_data);\nvoid cc1101_send_it_v1(const char* data);\n"
+          }
+        }
+      }
+    ]
   }
 ]
