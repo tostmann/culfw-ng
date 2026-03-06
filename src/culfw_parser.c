@@ -31,7 +31,9 @@ static void handle_command(char *cmd) {
         }
         len = snprintf(out, sizeof(out), "X21\r\n");
     } else if (cmd[0] == 'C') {
-        len = snprintf(out, sizeof(out), "C01\r\n");
+        uint8_t part = cc1101_read_reg(CC1101_PARTNUM | CC1101_READ_SINGLE);
+        uint8_t vers = cc1101_read_reg(CC1101_VERSION | CC1101_READ_SINGLE);
+        len = snprintf(out, sizeof(out), "C01 Part: 0x%02x, Vers: 0x%02x\r\n", part, vers);
     } else if (cmd[0] == 'F') {
         cc1101_send_slowrf(cmd + 1);
         len = snprintf(out, sizeof(out), "F OK\r\n");
