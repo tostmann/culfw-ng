@@ -22,12 +22,14 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 *   **Signal-Erfassung (RX):**
     *   Der CC1101 wird im **asynchronen seriellen Modus** (`PKTCTRL0 = 0x32`) betrieben, um ein rohes, demoduliertes ASK/OOK-Signal am `GDO0_PIN` bereitzustellen. Dieser Pin wird als Interrupt-Quelle genutzt, um die Timestamps der Signalflanken an den `slowrf_task` zu übergeben.
     *   **Rausch-Unterdrückung:** `GDO2` ist als **Carrier Sense** konfiguriert (`IOCFG2=0x0E`). Der GPIO-Interrupt wird nur verarbeitet, wenn der Carrier-Sense-Pin aktiv ist, wodurch Rauschen bei inaktivem Kanal effektiv gefiltert wird.
+    *   **Cross-Band-Unterdrückung:** Die `slowrf_task` prüft vor der Ausgabe eines dekodierten Pakets das per Hardware-Pin (`GPIO_433MARKER`) erkannte Frequenzband. 868MHz-Sticks geben nur FS20 aus, 433MHz-Sticks nur Intertechno.
 *   **Signal-Aussendung (TX):**
     *   Der `GDO0_PIN` wird dynamisch als Output konfiguriert, um Sendesequenzen per Bit-Banging mit präzisen Microsekunden-Delays (`ets_delay_us`) zu erzeugen.
     *   Zur Vermeidung von Echos (Selbst-Empfang) wird der `GDO0`-Interrupt während des Sendevorgangs temporär deaktiviert.
     *   Zur Sicherstellung der Sende-Bereitschaft wird vor dem Senden der **MARCSTATE** (`0x35`) geprüft und der `STX`-Strobe bei Bedarf wiederholt, bis der Chip im `TX`-State (`0x13`) ist.
     *   Für eine korrekte ASK-Modulation und maximale Reichweite wird die `PATABLE` mit `{0x00, 0xC0, ...}` (+10 dBm) initialisiert und das `FREND0`-Register auf `0x11` gesetzt.
     *   **FS20-Paketstruktur:** Die Präambel wurde auf 24 '0'-Bits verlängert und Pakete werden zur Erhöhung der Übertragungssicherheit **10-fach** wiederholt.
+*   **RF-Konfiguration:** Die Frequenzregister des CC1101 wurden präzise auf die Standard-Mittenfrequenzen kalibriert (868.30 MHz für FS20, 433.92 MHz für Intertechno).
 *   **Versionierung:** Automatisierte Build-Nummer und detaillierter, culfw-kompatibler Versions-String (`V`-Kommando), um die Identifikation durch Host-Systeme (z.B. FHEM) sicherzustellen.
 *   **Diagnose & Feedback:**
     *   Erweitertes `C`-Kommando zur Diagnose, das Part-, Versionsnummer und den **MARCSTATE** (`0x35`) ausliest.
@@ -58,7 +60,7 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 *   **[DONE]** Build-System um eine automatische Build-Nummer und einen culfw-kompatiblen Versions-String erweitert.
 *   **[DONE]** RX-Debugging-Modus (`X99`) implementiert, der rohe Pulsdauern ausgibt und umschaltbar ist.
 *   **[DONE]** FS20-Sendefrequenz präzise auf 868.3 MHz kalibriert und Präambel verlängert.
-*   **[DONE]** Implementierung einer Rauschunterdrückung via Hardware Carrier Sense (GDO2).
+*   **[DONE]** Implementierung und Validierung einer Rauschunterdrückung via Hardware Carrier Sense (GDO2).
 *   **[DONE]** Hinzufügen von visuellem Feedback (LED) für Sendevorgänge.
 *   **[DONE]** Protokoll-Erweiterung: Sende-Encoder für Intertechno V3 implementiert.
 *   **[DONE]** Konfigurations-Management: Speichern von culfw-Einstellungen (z.B. `X21`-Modus) im Non-Volatile Storage (NVS).
@@ -68,7 +70,8 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 *   **[DONE]** RSSI-Reporting: Empfangene Datenpakete werden um den RSSI-Wert ergänzt.
 *   **[DONE]** Remote-Diagnose: Implementierung von `R`/`W`-Befehlen zum Lesen/Schreiben von CC1101-Registern.
 *   **[DONE]** Host-System-Interface: Periodischer "CUL-TICK" als Heartbeat implementiert.
-*   **[DONE]** End-to-End Test: Intertechno V1 (433MHz) und FS20 (868MHz) RX/TX sind gegen einen Referenz-CUL validiert.
+*   **[DONE]** Implementierung einer frequenz-selektiven Protokoll-Dekodierung zur Unterdrückung von Cross-Band-Empfang.
+*   **[DONE]** End-to-End Test: Intertechno V1 (433MHz) und FS20 (868MHz) RX/TX sind gegen einen Referenz-CUL validiert, inklusive strikter Kanaltrennung.
 
 ## 4. Neue Erkenntnisse / Probleme
 
@@ -77,12 +80,12 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 *   **[INFO]** Hardwareseitiges Carrier Sense (RSSI-Schwellwert) über den GDO2-Pin ist eine sehr effektive Methode, um den RX-Prozessor von der Verarbeitung von reinem Rauschen zu entlasten.
 *   **[INFO]** Das Speichern von Konfigurationen im NVS ist essentiell für eine nahtlose Integration in Host-Systeme wie FHEM, da diese erwarten, dass der CUL seinen Zustand nach einem Neustart beibehält.
 *   **[INFO]** Die Remote-Register-Befehle (`R`/`W`) sind ein mächtiges Werkzeug zur Feinabstimmung der RF-Parameter (z.B. AGC-Verhalten, Frequenz-Offsets), ohne dass eine Neukompilierung erforderlich ist.
-*   **[INFO]** Während der Tests wurde beobachtet, dass der 868-MHz-Stick gelegentlich 433-MHz-Signale dekodiert. Dies deutet auf eine notwendige Feinabstimmung der RF-Parameter (z.B. RSSI-Schwellenwert, Filterbandbreite) hin, um die Störfestigkeit und Kanaltrennung zu verbessern.
+*   **[INFO]** Eine softwareseitige Prüfung des Frequenzbandes vor dem Melden eines dekodierten Pakets ist eine effektive und notwendige Methode, um Cross-Band-Störungen zu eliminieren, selbst wenn der RF-Chip physikalisch Signale außerhalb seines Zielbandes empfängt.
+*   **[INFO]** Die Frequenzregister (FREQ2, FREQ1, FREQ0) des CC1101 müssen präzise auf die Ziel-Mittenfrequenz (z.B. 433.92 MHz, 868.30 MHz) kalibriert werden, um die Empfängerempfindlichkeit zu maximieren und die Kanaltrennung zu verbessern.
 
 ## 5. Nächste Schritte
 
 *   **FHEM-Integration:** Validierung der Firmware mit einem Host-System (FHEM) zur Sicherstellung der Kompatibilität und Langzeitstabilität.
-*   **RF-Tuning:** Untersuchung und Optimierung der CC1101-Registereinstellungen, um das Cross-Band-Empfangsverhalten zu minimieren.
 *   **Dokumentation:** Erstellen einer kurzen Anleitung für die neuen Diagnose-Befehle (`R`, `W`, `X99`, `TX1`/`TX0`).
 *   **Langzeittests:** Überwachung der Stabilität und des Speicherverbrauchs über mehrere Tage.
 
