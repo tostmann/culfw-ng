@@ -1472,5 +1472,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "void cc1101_set_idle_mode() {\n    cc1101_cmd_strobe(CC1101_SIDLE);\n}\n\n#include \"rom/ets_sys.h\"\n\nstatic void fs20_send_bit(int bit) {\n    if (bit) {\n        gpio_set_level(GPIO_GDO0, 1);\n        ets_delay_us(600);\n        gpio_set_level(GPIO_GDO0, 0);\n        ets_delay_us(600);\n    } else {\n        gpio_set_level(GPIO_GDO0, 1);\n        ets_delay_us(400);\n        gpio_set_level(GPIO_GDO0, 0);\n        ets_delay_us(400);\n    }\n}\n\nvoid cc1101_send_slowrf(const char* hex_data) {\n    cc1101_set_tx_mode();\n    vTaskDelay(pdMS_TO_TICKS(1)); // Settling\n\n    // 1. Preamble (13 bits of 0)\n    for(int i=0; i<13; i++) fs20_send_bit(0);\n    \n    // 2. Sync bit (bit 0)\n    fs20_send_bit(0);\n\n    // 3. Data (hex string to bits)\n    int hex_len = strlen(hex_data);\n    for(int i=0; i<hex_len; i+=2) {\n        char h[3] = {hex_data[i], hex_data[i+1], 0};\n        uint8_t b = (uint8_t)strtol(h, NULL, 16);\n        int parity = 0;\n        for(int j=7; j>=0; j--) {\n            int bit = (b >> j) & 1;\n            fs20_send_bit(bit);\n            if (bit) parity++;\n        }\n        // Parity bit (even parity)\n        fs20_send_bit(parity % 2);\n    }\n    \n    // 4. End bit (bit 0)\n    fs20_send_bit(0);\n    \n    cc1101_set_rx_mode();\n}\n\nesp_err_t cc1101_write_reg(uint8_t reg, uint8_t val) {",
+            "path": "src/cc1101.c",
+            "original_text": "void cc1101_set_idle_mode() {\n    cc1101_cmd_strobe(CC1101_SIDLE);\n}\n\nesp_err_t cc1101_write_reg(uint8_t reg, uint8_t val) {"
+          }
+        }
+      }
+    ]
   }
 ]

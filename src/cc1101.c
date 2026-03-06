@@ -103,6 +103,53 @@ void cc1101_set_idle_mode() {
     cc1101_cmd_strobe(CC1101_SIDLE);
 }
 
+#include "rom/ets_sys.h"
+
+static void fs20_send_bit(int bit) {
+    if (bit) {
+        gpio_set_level(GPIO_GDO0, 1);
+        ets_delay_us(600);
+        gpio_set_level(GPIO_GDO0, 0);
+        ets_delay_us(600);
+    } else {
+        gpio_set_level(GPIO_GDO0, 1);
+        ets_delay_us(400);
+        gpio_set_level(GPIO_GDO0, 0);
+        ets_delay_us(400);
+    }
+}
+
+void cc1101_send_slowrf(const char* hex_data) {
+    cc1101_set_tx_mode();
+    vTaskDelay(pdMS_TO_TICKS(1)); // Settling
+
+    // 1. Preamble (13 bits of 0)
+    for(int i=0; i<13; i++) fs20_send_bit(0);
+    
+    // 2. Sync bit (bit 0)
+    fs20_send_bit(0);
+
+    // 3. Data (hex string to bits)
+    int hex_len = strlen(hex_data);
+    for(int i=0; i<hex_len; i+=2) {
+        char h[3] = {hex_data[i], hex_data[i+1], 0};
+        uint8_t b = (uint8_t)strtol(h, NULL, 16);
+        int parity = 0;
+        for(int j=7; j>=0; j--) {
+            int bit = (b >> j) & 1;
+            fs20_send_bit(bit);
+            if (bit) parity++;
+        }
+        // Parity bit (even parity)
+        fs20_send_bit(parity % 2);
+    }
+    
+    // 4. End bit (bit 0)
+    fs20_send_bit(0);
+    
+    cc1101_set_rx_mode();
+}
+
 esp_err_t cc1101_write_reg(uint8_t reg, uint8_t val) {
     spi_transaction_t t = {
         .length = 16,
