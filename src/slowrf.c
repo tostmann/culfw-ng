@@ -154,11 +154,34 @@ void slowrf_task(void *pvParameters) {
                             int len = snprintf(out, sizeof(out), "is%s%02X\r\n", it3_dec.s, rssi);
                             usb_serial_jtag_write_bytes(out, len, 0);
                         }
+                    } else {
+                        // HMS (H + 10 bytes)
+                        if (hms_dec.nibble_cnt >= 20) {
+                            char out[64];
+                            int len = snprintf(out, sizeof(out), "H");
+                            for(int i=0; i<hms_dec.nibble_cnt; i++) {
+                                len += snprintf(out+len, sizeof(out)-len, "%X", hms_dec.nibbles[i]);
+                            }
+                            len += snprintf(out+len, sizeof(out)-len, "%02X\r\n", rssi);
+                            usb_serial_jtag_write_bytes(out, len, 0);
+                        }
+                        // S300TH (K + 9+ nibbles)
+                        if (s300_dec.nibble_cnt >= 9) {
+                            char out[64];
+                            int len = snprintf(out, sizeof(out), "K");
+                            for(int i=0; i<s300_dec.nibble_cnt; i++) {
+                                len += snprintf(out+len, sizeof(out)-len, "%X", s300_dec.nibbles[i]);
+                            }
+                            len += snprintf(out+len, sizeof(out)-len, "%02X\r\n", rssi);
+                            usb_serial_jtag_write_bytes(out, len, 0);
+                        }
                     }
                 }
                 reset_fs20(&fs_dec);
                 reset_itv1(&it1_dec);
                 reset_itv3(&it3_dec);
+                reset_sensor(&hms_dec);
+                reset_sensor(&s300_dec);
                 
                 // IT-V3 starts AFTER a long low sync
                 if (pulse > 8000 && pulse < 11000) {

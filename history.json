@@ -593,5 +593,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "                    if (is_433) {\n                        if (it1_dec.pos == 12) {\n                            char out[64];\n                            int len = snprintf(out, sizeof(out), \"is%s%02X\\r\\n\", it1_dec.s, rssi);\n                            usb_serial_jtag_write_bytes(out, len, 0);\n                        }\n                        if (it3_dec.bit_pos == 32) {\n                            char out[128];\n                            int len = snprintf(out, sizeof(out), \"is%s%02X\\r\\n\", it3_dec.s, rssi);\n                            usb_serial_jtag_write_bytes(out, len, 0);\n                        }\n                    } else {\n                        // HMS (H + 10 bytes)\n                        if (hms_dec.nibble_cnt >= 20) {\n                            char out[64];\n                            int len = snprintf(out, sizeof(out), \"H\");\n                            for(int i=0; i<hms_dec.nibble_cnt; i++) {\n                                len += snprintf(out+len, sizeof(out)-len, \"%X\", hms_dec.nibbles[i]);\n                            }\n                            len += snprintf(out+len, sizeof(out)-len, \"%02X\\r\\n\", rssi);\n                            usb_serial_jtag_write_bytes(out, len, 0);\n                        }\n                        // S300TH (K + 9+ nibbles)\n                        if (s300_dec.nibble_cnt >= 9) {\n                            char out[64];\n                            int len = snprintf(out, sizeof(out), \"K\");\n                            for(int i=0; i<s300_dec.nibble_cnt; i++) {\n                                len += snprintf(out+len, sizeof(out)-len, \"%X\", s300_dec.nibbles[i]);\n                            }\n                            len += snprintf(out+len, sizeof(out)-len, \"%02X\\r\\n\", rssi);\n                            usb_serial_jtag_write_bytes(out, len, 0);\n                        }\n                    }\n                }\n                reset_fs20(&fs_dec);\n                reset_itv1(&it1_dec);\n                reset_itv3(&it3_dec);\n                reset_sensor(&hms_dec);\n                reset_sensor(&s300_dec);\n",
+            "path": "src/slowrf.c",
+            "original_text": "                    if (is_433) {\n                        if (it1_dec.pos == 12) {\n                            char out[64];\n                            int len = snprintf(out, sizeof(out), \"is%s%02X\\r\\n\", it1_dec.s, rssi);\n                            usb_serial_jtag_write_bytes(out, len, 0);\n                        }\n                        if (it3_dec.bit_pos == 32) {\n                            char out[128];\n                            int len = snprintf(out, sizeof(out), \"is%s%02X\\r\\n\", it3_dec.s, rssi);\n                            usb_serial_jtag_write_bytes(out, len, 0);\n                        }\n                    }\n                }\n                reset_fs20(&fs_dec);\n                reset_itv1(&it1_dec);\n                reset_itv3(&it3_dec);\n"
+          }
+        }
+      }
+    ]
   }
 ]
