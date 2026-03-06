@@ -134,6 +134,44 @@ static void fs20_send_bit(int bit) {
     }
 }
 
+static void it_v1_send_bit(char bit) {
+    // T = 420us
+    // '0': T High, 3T Low, T High, 3T Low
+    // '1': 3T High, T Low, 3T High, T Low
+    // 'F': T High, 3T Low, 3T High, T Low
+    if (bit == '0') {
+        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(420);
+        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(1260);
+        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(420);
+        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(1260);
+    } else if (bit == '1') {
+        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(1260);
+        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(420);
+        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(1260);
+        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(420);
+    } else { // 'F'
+        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(420);
+        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(1260);
+        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(1260);
+        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(420);
+    }
+}
+
+void cc1101_send_it_v1(const char* data) {
+    cc1101_set_tx_mode();
+    vTaskDelay(pdMS_TO_TICKS(2));
+    
+    for (int repeat = 0; repeat < 6; repeat++) {
+        for (int i = 0; data[i]; i++) {
+            it_v1_send_bit(data[i]);
+        }
+        // Sync/Gap: T high, 31T low
+        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(420);
+        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(13020);
+    }
+    cc1101_set_rx_mode();
+}
+
 void cc1101_send_slowrf(const char* hex_data) {
     cc1101_set_tx_mode();
     vTaskDelay(pdMS_TO_TICKS(2)); // Settling

@@ -925,5 +925,189 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "~/.platformio/penv/bin/pio run && \\\n~/.platformio/penv/bin/pio run --target upload --upload-port /dev/ttyACM2 && \\\n~/.platformio/penv/bin/pio run --target upload --upload-port /dev/ttyACM3\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\n\n... [OUTPUT TRUNCATED. Total size: 15021 bytes. Showing last 1500 bytes. Full output saved in 'last_execution.log'. Use 'grep' or 'read_file last_execution.log' to analyze!]\nHash of data verified.\nCompressed 211488 bytes to 107335...\n\nWriting at 0x00010000 [\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]   0.0% 0/107335 bytes... \n\nWriting at 0x0001b882 [\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  15.3% 16384/107335 bytes... \n\nWriting at 0x000221c3 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  30.5% 32768/107335 bytes... \n\nWriting at 0x000295ee [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  45.8% 49152/107335 bytes... \n\nWriting at 0x000311cf [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  61.1% 65536/107335 bytes... \n\nWriting at 0x00037fa8 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  76.3% 81920/107335 bytes... \n\nWriting at 0x0003f0d9 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591]  91.6% 98304/107335 bytes... \n\nWriting at 0x00043a20 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588] 100.0% 107335/107335 bytes... \nWrote 211488 bytes (107335 compressed) at 0x00010000 in 1.1 seconds (1592.9 kbit/s).\nHash of data verified.\n\nHard resetting via RTS pin...\n========================= [SUCCESS] Took 10.34 seconds =========================\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "echo \"V\" > /dev/ttyACM2 && timeout 2s cat /dev/ttyACM2\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "(echo \"V\"; sleep 1) > /dev/ttyACM2 & \ntimeout 3s cat /dev/ttyACM2\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\nV 1.0.2-NG culfw-NG Build: 2 (Mar  6 2026 17:42:04) CUL32-C6 (F-Band: 433MHz)\r\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "# ESP32 868\necho \"X99\" > /dev/ttyACM3\n# Reference CUL 868 send FS20\necho \"F12340111\" > /dev/ttyACM1\n# Listen for 5 seconds\ntimeout 5s cat /dev/ttyACM3 > /tmp/esp868_pulse2.log\ncat /tmp/esp868_pulse2.log\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\nP: 3342\r\nP: 11721\r\nP: 764\r\nP: 777\r\nP: 561\r\nP: 597\r\nP: 425\r\nP: 3605\r\nP: 3389\r\nP: 603\r\nP: 764\r\nP: 596\r\nP: 1606\r\nP: 1193\r\nP: 814\r\nP: 788\r\nP:"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "read_file",
+          "args": {
+            "path": "src/cc1101.c"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "read_file",
+          "response": {
+            "result": "#include \"cc1101.h\"\n#include \"driver/spi_master.h\"\n#include \"driver/gpio.h\"\n#include \"esp_log.h\"\n\nstatic const char *TAG = \"CC1101\";\nstatic spi_device_handle_t spi;\n\nesp_err_t cc1101_init() {\n    spi_bus_config_t buscfg = {\n        .miso_io_num = GPIO_MISO,\n        .mosi_io_num = GPIO_MOSI,\n        .sclk_io_num = GPIO_SCK,\n        .quadwp_io_num = -1,\n        .quadhd_io_num = -1,\n        .max_transfer_sz = 64\n    };\n    \n    spi_device_interface_config_t devcfg = {\n        .clock_speed_hz = 500000, // 500kHz\n        .mode = 0,\n        .spics_io_num = GPIO_SS,\n        .queue_size = 7,\n    };\n\n    ESP_LOGI(TAG, \"Initializing SPI: SCK=%d, MISO=%d, MOSI=%d, SS=%d\", GPIO_SCK, GPIO_MISO, GPIO_MOSI, GPIO_SS);\n    esp_err_t ret = spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_CH_AUTO);\n    if (ret != ESP_OK) return ret;\n\n    ret = spi_bus_add_device(SPI2_HOST, &devcfg, &spi);\n    if (ret != ESP_OK) return ret;\n\n    cc1101_cmd_strobe(CC1101_SRES);\n    vTaskDelay(pdMS_TO_TICKS(50));\n\n    // Dummy read to clear anything\n    cc1101_read_reg(CC1101_PARTNUM | CC1101_READ_BURST);\n    \n    uint8_t partnum = cc1101_read_reg(CC1101_PARTNUM | CC1101_READ_BURST);\n    uint8_t version = cc1101_read_reg(CC1101_VERSION | CC1101_READ_BURST);\n\n    ESP_LOGI(TAG, \"CC1101 Partnum: 0x%02x, Version: 0x%02x\", partnum, version);\n\n    if (version == 0 || version == 0xFF) return ESP_FAIL;\n\n    // Default configuration for SlowRF (OOK/ASK)\n    gpio_config_t marker_conf = {\n        .pin_bit_mask = (1ULL << GPIO_433MARKER),\n        .mode = GPIO_MODE_INPUT,\n        .pull_up_en = GPIO_PULLUP_ENABLE,\n    };\n    gpio_config(&marker_conf);\n    vTaskDelay(pdMS_TO_TICKS(10));\n    bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);\n    ESP_LOGI(TAG, \"Detected Frequency: %s MHz\", is_433 ? \"433\" : \"868\");\n\n    // Common SlowRF Setup (ASK, ~2.4k Baud, etc.)\n    cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Output\n    cc1101_write_reg(0x00, 0x2E); // IOCFG2: GDO2 High Impedance\n    cc1101_write_reg(0x08, 0x32); // PKTCTRL0: Asynchronous Serial Mode\n    cc1101_write_reg(0x0B, 0x06); // FSCTRL1\n    cc1101_write_reg(0x0C, 0x00); // FSCTRL0\n    \n    if (is_433) {\n        cc1101_write_reg(0x0D, 0x10); // FREQ2\n        cc1101_write_reg(0x0E, 0xB1); // FREQ1\n        cc1101_write_reg(0x0F, 0x3B); // FREQ0\n    } else {\n        cc1101_write_reg(0x0D, 0x21); // FREQ2\n        cc1101_write_reg(0x0E, 0x62); // FREQ1\n        cc1101_write_reg(0x0F, 0x76); // FREQ0\n    }\n    \n    cc1101_write_reg(0x10, 0x58); // MDMCFG4: BW 325kHz\n    cc1101_write_reg(0x11, 0x93); // MDMCFG3\n    cc1101_write_reg(0x12, 0x30); // MDMCFG2: ASK/OOK, No sync\n    cc1101_write_reg(0x13, 0x22); // MDMCFG1\n    cc1101_write_reg(0x14, 0xF8); // MDMCFG0\n    cc1101_write_reg(0x15, 0x15); // DEVIATN\n    cc1101_write_reg(0x18, 0x18); // MCSM0\n    cc1101_write_reg(0x19, 0x16); // FOCCFG\n    cc1101_write_reg(0x1A, 0x6C); // BSCFG\n    cc1101_write_reg(0x1B, 0x03); // AGCCTRL2\n    cc1101_write_reg(0x1C, 0x40); // AGCCTRL1\n    cc1101_write_reg(0x1D, 0x91); // AGCCTRL0\n    cc1101_write_reg(0x21, 0x56); // FREND1\n    cc1101_write_reg(0x22, 0x11); // FREND0: ASK/OOK use PATABLE[1] for '1'\n    cc1101_write_reg(0x23, 0xE9); // FSCAL3\n    cc1101_write_reg(0x24, 0x2A); // FSCAL2\n    cc1101_write_reg(0x25, 0x00); // FSCAL1\n    cc1101_write_reg(0x26, 0x1F); // FSCAL0\n\n    // PATABLE: [0]=0x00 (for '0'), [1]=0xC0 (for '1')\n    uint8_t patable[] = {0x00, 0xC0};\n    cc1101_write_burst(0x3E, patable, 2);\n    \n\n    cc1101_set_rx_mode();\n\n    return ESP_OK;\n}\n\nvoid cc1101_set_rx_mode() {\n    cc1101_cmd_strobe(CC1101_SIDLE);\n    cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Output\n    gpio_set_direction(GPIO_GDO0, GPIO_MODE_INPUT);\n    cc1101_cmd_strobe(CC1101_SRX);\n}\n\nvoid cc1101_set_tx_mode() {\n    cc1101_cmd_strobe(CC1101_SIDLE);\n    cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Input (actually 0x0D is same pin but CC1101 will use it as input in TX)\n    gpio_set_direction(GPIO_GDO0, GPIO_MODE_OUTPUT);\n    cc1101_cmd_strobe(CC1101_STX);\n}\n\nvoid cc1101_set_idle_mode() {\n    cc1101_cmd_strobe(CC1101_SIDLE);\n}\n\n#include \"rom/ets_sys.h\"\n\nstatic void fs20_send_bit(int bit) {\n    if (bit) {\n        gpio_set_level(GPIO_GDO0, 1);\n        ets_delay_us(600);\n        gpio_set_level(GPIO_GDO0, 0);\n        ets_delay_us(600);\n    } else {\n        gpio_set_level(GPIO_GDO0, 1);\n        ets_delay_us(400);\n        gpio_set_level(GPIO_GDO0, 0);\n        ets_delay_us(400);\n    }\n}\n\nvoid cc1101_send_slowrf(const char* hex_data) {\n    cc1101_set_tx_mode();\n    vTaskDelay(pdMS_TO_TICKS(2)); // Settling\n\n    // Multi-transmit for reliability (standard culfw behavior)\n    for (int repeat = 0; repeat < 3; repeat++) {\n        // 1. Preamble (13 bits of 0)\n        for(int i=0; i<13; i++) fs20_send_bit(0);\n        \n        // 2. Sync bit (bit 0)\n        fs20_send_bit(0);\n\n        // 3. Data (hex string to bits)\n        int hex_len = strlen(hex_data);\n        for(int i=0; i<hex_len; i+=2) {\n            char h[3] = {hex_data[i], hex_data[i+1], 0};\n            uint8_t b = (uint8_t)strtol(h, NULL, 16);\n            int parity = 0;\n            for(int j=7; j>=0; j--) {\n                int bit = (b >> j) & 1;\n                fs20_send_bit(bit);\n                if (bit) parity++;\n            }\n            // FS20 uses ODD parity: number of 1-bits in the 9 bits must be odd.\n            fs20_send_bit((parity % 2) ? 0 : 1);\n        }\n        \n        // 4. End bit (bit 0)\n        fs20_send_bit(0);\n        \n        // Gap between repeats\n        ets_delay_us(10000);\n    }\n    \n    cc1101_set_rx_mode();\n}\n\nesp_err_t cc1101_write_reg(uint8_t reg, uint8_t val) {\n    spi_transaction_t t = {\n        .length = 16,\n        .tx_data = {reg, val},\n        .flags = SPI_TRANS_USE_TXDATA\n    };\n    return spi_device_transmit(spi, &t);\n}\n\nesp_err_t cc1101_write_burst(uint8_t reg, const uint8_t *data, size_t len) {\n    uint8_t tx_data[65];\n    tx_data[0] = reg | CC1101_WRITE_BURST;\n    memcpy(tx_data + 1, data, len);\n    spi_transaction_t t = {\n        .length = (len + 1) * 8,\n        .tx_buffer = tx_data,\n    };\n    return spi_device_transmit(spi, &t);\n}\n\nuint8_t cc1101_read_reg(uint8_t reg) {\n    uint8_t tx_data[2] = {reg | CC1101_READ_SINGLE, 0x00};\n    uint8_t rx_data[2] = {0, 0};\n    spi_transaction_t t = {\n        .length = 16,\n        .tx_buffer = tx_data,\n        .rx_buffer = rx_data,\n    };\n    spi_device_transmit(spi, &t);\n    return rx_data[1];\n}\n\nesp_err_t cc1101_cmd_strobe(uint8_t cmd) {\n    spi_transaction_t t = {\n        .length = 8,\n        .tx_data = {cmd},\n        .flags = SPI_TRANS_USE_TXDATA\n    };\n    return spi_device_transmit(spi, &t);\n}\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "read_file",
+          "args": {
+            "path": "src/culfw_parser.c"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "read_file",
+          "response": {
+            "result": "#include <stdio.h>\n#include <string.h>\n#include \"freertos/FreeRTOS.h\"\n#include \"freertos/task.h\"\n#include \"culfw_parser.h\"\n#include \"esp_log.h\"\n#include \"esp_random.h\"\n#include \"driver/gpio.h\"\n#include \"driver/usb_serial_jtag.h\"\n#include \"cc1101.h\"\n#include \"slowrf.h\"\n\nstatic const char *TAG = \"CULFW_PARSER\";\nstatic bool reporting_enabled = false;\n\nbool culfw_reporting_enabled() {\n    return reporting_enabled;\n}\n\nstatic void handle_command(char *cmd) {\n    char out[128];\n    int len = 0;\n    if (cmd[0] == 'V') {\n        bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);\n        len = snprintf(out, sizeof(out), \"V %s culfw-NG Build: %d (%s %s) CUL32-C6 (F-Band: %sMHz)\\r\\n\", \n                       FW_VERSION, BUILD_NUMBER, __DATE__, __TIME__, is_433 ? \"433\" : \"868\");\n    } else if (cmd[0] == 'X') {\n        if (cmd[1] == '0' && cmd[2] == '0') {\n            reporting_enabled = false;\n            slowrf_set_debug(false);\n        } else if (cmd[1] == '9' && cmd[2] == '9') {\n            slowrf_set_debug(true);\n            reporting_enabled = true;\n        } else {\n            reporting_enabled = true;\n            slowrf_set_debug(false);\n        }\n        len = snprintf(out, sizeof(out), \"X21\\r\\n\");\n    } else if (cmd[0] == 'C') {\n        uint8_t part = cc1101_read_reg(CC1101_PARTNUM | CC1101_READ_BURST);\n        uint8_t vers = cc1101_read_reg(CC1101_VERSION | CC1101_READ_BURST);\n        uint8_t marc = cc1101_read_reg(0x35 | CC1101_READ_BURST);\n        len = snprintf(out, sizeof(out), \"C01 Part: 0x%02x, Vers: 0x%02x, MARC: 0x%02x\\r\\n\", part, vers, marc);\n    } else if (cmd[0] == 'F') {\n        cc1101_send_slowrf(cmd + 1);\n        len = snprintf(out, sizeof(out), \"F OK\\r\\n\");\n    } else if (cmd[0] == 'T' && cmd[1] == 'r') {\n        // Test Random: Send 5 random FS20 packets\n        len = snprintf(out, sizeof(out), \"Tr START\\r\\n\");\n        usb_serial_jtag_write_bytes(out, len, portMAX_DELAY);\n        for (int i = 0; i < 5; i++) {\n            char rnd_hex[11];\n            uint32_t r = esp_random();\n            // Just use the bytes directly for simplicity\n            snprintf(rnd_hex, sizeof(rnd_hex), \"%08X\", r);\n            \n            char msg[64];\n            int mlen = snprintf(msg, sizeof(msg), \"TX: %s\\r\\n\", rnd_hex);\n            usb_serial_jtag_write_bytes(msg, mlen, portMAX_DELAY);\n\n            cc1101_send_slowrf(rnd_hex);\n            vTaskDelay(pdMS_TO_TICKS(500));\n        }\n        len = snprintf(out, sizeof(out), \"Tr DONE\\r\\n\");\n    } else {\n        len = snprintf(out, sizeof(out), \"E %s unknown\\r\\n\", cmd);\n    }\n    \n    if (len > 0) {\n        usb_serial_jtag_write_bytes(out, len, portMAX_DELAY);\n    }\n}\n\nvoid culfw_parser_task(void *pvParameters) {\n    // Check if driver is already installed (might be by another task or earlier boot stage)\n    if (!usb_serial_jtag_is_driver_installed()) {\n        usb_serial_jtag_driver_config_t usb_serial_jtag_config = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();\n        usb_serial_jtag_driver_install(&usb_serial_jtag_config);\n    }\n\n    uint8_t buf[128];\n    char cmd_buf[128];\n    int cmd_pos = 0;\n\n    while (1) {\n        int n = usb_serial_jtag_read_bytes(buf, sizeof(buf), pdMS_TO_TICKS(50));\n        if (n > 0) {\n            for (int i = 0; i < n; i++) {\n                char c = (char)buf[i];\n                if (c == '\\r' || c == '\\n') {\n                    if (cmd_pos > 0) {\n                        cmd_buf[cmd_pos] = '\\0';\n                        handle_command(cmd_buf);\n                        cmd_pos = 0;\n                    }\n                } else if (cmd_pos < sizeof(cmd_buf) - 1) {\n                    cmd_buf[cmd_pos++] = c;\n                }\n            }\n        }\n        vTaskDelay(pdMS_TO_TICKS(10));\n    }\n}\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "static void it_v1_send_bit(char bit) {\n    // T = 420us\n    // '0': T High, 3T Low, T High, 3T Low\n    // '1': 3T High, T Low, 3T High, T Low\n    // 'F': T High, 3T Low, 3T High, T Low\n    if (bit == '0') {\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(420);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(1260);\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(420);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(1260);\n    } else if (bit == '1') {\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(1260);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(420);\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(1260);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(420);\n    } else { // 'F'\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(420);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(1260);\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(1260);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(420);\n    }\n}\n\nvoid cc1101_send_it_v1(const char* data) {\n    cc1101_set_tx_mode();\n    vTaskDelay(pdMS_TO_TICKS(2));\n    \n    for (int repeat = 0; repeat < 6; repeat++) {\n        for (int i = 0; data[i]; i++) {\n            it_v1_send_bit(data[i]);\n        }\n        // Sync/Gap: T high, 31T low\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(420);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(13020);\n    }\n    cc1101_set_rx_mode();\n}\n\nvoid cc1101_send_slowrf(const char* hex_data) {\n    cc1101_set_tx_mode();\n    vTaskDelay(pdMS_TO_TICKS(2)); // Settling\n\n    // Multi-transmit for reliability (standard culfw behavior)\n    for (int repeat = 0; repeat < 3; repeat++) {\n        // 1. Preamble (13 bits of 0)\n        for(int i=0; i<13; i++) fs20_send_bit(0);\n        \n        // 2. Sync bit (bit 0)\n        fs20_send_bit(0);\n\n        // 3. Data (hex string to bits)\n        int hex_len = strlen(hex_data);\n        for(int i=0; i<hex_len; i+=2) {\n            char h[3] = {hex_data[i], hex_data[i+1], 0};\n            uint8_t b = (uint8_t)strtol(h, NULL, 16);\n            int parity = 0;\n            for(int j=7; j>=0; j--) {\n                int bit = (b >> j) & 1;\n                fs20_send_bit(bit);\n                if (bit) parity++;\n            }\n            // FS20 uses ODD parity: number of 1-bits in the 9 bits must be odd.\n            fs20_send_bit((parity % 2) ? 0 : 1);\n        }\n        \n        // 4. End bit (bit 0)\n        fs20_send_bit(0);\n        \n        // Gap between repeats\n        ets_delay_us(10000);\n    }\n    \n    cc1101_set_rx_mode();\n}\n",
+            "path": "src/cc1101.c",
+            "original_text": "void cc1101_send_slowrf(const char* hex_data) {\n    cc1101_set_tx_mode();\n    vTaskDelay(pdMS_TO_TICKS(2)); // Settling\n\n    // Multi-transmit for reliability (standard culfw behavior)\n    for (int repeat = 0; repeat < 3; repeat++) {\n        // 1. Preamble (13 bits of 0)\n        for(int i=0; i<13; i++) fs20_send_bit(0);\n        \n        // 2. Sync bit (bit 0)\n        fs20_send_bit(0);\n\n        // 3. Data (hex string to bits)\n        int hex_len = strlen(hex_data);\n        for(int i=0; i<hex_len; i+=2) {\n            char h[3] = {hex_data[i], hex_data[i+1], 0};\n            uint8_t b = (uint8_t)strtol(h, NULL, 16);\n            int parity = 0;\n            for(int j=7; j>=0; j--) {\n                int bit = (b >> j) & 1;\n                fs20_send_bit(bit);\n                if (bit) parity++;\n            }\n            // FS20 uses ODD parity: number of 1-bits in the 9 bits must be odd.\n            fs20_send_bit((parity % 2) ? 0 : 1);\n        }\n        \n        // 4. End bit (bit 0)\n        fs20_send_bit(0);\n        \n        // Gap between repeats\n        ets_delay_us(10000);\n    }\n    \n    cc1101_set_rx_mode();\n}\n"
+          }
+        }
+      }
+    ]
   }
 ]
