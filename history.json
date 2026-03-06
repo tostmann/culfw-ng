@@ -1500,5 +1500,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "    } else if (cmd[0] == 'C') {\n        len = snprintf(out, sizeof(out), \"C01\\r\\n\");\n    } else if (cmd[0] == 'F') {\n        // F <hex_data>\n        // cmd is like \"F1122334455\"\n        cc1101_send_slowrf(cmd + 1);\n        len = snprintf(out, sizeof(out), \"F OK\\r\\n\");\n    } else {\n        len = snprintf(out, sizeof(out), \"E %s unknown\\r\\n\", cmd);\n    }",
+            "path": "src/culfw_parser.c",
+            "original_text": "    } else if (cmd[0] == 'C') {\n        len = snprintf(out, sizeof(out), \"C01\\r\\n\");\n    } else {\n        len = snprintf(out, sizeof(out), \"E %s unknown\\r\\n\", cmd);\n    }"
+          }
+        }
+      }
+    ]
   }
 ]

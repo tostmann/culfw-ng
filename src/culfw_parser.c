@@ -30,6 +30,11 @@ static void handle_command(char *cmd) {
         len = snprintf(out, sizeof(out), "X21\r\n");
     } else if (cmd[0] == 'C') {
         len = snprintf(out, sizeof(out), "C01\r\n");
+    } else if (cmd[0] == 'F') {
+        // F <hex_data>
+        // cmd is like "F1122334455"
+        cc1101_send_slowrf(cmd + 1);
+        len = snprintf(out, sizeof(out), "F OK\r\n");
     } else {
         len = snprintf(out, sizeof(out), "E %s unknown\r\n", cmd);
     }
