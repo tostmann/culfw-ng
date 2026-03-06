@@ -147,8 +147,8 @@ void slowrf_task(void *pvParameters) {
                         uint8_t parity_bit = (dec.current_bits & 1);
                         int ones = 0;
                         for (int i = 0; i < 8; i++) { if ((data_byte >> i) & 1) ones++; }
-                        // FS20 ODD Parity
-                        if (parity_bit == ((ones % 2) ? 0 : 1)) {
+                        // FS20 EVEN Parity (culfw style)
+                        if (parity_bit == (ones % 2)) {
                             if (dec.byte_cnt < sizeof(dec.data)) { 
                                 dec.data[dec.byte_cnt++] = data_byte; 
                             }
