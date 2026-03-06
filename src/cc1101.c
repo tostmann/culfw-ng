@@ -103,14 +103,16 @@ esp_err_t cc1101_init() {
 
 void cc1101_set_rx_mode() {
     cc1101_cmd_strobe(CC1101_SIDLE);
-    cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Output
     gpio_set_direction(GPIO_GDO0, GPIO_MODE_INPUT);
+    cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Output
     cc1101_cmd_strobe(CC1101_SRX);
+    gpio_intr_enable(GPIO_GDO0);
 }
 
 void cc1101_set_tx_mode() {
+    gpio_intr_disable(GPIO_GDO0);
     cc1101_cmd_strobe(CC1101_SIDLE);
-    cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Input (actually 0x0D is same pin but CC1101 will use it as input in TX)
+    cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Input
     gpio_set_direction(GPIO_GDO0, GPIO_MODE_OUTPUT);
     cc1101_cmd_strobe(CC1101_STX);
 }
