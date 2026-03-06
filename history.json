@@ -1127,5 +1127,501 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "~/.platformio/penv/bin/pio run && \\\n~/.platformio/penv/bin/pio run --target upload --upload-port /dev/ttyACM2 && \\\n~/.platformio/penv/bin/pio run --target upload --upload-port /dev/ttyACM3\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\n\n... [OUTPUT TRUNCATED. Total size: 15455 bytes. Showing last 1500 bytes. Full output saved in 'last_execution.log'. Use 'grep' or 'read_file last_execution.log' to analyze!]\n\nWriting at 0x0001ba21 [\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  13.4% 16384/122203 bytes... \n\nWriting at 0x00021aed [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  26.8% 32768/122203 bytes... \n\nWriting at 0x00029585 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  40.2% 49152/122203 bytes... \n\nWriting at 0x00030d13 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  53.6% 65536/122203 bytes... \n\nWriting at 0x00037949 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  67.0% 81920/122203 bytes... \n\nWriting at 0x0003eb98 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591]  80.4% 98304/122203 bytes... \n\nWriting at 0x00045b0a [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591]  93.9% 114688/122203 bytes... \n\nWriting at 0x00049a20 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588] 100.0% 122203/122203 bytes... \nWrote 236064 bytes (122203 compressed) at 0x00010000 in 1.3 seconds (1473.9 kbit/s).\nHash of data verified.\n\nHard resetting via RTS pin...\n========================= [SUCCESS] Took 10.58 seconds =========================\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "# Test register read of PARTNUM (0x30)\necho \"R30\" > /dev/ttyACM2\nsleep 1\ntimeout 2s cat /dev/ttyACM2\n# Test register read of VERSION (0x31)\necho \"R31\" > /dev/ttyACM2\nsleep 1\ntimeout 2s cat /dev/ttyACM2\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "# Open background cat\ntimeout 5s cat /dev/ttyACM2 > /tmp/read_test.log &\nsleep 1\necho \"R30\" > /dev/ttyACM2\nsleep 1\necho \"R31\" > /dev/ttyACM2\nsleep 2\ncat /tmp/read_test.log\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "timeout 3s ~/.platformio/penv/bin/pio monitor --port /dev/ttyACM2\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 2\nOutput:\nUsage: pio [OPTIONS] COMMAND [ARGS]...\nTry 'pio -h' for help.\n\nError: No such command \"monitor\"\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "timeout 3s ~/.platformio/penv/bin/pio device monitor --port /dev/ttyACM2\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 1\nOutput:\n\n... [OUTPUT TRUNCATED. Total size: 3145 bytes. Showing last 1500 bytes. Full output saved in 'last_execution.log'. Use 'grep' or 'read_file last_execution.log' to analyze!]\n    term = new_terminal(options)\n  File \"/root/.platformio/penv/lib/python3.13/site-packages/platformio/device/monitor/terminal.py\", line 102, in new_terminal\n    term = Terminal(\n        new_serial_instance(options),\n    ...<2 lines>...\n        filters=list(reversed(options[\"filters\"] or [\"default\"])),\n    )\n  File \"/root/.platformio/penv/lib/python3.13/site-packages/platformio/device/monitor/terminal.py\", line 28, in __init__\n    super().__init__(*args, **kwargs)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^\n  File \"/root/.platformio/penv/lib/python3.13/site-packages/serial/tools/miniterm.py\", line 395, in __init__\n    self.console = Console()\n                   ~~~~~~~^^\n  File \"/root/.platformio/penv/lib/python3.13/site-packages/serial/tools/miniterm.py\", line 198, in __init__\n    self.old = termios.tcgetattr(self.fd)\n               ~~~~~~~~~~~~~~~~~^^^^^^^^^\ntermios.error: (25, 'Inappropriate ioctl for device')\n\n============================================================\n\nAn unexpected error occurred. Further steps:\n\n* Verify that you have the latest version of PlatformIO using\n  `python -m pip install -U platformio` command\n\n* Try to find answer in FAQ Troubleshooting section\n  https://docs.platformio.org/page/faq/index.html\n\n* Report this problem to the developers\n  https://github.com/platformio/platformio-core/issues\n\n============================================================\n\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "timeout 5s cat /dev/ttyACM2 > /tmp/v_test.log &\nsleep 1\necho \"V\" > /dev/ttyACM2\nsleep 2\ncat /tmp/v_test.log\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "timeout 3s cat /dev/ttyACM2\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "# Start background cat again\ntimeout 5s cat /dev/ttyACM2 > /tmp/v_test_nl.log &\nsleep 1\nprintf \"V\\n\" > /dev/ttyACM2\nsleep 2\ncat /tmp/v_test_nl.log\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "read_file",
+          "args": {
+            "path": "src/cc1101.c"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "read_file",
+          "response": {
+            "result": "#include \"cc1101.h\"\n#include \"driver/spi_master.h\"\n#include \"driver/gpio.h\"\n#include \"esp_log.h\"\n\nstatic const char *TAG = \"CC1101\";\nstatic spi_device_handle_t spi;\n\nesp_err_t cc1101_init() {\n    spi_bus_config_t buscfg = {\n        .miso_io_num = GPIO_MISO,\n        .mosi_io_num = GPIO_MOSI,\n        .sclk_io_num = GPIO_SCK,\n        .quadwp_io_num = -1,\n        .quadhd_io_num = -1,\n        .max_transfer_sz = 64\n    };\n    \n    spi_device_interface_config_t devcfg = {\n        .clock_speed_hz = 500000, // 500kHz\n        .mode = 0,\n        .spics_io_num = GPIO_SS,\n        .queue_size = 7,\n    };\n\n    ESP_LOGI(TAG, \"Initializing SPI: SCK=%d, MISO=%d, MOSI=%d, SS=%d\", GPIO_SCK, GPIO_MISO, GPIO_MOSI, GPIO_SS);\n    esp_err_t ret = spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_CH_AUTO);\n    if (ret != ESP_OK) return ret;\n\n    ret = spi_bus_add_device(SPI2_HOST, &devcfg, &spi);\n    if (ret != ESP_OK) return ret;\n\n    cc1101_cmd_strobe(CC1101_SRES);\n    vTaskDelay(pdMS_TO_TICKS(50));\n\n    // Dummy read to clear anything\n    cc1101_read_reg(CC1101_PARTNUM | CC1101_READ_BURST);\n    \n    uint8_t partnum = cc1101_read_reg(CC1101_PARTNUM | CC1101_READ_BURST);\n    uint8_t version = cc1101_read_reg(CC1101_VERSION | CC1101_READ_BURST);\n\n    ESP_LOGI(TAG, \"CC1101 Partnum: 0x%02x, Version: 0x%02x\", partnum, version);\n\n    if (version == 0 || version == 0xFF) return ESP_FAIL;\n\n    // Default configuration for SlowRF (OOK/ASK)\n    gpio_config_t marker_conf = {\n        .pin_bit_mask = (1ULL << GPIO_433MARKER),\n        .mode = GPIO_MODE_INPUT,\n        .pull_up_en = GPIO_PULLUP_ENABLE,\n    };\n    gpio_config(&marker_conf);\n    vTaskDelay(pdMS_TO_TICKS(10));\n    bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);\n    ESP_LOGI(TAG, \"Detected Frequency: %s MHz\", is_433 ? \"433\" : \"868\");\n\n    // Common SlowRF Setup (ASK, ~2.4k Baud, etc.)\n    cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Output\n    cc1101_write_reg(0x00, 0x0E); // IOCFG2: Carrier Sense (High when RSSI > Threshold)\n    cc1101_write_reg(0x08, 0x32); // PKTCTRL0: Asynchronous Serial Mode\n    cc1101_write_reg(0x0B, 0x06); // FSCTRL1\n    cc1101_write_reg(0x0C, 0x00); // FSCTRL0\n    \n    if (is_433) {\n        cc1101_write_reg(0x0D, 0x10); // FREQ2\n        cc1101_write_reg(0x0E, 0xB1); // FREQ1\n        cc1101_write_reg(0x0F, 0x3B); // FREQ0\n    } else {\n        cc1101_write_reg(0x0D, 0x21); // FREQ2\n        cc1101_write_reg(0x0E, 0x65); // FREQ1\n        cc1101_write_reg(0x0F, 0x6A); // FREQ0 (868.3 MHz)\n    }\n    \n    cc1101_write_reg(0x10, 0x58); // MDMCFG4: BW 325kHz\n    cc1101_write_reg(0x11, 0x93); // MDMCFG3\n    cc1101_write_reg(0x12, 0x30); // MDMCFG2: ASK/OOK, No sync\n    cc1101_write_reg(0x13, 0x22); // MDMCFG1\n    cc1101_write_reg(0x14, 0xF8); // MDMCFG0\n    cc1101_write_reg(0x15, 0x15); // DEVIATN\n    cc1101_write_reg(0x18, 0x18); // MCSM0\n    cc1101_write_reg(0x19, 0x16); // FOCCFG\n    cc1101_write_reg(0x1A, 0x6C); // BSCFG\n    cc1101_write_reg(0x1B, 0x03); // AGCCTRL2\n    cc1101_write_reg(0x1C, 0x40); // AGCCTRL1\n    cc1101_write_reg(0x1D, 0x91); // AGCCTRL0\n    cc1101_write_reg(0x21, 0x56); // FREND1\n    cc1101_write_reg(0x22, 0x11); // FREND0: ASK/OOK use PATABLE[1] for '1'\n    cc1101_write_reg(0x23, 0xE9); // FSCAL3\n    cc1101_write_reg(0x24, 0x2A); // FSCAL2\n    cc1101_write_reg(0x25, 0x00); // FSCAL1\n    cc1101_write_reg(0x26, 0x1F); // FSCAL0\n\n    // PATABLE: [0]=0x00 (for '0'), [1]=0xC0 (for '1' -> +10dBm)\n    uint8_t patable[8] = {0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};\n    cc1101_write_burst(0x3E, patable, 8);\n    \n\n    cc1101_set_rx_mode();\n\n    return ESP_OK;\n}\n\nvoid cc1101_set_rx_mode() {\n    cc1101_cmd_strobe(CC1101_SIDLE);\n    gpio_set_direction(GPIO_GDO0, GPIO_MODE_INPUT);\n    cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Output\n    cc1101_cmd_strobe(CC1101_SRX);\n    gpio_intr_enable(GPIO_GDO0);\n}\n\nvoid cc1101_set_tx_mode() {\n    gpio_intr_disable(GPIO_GDO0);\n    cc1101_cmd_strobe(CC1101_SIDLE);\n    vTaskDelay(pdMS_TO_TICKS(1));\n    cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Input\n    gpio_set_direction(GPIO_GDO0, GPIO_MODE_OUTPUT);\n    gpio_set_level(GPIO_GDO0, 0);\n    cc1101_cmd_strobe(CC1101_STX);\n    \n    // Wait for TX mode\n    int timeout = 100;\n    while (((cc1101_read_reg(0x35 | CC1101_READ_BURST) & 0x70) != 0x30) && timeout--) {\n        vTaskDelay(1);\n    }\n}\n\nvoid cc1101_set_idle_mode() {\n    cc1101_cmd_strobe(CC1101_SIDLE);\n}\n\nuint8_t cc1101_read_rssi() {\n    // RSSI is in 0x34 status register\n    uint8_t rssi_raw = cc1101_read_reg(0x34 | CC1101_READ_BURST);\n    return rssi_raw;\n}\n\n#include \"rom/ets_sys.h\"\n\nstatic void fs20_send_bit(int bit) {\n    if (bit) {\n        gpio_set_level(GPIO_GDO0, 1);\n        ets_delay_us(600);\n        gpio_set_level(GPIO_GDO0, 0);\n        ets_delay_us(600);\n    } else {\n        gpio_set_level(GPIO_GDO0, 1);\n        ets_delay_us(400);\n        gpio_set_level(GPIO_GDO0, 0);\n        ets_delay_us(400);\n    }\n}\n\nstatic void it_v1_send_bit(char bit) {\n    // T = 420us\n    // '0': T High, 3T Low, T High, 3T Low\n    // '1': 3T High, T Low, 3T High, T Low\n    // 'F': T High, 3T Low, 3T High, T Low\n    if (bit == '0') {\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(420);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(1260);\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(420);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(1260);\n    } else if (bit == '1') {\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(1260);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(420);\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(1260);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(420);\n    } else { // 'F'\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(420);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(1260);\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(1260);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(420);\n    }\n}\n\nvoid cc1101_send_it_v1(const char* data) {\n    gpio_set_level(GPIO_LED, 0); // LED ON\n    cc1101_set_tx_mode();\n    vTaskDelay(pdMS_TO_TICKS(5));\n    \n    // Check MARCSTATE\n    uint8_t marc = cc1101_read_reg(0x35 | CC1101_READ_BURST);\n    if ((marc & 0x1F) != 0x13) { // 0x13 is TX\n        // Try again\n        cc1101_cmd_strobe(CC1101_SIDLE);\n        cc1101_cmd_strobe(CC1101_STX);\n        vTaskDelay(pdMS_TO_TICKS(2));\n    }\n\n    for (int repeat = 0; repeat < 6; repeat++) {\n        for (int i = 0; data[i]; i++) {\n            it_v1_send_bit(data[i]);\n        }\n        // Sync/Gap: T high, 31T low\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(420);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(13020);\n    }\n    cc1101_set_rx_mode();\n}\n\nvoid cc1101_send_raw_slowrf(const char* hex_data) {\n    gpio_set_level(GPIO_LED, 0); // LED ON\n    cc1101_set_tx_mode();\n    vTaskDelay(pdMS_TO_TICKS(5));\n\n    for (int repeat = 0; repeat < 10; repeat++) {\n        for(int i=0; i<24; i++) fs20_send_bit(0); \n        fs20_send_bit(1); \n\n        int hex_len = strlen(hex_data);\n        for(int i=0; i<hex_len; i+=2) {\n            char h[3] = {hex_data[i], hex_data[i+1], 0};\n            uint8_t b = (uint8_t)strtol(h, NULL, 16);\n            int parity = 0;\n            for(int j=7; j>=0; j--) {\n                int bit = (b >> j) & 1;\n                fs20_send_bit(bit);\n                if (bit) parity++;\n            }\n            fs20_send_bit(parity % 2);\n        }\n        fs20_send_bit(0);\n        ets_delay_us(10000);\n    }\n    \n    cc1101_set_rx_mode();\n    gpio_set_level(GPIO_LED, 1); // LED OFF\n}\n\nvoid cc1101_send_fs20(const char* housecode, const char* addr, const char* cmd) {\n    char hex[16];\n    char tmp[3] = {0, 0, 0};\n    \n    tmp[0] = housecode[0]; tmp[1] = housecode[1];\n    uint8_t hc1 = strtol(tmp, NULL, 16);\n    \n    tmp[0] = housecode[2]; tmp[1] = housecode[3];\n    uint8_t hc2 = strtol(tmp, NULL, 16);\n    \n    uint8_t ad  = strtol(addr, NULL, 16);\n    uint8_t cm  = strtol(cmd, NULL, 16);\n    uint8_t cs  = (hc1 + hc2 + ad + cm + 6) & 0xFF;\n    \n    snprintf(hex, sizeof(hex), \"%02X%02X%02X%02X%02X\", hc1, hc2, ad, cm, cs);\n    cc1101_send_raw_slowrf(hex);\n}\n\nvoid cc1101_send_it_v3(const char* data) {\n    // IT V3 (Self Learning) sending logic\n    // data is a string of 32 bits ('0' or '1')\n    gpio_set_level(GPIO_LED, 0);\n    cc1101_set_tx_mode();\n    vTaskDelay(pdMS_TO_TICKS(5));\n\n    int T = 300; // Base timing 300us\n\n    for (int repeat = 0; repeat < 6; repeat++) {\n        // Sync: High T, Low 31T\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T * 31);\n\n        for (int i = 0; data[i]; i++) {\n            if (data[i] == '0') {\n                // Logical 0: (High T, Low 3T), (High T, Low 3T)\n                gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T);\n                gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T * 3);\n                gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T);\n                gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T * 3);\n            } else {\n                // Logical 1: (High T, Low 3T), (High 3T, Low T)\n                gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T);\n                gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T * 3);\n                gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T * 3);\n                gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T);\n            }\n        }\n        // Final pulse to end frame\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T * 31);\n    }\n\n    cc1101_set_rx_mode();\n    gpio_set_level(GPIO_LED, 1);\n}\n\nesp_err_t cc1101_write_reg(uint8_t reg, uint8_t val) {\n    spi_transaction_t t = {\n        .length = 16,\n        .tx_data = {reg, val},\n        .flags = SPI_TRANS_USE_TXDATA\n    };\n    return spi_device_transmit(spi, &t);\n}\n\nesp_err_t cc1101_write_burst(uint8_t reg, const uint8_t *data, size_t len) {\n    uint8_t tx_data[65];\n    tx_data[0] = reg | CC1101_WRITE_BURST;\n    memcpy(tx_data + 1, data, len);\n    spi_transaction_t t = {\n        .length = (len + 1) * 8,\n        .tx_buffer = tx_data,\n    };\n    return spi_device_transmit(spi, &t);\n}\n\nuint8_t cc1101_read_reg(uint8_t reg) {\n    uint8_t tx_data[2] = {reg | CC1101_READ_SINGLE, 0x00};\n    uint8_t rx_data[2] = {0, 0};\n    spi_transaction_t t = {\n        .length = 16,\n        .tx_buffer = tx_data,\n        .rx_buffer = rx_data,\n    };\n    spi_device_transmit(spi, &t);\n    return rx_data[1];\n}\n\nesp_err_t cc1101_cmd_strobe(uint8_t cmd) {\n    spi_transaction_t t = {\n        .length = 8,\n        .tx_data = {cmd},\n        .flags = SPI_TRANS_USE_TXDATA\n    };\n    return spi_device_transmit(spi, &t);\n}\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "grep \"GPIO_\" include/cc1101.h\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 1\nOutput:\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "read_file",
+          "args": {
+            "path": "include/cc1101.h"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "read_file",
+          "response": {
+            "result": "#ifndef CC1101_H\n#define CC1101_H\n\n#include \"esp_err.h\"\n#include \"driver/spi_master.h\"\n\nesp_err_t cc1101_init();\nesp_err_t cc1101_write_reg(uint8_t reg, uint8_t val);\nesp_err_t cc1101_write_burst(uint8_t reg, const uint8_t *data, size_t len);\nuint8_t cc1101_read_reg(uint8_t reg);\nesp_err_t cc1101_cmd_strobe(uint8_t cmd);\nvoid cc1101_set_rx_mode();\nvoid cc1101_set_tx_mode();\nvoid cc1101_set_idle_mode();\nuint8_t cc1101_read_rssi();\nvoid cc1101_send_fs20(const char* housecode, const char* addr, const char* cmd);\nvoid cc1101_send_it_v1(const char* data);\nvoid cc1101_send_it_v3(const char* data);\nvoid cc1101_send_raw_slowrf(const char* hex_data);\n\n#define CC1101_WRITE_BURST  0x40\n#define CC1101_READ_SINGLE  0x80\n#define CC1101_READ_BURST   0xC0\n\n// Status Registers\n#define CC1101_PARTNUM      0x30\n#define CC1101_VERSION      0x31\n\n// Command Strobes\n#define CC1101_SRES         0x30\n#define CC1101_SFSTX        0x31\n#define CC1101_SXOFF        0x32\n#define CC1101_SCAL         0x33\n#define CC1101_SRX          0x34\n#define CC1101_STX          0x35\n#define CC1101_SIDLE        0x36\n#define CC1101_SWOR         0x38\n#define CC1101_SPWD         0x39\n#define CC1101_SFTX         0x3B\n#define CC1101_SFRX         0x3C\n#define CC1101_SNOP         0x3D\n\n#endif\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "read_file",
+          "args": {
+            "path": "src/cc1101.c"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "read_file",
+          "response": {
+            "result": "#include \"cc1101.h\"\n#include \"driver/spi_master.h\"\n#include \"driver/gpio.h\"\n#include \"esp_log.h\"\n\nstatic const char *TAG = \"CC1101\";\nstatic spi_device_handle_t spi;\n\nesp_err_t cc1101_init() {\n    spi_bus_config_t buscfg = {\n        .miso_io_num = GPIO_MISO,\n        .mosi_io_num = GPIO_MOSI,\n        .sclk_io_num = GPIO_SCK,\n        .quadwp_io_num = -1,\n        .quadhd_io_num = -1,\n        .max_transfer_sz = 64\n    };\n    \n    spi_device_interface_config_t devcfg = {\n        .clock_speed_hz = 500000, // 500kHz\n        .mode = 0,\n        .spics_io_num = GPIO_SS,\n        .queue_size = 7,\n    };\n\n    ESP_LOGI(TAG, \"Initializing SPI: SCK=%d, MISO=%d, MOSI=%d, SS=%d\", GPIO_SCK, GPIO_MISO, GPIO_MOSI, GPIO_SS);\n    esp_err_t ret = spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_CH_AUTO);\n    if (ret != ESP_OK) return ret;\n\n    ret = spi_bus_add_device(SPI2_HOST, &devcfg, &spi);\n    if (ret != ESP_OK) return ret;\n\n    cc1101_cmd_strobe(CC1101_SRES);\n    vTaskDelay(pdMS_TO_TICKS(50));\n\n    // Dummy read to clear anything\n    cc1101_read_reg(CC1101_PARTNUM | CC1101_READ_BURST);\n    \n    uint8_t partnum = cc1101_read_reg(CC1101_PARTNUM | CC1101_READ_BURST);\n    uint8_t version = cc1101_read_reg(CC1101_VERSION | CC1101_READ_BURST);\n\n    ESP_LOGI(TAG, \"CC1101 Partnum: 0x%02x, Version: 0x%02x\", partnum, version);\n\n    if (version == 0 || version == 0xFF) return ESP_FAIL;\n\n    // Default configuration for SlowRF (OOK/ASK)\n    gpio_config_t marker_conf = {\n        .pin_bit_mask = (1ULL << GPIO_433MARKER),\n        .mode = GPIO_MODE_INPUT,\n        .pull_up_en = GPIO_PULLUP_ENABLE,\n    };\n    gpio_config(&marker_conf);\n    vTaskDelay(pdMS_TO_TICKS(10));\n    bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);\n    ESP_LOGI(TAG, \"Detected Frequency: %s MHz\", is_433 ? \"433\" : \"868\");\n\n    // Common SlowRF Setup (ASK, ~2.4k Baud, etc.)\n    cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Output\n    cc1101_write_reg(0x00, 0x0E); // IOCFG2: Carrier Sense (High when RSSI > Threshold)\n    cc1101_write_reg(0x08, 0x32); // PKTCTRL0: Asynchronous Serial Mode\n    cc1101_write_reg(0x0B, 0x06); // FSCTRL1\n    cc1101_write_reg(0x0C, 0x00); // FSCTRL0\n    \n    if (is_433) {\n        cc1101_write_reg(0x0D, 0x10); // FREQ2\n        cc1101_write_reg(0x0E, 0xB1); // FREQ1\n        cc1101_write_reg(0x0F, 0x3B); // FREQ0\n    } else {\n        cc1101_write_reg(0x0D, 0x21); // FREQ2\n        cc1101_write_reg(0x0E, 0x65); // FREQ1\n        cc1101_write_reg(0x0F, 0x6A); // FREQ0 (868.3 MHz)\n    }\n    \n    cc1101_write_reg(0x10, 0x58); // MDMCFG4: BW 325kHz\n    cc1101_write_reg(0x11, 0x93); // MDMCFG3\n    cc1101_write_reg(0x12, 0x30); // MDMCFG2: ASK/OOK, No sync\n    cc1101_write_reg(0x13, 0x22); // MDMCFG1\n    cc1101_write_reg(0x14, 0xF8); // MDMCFG0\n    cc1101_write_reg(0x15, 0x15); // DEVIATN\n    cc1101_write_reg(0x18, 0x18); // MCSM0\n    cc1101_write_reg(0x19, 0x16); // FOCCFG\n    cc1101_write_reg(0x1A, 0x6C); // BSCFG\n    cc1101_write_reg(0x1B, 0x03); // AGCCTRL2\n    cc1101_write_reg(0x1C, 0x40); // AGCCTRL1\n    cc1101_write_reg(0x1D, 0x91); // AGCCTRL0\n    cc1101_write_reg(0x21, 0x56); // FREND1\n    cc1101_write_reg(0x22, 0x11); // FREND0: ASK/OOK use PATABLE[1] for '1'\n    cc1101_write_reg(0x23, 0xE9); // FSCAL3\n    cc1101_write_reg(0x24, 0x2A); // FSCAL2\n    cc1101_write_reg(0x25, 0x00); // FSCAL1\n    cc1101_write_reg(0x26, 0x1F); // FSCAL0\n\n    // PATABLE: [0]=0x00 (for '0'), [1]=0xC0 (for '1' -> +10dBm)\n    uint8_t patable[8] = {0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};\n    cc1101_write_burst(0x3E, patable, 8);\n    \n\n    cc1101_set_rx_mode();\n\n    return ESP_OK;\n}\n\nvoid cc1101_set_rx_mode() {\n    cc1101_cmd_strobe(CC1101_SIDLE);\n    gpio_set_direction(GPIO_GDO0, GPIO_MODE_INPUT);\n    cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Output\n    cc1101_cmd_strobe(CC1101_SRX);\n    gpio_intr_enable(GPIO_GDO0);\n}\n\nvoid cc1101_set_tx_mode() {\n    gpio_intr_disable(GPIO_GDO0);\n    cc1101_cmd_strobe(CC1101_SIDLE);\n    vTaskDelay(pdMS_TO_TICKS(1));\n    cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Input\n    gpio_set_direction(GPIO_GDO0, GPIO_MODE_OUTPUT);\n    gpio_set_level(GPIO_GDO0, 0);\n    cc1101_cmd_strobe(CC1101_STX);\n    \n    // Wait for TX mode\n    int timeout = 100;\n    while (((cc1101_read_reg(0x35 | CC1101_READ_BURST) & 0x70) != 0x30) && timeout--) {\n        vTaskDelay(1);\n    }\n}\n\nvoid cc1101_set_idle_mode() {\n    cc1101_cmd_strobe(CC1101_SIDLE);\n}\n\nuint8_t cc1101_read_rssi() {\n    // RSSI is in 0x34 status register\n    uint8_t rssi_raw = cc1101_read_reg(0x34 | CC1101_READ_BURST);\n    return rssi_raw;\n}\n\n#include \"rom/ets_sys.h\"\n\nstatic void fs20_send_bit(int bit) {\n    if (bit) {\n        gpio_set_level(GPIO_GDO0, 1);\n        ets_delay_us(600);\n        gpio_set_level(GPIO_GDO0, 0);\n        ets_delay_us(600);\n    } else {\n        gpio_set_level(GPIO_GDO0, 1);\n        ets_delay_us(400);\n        gpio_set_level(GPIO_GDO0, 0);\n        ets_delay_us(400);\n    }\n}\n\nstatic void it_v1_send_bit(char bit) {\n    // T = 420us\n    // '0': T High, 3T Low, T High, 3T Low\n    // '1': 3T High, T Low, 3T High, T Low\n    // 'F': T High, 3T Low, 3T High, T Low\n    if (bit == '0') {\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(420);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(1260);\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(420);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(1260);\n    } else if (bit == '1') {\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(1260);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(420);\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(1260);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(420);\n    } else { // 'F'\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(420);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(1260);\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(1260);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(420);\n    }\n}\n\nvoid cc1101_send_it_v1(const char* data) {\n    gpio_set_level(GPIO_LED, 0); // LED ON\n    cc1101_set_tx_mode();\n    vTaskDelay(pdMS_TO_TICKS(5));\n    \n    // Check MARCSTATE\n    uint8_t marc = cc1101_read_reg(0x35 | CC1101_READ_BURST);\n    if ((marc & 0x1F) != 0x13) { // 0x13 is TX\n        // Try again\n        cc1101_cmd_strobe(CC1101_SIDLE);\n        cc1101_cmd_strobe(CC1101_STX);\n        vTaskDelay(pdMS_TO_TICKS(2));\n    }\n\n    for (int repeat = 0; repeat < 6; repeat++) {\n        for (int i = 0; data[i]; i++) {\n            it_v1_send_bit(data[i]);\n        }\n        // Sync/Gap: T high, 31T low\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(420);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(13020);\n    }\n    cc1101_set_rx_mode();\n}\n\nvoid cc1101_send_raw_slowrf(const char* hex_data) {\n    gpio_set_level(GPIO_LED, 0); // LED ON\n    cc1101_set_tx_mode();\n    vTaskDelay(pdMS_TO_TICKS(5));\n\n    for (int repeat = 0; repeat < 10; repeat++) {\n        for(int i=0; i<24; i++) fs20_send_bit(0); \n        fs20_send_bit(1); \n\n        int hex_len = strlen(hex_data);\n        for(int i=0; i<hex_len; i+=2) {\n            char h[3] = {hex_data[i], hex_data[i+1], 0};\n            uint8_t b = (uint8_t)strtol(h, NULL, 16);\n            int parity = 0;\n            for(int j=7; j>=0; j--) {\n                int bit = (b >> j) & 1;\n                fs20_send_bit(bit);\n                if (bit) parity++;\n            }\n            fs20_send_bit(parity % 2);\n        }\n        fs20_send_bit(0);\n        ets_delay_us(10000);\n    }\n    \n    cc1101_set_rx_mode();\n    gpio_set_level(GPIO_LED, 1); // LED OFF\n}\n\nvoid cc1101_send_fs20(const char* housecode, const char* addr, const char* cmd) {\n    char hex[16];\n    char tmp[3] = {0, 0, 0};\n    \n    tmp[0] = housecode[0]; tmp[1] = housecode[1];\n    uint8_t hc1 = strtol(tmp, NULL, 16);\n    \n    tmp[0] = housecode[2]; tmp[1] = housecode[3];\n    uint8_t hc2 = strtol(tmp, NULL, 16);\n    \n    uint8_t ad  = strtol(addr, NULL, 16);\n    uint8_t cm  = strtol(cmd, NULL, 16);\n    uint8_t cs  = (hc1 + hc2 + ad + cm + 6) & 0xFF;\n    \n    snprintf(hex, sizeof(hex), \"%02X%02X%02X%02X%02X\", hc1, hc2, ad, cm, cs);\n    cc1101_send_raw_slowrf(hex);\n}\n\nvoid cc1101_send_it_v3(const char* data) {\n    // IT V3 (Self Learning) sending logic\n    // data is a string of 32 bits ('0' or '1')\n    gpio_set_level(GPIO_LED, 0);\n    cc1101_set_tx_mode();\n    vTaskDelay(pdMS_TO_TICKS(5));\n\n    int T = 300; // Base timing 300us\n\n    for (int repeat = 0; repeat < 6; repeat++) {\n        // Sync: High T, Low 31T\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T * 31);\n\n        for (int i = 0; data[i]; i++) {\n            if (data[i] == '0') {\n                // Logical 0: (High T, Low 3T), (High T, Low 3T)\n                gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T);\n                gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T * 3);\n                gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T);\n                gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T * 3);\n            } else {\n                // Logical 1: (High T, Low 3T), (High 3T, Low T)\n                gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T);\n                gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T * 3);\n                gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T * 3);\n                gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T);\n            }\n        }\n        // Final pulse to end frame\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T * 31);\n    }\n\n    cc1101_set_rx_mode();\n    gpio_set_level(GPIO_LED, 1);\n}\n\nesp_err_t cc1101_write_reg(uint8_t reg, uint8_t val) {\n    spi_transaction_t t = {\n        .length = 16,\n        .tx_data = {reg, val},\n        .flags = SPI_TRANS_USE_TXDATA\n    };\n    return spi_device_transmit(spi, &t);\n}\n\nesp_err_t cc1101_write_burst(uint8_t reg, const uint8_t *data, size_t len) {\n    uint8_t tx_data[65];\n    tx_data[0] = reg | CC1101_WRITE_BURST;\n    memcpy(tx_data + 1, data, len);\n    spi_transaction_t t = {\n        .length = (len + 1) * 8,\n        .tx_buffer = tx_data,\n    };\n    return spi_device_transmit(spi, &t);\n}\n\nuint8_t cc1101_read_reg(uint8_t reg) {\n    uint8_t tx_data[2] = {reg | CC1101_READ_SINGLE, 0x00};\n    uint8_t rx_data[2] = {0, 0};\n    spi_transaction_t t = {\n        .length = 16,\n        .tx_buffer = tx_data,\n        .rx_buffer = rx_data,\n    };\n    spi_device_transmit(spi, &t);\n    return rx_data[1];\n}\n\nesp_err_t cc1101_cmd_strobe(uint8_t cmd) {\n    spi_transaction_t t = {\n        .length = 8,\n        .tx_data = {cmd},\n        .flags = SPI_TRANS_USE_TXDATA\n    };\n    return spi_device_transmit(spi, &t);\n}\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "ls include/\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\ncc1101.h\nculfw_parser.h\nslowrf.h\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "read_file",
+          "args": {
+            "path": "include/culfw_parser.h"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "read_file",
+          "response": {
+            "result": "#ifndef CULFW_PARSER_H\n#define CULFW_PARSER_H\n\n#include <stdbool.h>\n\nvoid culfw_parser_task(void *pvParameters);\nbool culfw_reporting_enabled();\n\n#endif\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "grep -r \"GPIO_MOSI\" src/\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\nsrc/cc1101.c:        .mosi_io_num = GPIO_MOSI,\nsrc/cc1101.c:    ESP_LOGI(TAG, \"Initializing SPI: SCK=%d, MISO=%d, MOSI=%d, SS=%d\", GPIO_SCK, GPIO_MISO, GPIO_MOSI, GPIO_SS);\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "read_file",
+          "args": {
+            "path": "CMakeLists.txt"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "read_file",
+          "response": {
+            "result": "cmake_minimum_required(VERSION 3.16.0)\ninclude($ENV{IDF_PATH}/tools/cmake/project.cmake)\nproject(CULFW-NG)\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "read_file",
+          "args": {
+            "path": "src/CMakeLists.txt"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "read_file",
+          "response": {
+            "result": "# This file was automatically generated for projects\n# without default 'CMakeLists.txt' file.\n\nFILE(GLOB_RECURSE app_sources ${CMAKE_SOURCE_DIR}/src/*.*)\n\nidf_component_register(SRCS ${app_sources})\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "read_file",
+          "args": {
+            "path": "platformio.ini"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "read_file",
+          "response": {
+            "result": "[env:cul32-c6]\nplatform = espressif32\nboard = esp32-c6-devkitc-1\nframework = espidf\nmonitor_speed = 115200\nboard_build.partitions = partitions.csv\nbuild_flags = \n    -D CORE_DEBUG_LEVEL=5\n    -D GPIO_GDO0=2\n    -D GPIO_GDO2=3\n    -D GPIO_SS=18\n    -D GPIO_SCK=19\n    -D GPIO_MISO=20\n    -D GPIO_MOSI=21\n    -D GPIO_LED=8\n    -D GPIO_SW=9\n    -D GPIO_433MARKER=4\n    -D BUILD_NUMBER=2\n    -D FW_VERSION=\\\"1.0.2-NG\\\"\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "void led_task(void *pvParameters) {\n    gpio_reset_pin(GPIO_LED);\n    gpio_set_direction(GPIO_LED, GPIO_MODE_OUTPUT);\n    while (1) {\n        gpio_set_level(GPIO_LED, 0); // Low active\n        vTaskDelay(pdMS_TO_TICKS(100));\n        gpio_set_level(GPIO_LED, 1);\n        \n        const char* tick = \"CUL-TICK\\r\\n\";\n        usb_serial_jtag_write_bytes(tick, strlen(tick), 0);\n        \n        vTaskDelay(pdMS_TO_TICKS(900));\n    }\n}\n",
+            "path": "src/main.c",
+            "original_text": "void led_task(void *pvParameters) {\n    gpio_reset_pin(GPIO_LED);\n    gpio_set_direction(GPIO_LED, GPIO_MODE_OUTPUT);\n    while (1) {\n        gpio_set_level(GPIO_LED, 0); // Low active\n        vTaskDelay(pdMS_TO_TICKS(100));\n        gpio_set_level(GPIO_LED, 1);\n        vTaskDelay(pdMS_TO_TICKS(900));\n    }\n}\n"
+          }
+        }
+      }
+    ]
   }
 ]
