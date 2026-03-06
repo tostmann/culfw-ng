@@ -9,6 +9,11 @@
 #include "cc1101.h"
 
 static const char *TAG = "SLOWRF";
+typedef struct {
+    uint16_t duration;
+    uint8_t level;
+} pulse_t;
+
 static QueueHandle_t pulse_queue;
 static int64_t last_time = 0;
 static bool slowrf_debug = false;
@@ -24,14 +29,17 @@ void slowrf_set_reporting(bool enable) {
 
 static void IRAM_ATTR gpio_isr_handler(void* arg) {
     int64_t current_time = esp_timer_get_time();
-    int64_t diff = current_time - last_time;
+    int diff = (int)(current_time - last_time);
     last_time = current_time;
     
+    int level = gpio_get_level(GPIO_GDO0);
+
     // Carrier Sense check (High when RSSI > Threshold)
     if (gpio_get_level(GPIO_GDO2) == 0) return;
 
-    if (diff > 150 && diff < 15000) {
-        xQueueSendFromISR(pulse_queue, &diff, NULL);
+    if (diff > 100 && diff < 20000) {
+        pulse_t p = { .duration = (uint16_t)diff, .level = (uint8_t)level };
+        xQueueSendFromISR(pulse_queue, &p, NULL);
     }
 }
 
