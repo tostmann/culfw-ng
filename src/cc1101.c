@@ -184,21 +184,15 @@ void cc1101_send_it_v1(const char* data) {
     cc1101_set_rx_mode();
 }
 
-void cc1101_send_slowrf(const char* hex_data) {
+void cc1101_send_raw_slowrf(const char* hex_data) {
     gpio_set_level(GPIO_LED, 0); // LED ON
     cc1101_set_tx_mode();
-    vTaskDelay(pdMS_TO_TICKS(5)); // More settling
+    vTaskDelay(pdMS_TO_TICKS(5));
 
-    // Multi-transmit for reliability (standard culfw behavior)
-    for (int repeat = 0; repeat < 6; repeat++) { // Increased repeats
-        // 1. Preamble (standard culfw uses ~12-13 '0' bits)
+    for (int repeat = 0; repeat < 6; repeat++) {
         for(int i=0; i<24; i++) fs20_send_bit(0); 
-        
-        // 2. Sync bit (The sync bit is a '1' in FS20 protocol spec, culfw calls it 1)
-        // Actually Spec says: 12-13 zero bits, then one '1' bit as sync.
         fs20_send_bit(1); 
 
-        // 3. Data (hex string to bits)
         int hex_len = strlen(hex_data);
         for(int i=0; i<hex_len; i+=2) {
             char h[3] = {hex_data[i], hex_data[i+1], 0};
@@ -209,19 +203,64 @@ void cc1101_send_slowrf(const char* hex_data) {
                 fs20_send_bit(bit);
                 if (bit) parity++;
             }
-            // FS20: EVEN parity (Total bits in 9-bit group must be even)
             fs20_send_bit(parity % 2);
         }
-        
-        // 4. End bit (bit 0)
         fs20_send_bit(0);
-        
-        // Gap between repeats (standard FS20 is ~10ms)
         ets_delay_us(10000);
     }
     
     cc1101_set_rx_mode();
     gpio_set_level(GPIO_LED, 1); // LED OFF
+}
+
+void cc1101_send_fs20(const char* housecode, const char* addr, const char* cmd) {
+    char hex[16];
+    uint8_t hc1 = strtol((char[]){housecode[0], housecode[1], 0}, NULL, 16);
+    uint8_t hc2 = strtol((char[]){housecode[2], housecode[3], 0}, NULL, 16);
+    uint8_t ad  = strtol(addr, NULL, 16);
+    uint8_t cm  = strtol(cmd, NULL, 16);
+    uint8_t cs  = (hc1 + hc2 + ad + cm + 6) & 0xFF;
+    
+    snprintf(hex, sizeof(hex), "%02X%02X%02X%02X%02X", hc1, hc2, ad, cm, cs);
+    cc1101_send_raw_slowrf(hex);
+}
+
+void cc1101_send_it_v3(const char* data) {
+    // IT V3 (Self Learning) sending logic
+    // data is a string of 32 bits ('0' or '1')
+    gpio_set_level(GPIO_LED, 0);
+    cc1101_set_tx_mode();
+    vTaskDelay(pdMS_TO_TICKS(5));
+
+    int T = 300; // Base timing 300us
+
+    for (int repeat = 0; repeat < 6; repeat++) {
+        // Sync: High T, Low 31T
+        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T);
+        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T * 31);
+
+        for (int i = 0; data[i]; i++) {
+            if (data[i] == '0') {
+                // Logical 0: (High T, Low 3T), (High T, Low 3T)
+                gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T);
+                gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T * 3);
+                gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T);
+                gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T * 3);
+            } else {
+                // Logical 1: (High T, Low 3T), (High 3T, Low T)
+                gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T);
+                gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T * 3);
+                gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T * 3);
+                gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T);
+            }
+        }
+        // Final pulse to end frame
+        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T);
+        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T * 31);
+    }
+
+    cc1101_set_rx_mode();
+    gpio_set_level(GPIO_LED, 1);
 }
 
 esp_err_t cc1101_write_reg(uint8_t reg, uint8_t val) {

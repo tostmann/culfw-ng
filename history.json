@@ -1157,5 +1157,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "void cc1101_send_raw_slowrf(const char* hex_data) {\n    gpio_set_level(GPIO_LED, 0); // LED ON\n    cc1101_set_tx_mode();\n    vTaskDelay(pdMS_TO_TICKS(5));\n\n    for (int repeat = 0; repeat < 6; repeat++) {\n        for(int i=0; i<24; i++) fs20_send_bit(0); \n        fs20_send_bit(1); \n\n        int hex_len = strlen(hex_data);\n        for(int i=0; i<hex_len; i+=2) {\n            char h[3] = {hex_data[i], hex_data[i+1], 0};\n            uint8_t b = (uint8_t)strtol(h, NULL, 16);\n            int parity = 0;\n            for(int j=7; j>=0; j--) {\n                int bit = (b >> j) & 1;\n                fs20_send_bit(bit);\n                if (bit) parity++;\n            }\n            fs20_send_bit(parity % 2);\n        }\n        fs20_send_bit(0);\n        ets_delay_us(10000);\n    }\n    \n    cc1101_set_rx_mode();\n    gpio_set_level(GPIO_LED, 1); // LED OFF\n}\n\nvoid cc1101_send_fs20(const char* housecode, const char* addr, const char* cmd) {\n    char hex[16];\n    uint8_t hc1 = strtol((char[]){housecode[0], housecode[1], 0}, NULL, 16);\n    uint8_t hc2 = strtol((char[]){housecode[2], housecode[3], 0}, NULL, 16);\n    uint8_t ad  = strtol(addr, NULL, 16);\n    uint8_t cm  = strtol(cmd, NULL, 16);\n    uint8_t cs  = (hc1 + hc2 + ad + cm + 6) & 0xFF;\n    \n    snprintf(hex, sizeof(hex), \"%02X%02X%02X%02X%02X\", hc1, hc2, ad, cm, cs);\n    cc1101_send_raw_slowrf(hex);\n}\n\nvoid cc1101_send_it_v3(const char* data) {\n    // IT V3 (Self Learning) sending logic\n    // data is a string of 32 bits ('0' or '1')\n    gpio_set_level(GPIO_LED, 0);\n    cc1101_set_tx_mode();\n    vTaskDelay(pdMS_TO_TICKS(5));\n\n    int T = 300; // Base timing 300us\n\n    for (int repeat = 0; repeat < 6; repeat++) {\n        // Sync: High T, Low 31T\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T * 31);\n\n        for (int i = 0; data[i]; i++) {\n            if (data[i] == '0') {\n                // Logical 0: (High T, Low 3T), (High T, Low 3T)\n                gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T);\n                gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T * 3);\n                gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T);\n                gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T * 3);\n            } else {\n                // Logical 1: (High T, Low 3T), (High 3T, Low T)\n                gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T);\n                gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T * 3);\n                gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T * 3);\n                gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T);\n            }\n        }\n        // Final pulse to end frame\n        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T);\n        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T * 31);\n    }\n\n    cc1101_set_rx_mode();\n    gpio_set_level(GPIO_LED, 1);\n}\n",
+            "path": "src/cc1101.c",
+            "original_text": "void cc1101_send_slowrf(const char* hex_data) {\n    gpio_set_level(GPIO_LED, 0); // LED ON\n    cc1101_set_tx_mode();\n    vTaskDelay(pdMS_TO_TICKS(5)); // More settling\n\n    // Multi-transmit for reliability (standard culfw behavior)\n    for (int repeat = 0; repeat < 6; repeat++) { // Increased repeats\n        // 1. Preamble (standard culfw uses ~12-13 '0' bits)\n        for(int i=0; i<24; i++) fs20_send_bit(0); \n        \n        // 2. Sync bit (The sync bit is a '1' in FS20 protocol spec, culfw calls it 1)\n        // Actually Spec says: 12-13 zero bits, then one '1' bit as sync.\n        fs20_send_bit(1); \n\n        // 3. Data (hex string to bits)\n        int hex_len = strlen(hex_data);\n        for(int i=0; i<hex_len; i+=2) {\n            char h[3] = {hex_data[i], hex_data[i+1], 0};\n            uint8_t b = (uint8_t)strtol(h, NULL, 16);\n            int parity = 0;\n            for(int j=7; j>=0; j--) {\n                int bit = (b >> j) & 1;\n                fs20_send_bit(bit);\n                if (bit) parity++;\n            }\n            // FS20: EVEN parity (Total bits in 9-bit group must be even)\n            fs20_send_bit(parity % 2);\n        }\n        \n        // 4. End bit (bit 0)\n        fs20_send_bit(0);\n        \n        // Gap between repeats (standard FS20 is ~10ms)\n        ets_delay_us(10000);\n    }\n    \n    cc1101_set_rx_mode();\n    gpio_set_level(GPIO_LED, 1); // LED OFF\n}\n"
+          }
+        }
+      }
+    ]
   }
 ]
