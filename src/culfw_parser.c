@@ -66,6 +66,15 @@ static void handle_command(char *cmd) {
         uint8_t vers = cc1101_read_reg(CC1101_VERSION | CC1101_READ_BURST);
         uint8_t marc = cc1101_read_reg(0x35 | CC1101_READ_BURST);
         len = snprintf(out, sizeof(out), "C01 Part: 0x%02x, Vers: 0x%02x, MARC: 0x%02x\r\n", part, vers, marc);
+    } else if (cmd[0] == 'R' && strlen(cmd) >= 3) {
+        uint8_t reg = strtol(cmd + 1, NULL, 16);
+        uint8_t val = cc1101_read_reg(reg | CC1101_READ_BURST);
+        len = snprintf(out, sizeof(out), "R%02X%02X\r\n", reg, val);
+    } else if (cmd[0] == 'W' && strlen(cmd) >= 5) {
+        uint8_t reg = strtol((char[]){cmd[1], cmd[2], 0}, NULL, 16);
+        uint8_t val = strtol(cmd + 3, NULL, 16);
+        cc1101_write_reg(reg, val);
+        len = snprintf(out, sizeof(out), "W%02X%02X\r\n", reg, val);
     } else if (cmd[0] == 'F') {
         if (strlen(cmd) == 9) {
             char hc[5], ad[3], cm[3];

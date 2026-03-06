@@ -27,16 +27,16 @@ static void IRAM_ATTR gpio_isr_handler(void* arg) {
     int64_t diff = current_time - last_time;
     last_time = current_time;
     
-    // Simple filter for SlowRF: 200us < duration < 15ms
-    if (diff > 200 && diff < 15000) {
+    // Carrier Sense check (optional, but reduces noise processing)
+    if (gpio_get_level(GPIO_GDO2) == 0) { // Carrier not active
+        // Optional: return;
+    }
+
+    if (diff > 150 && diff < 15000) {
         xQueueSendFromISR(pulse_queue, &diff, NULL);
     }
 }
 
-#define SLOWRF_BIT_S_MIN 300
-#define SLOWRF_BIT_S_MAX 550
-#define SLOWRF_BIT_L_MIN 550
-#define SLOWRF_BIT_L_MAX 900
 #define SLOWRF_SYNC_MIN  8000
 
 typedef struct {
@@ -45,39 +45,16 @@ typedef struct {
     int bit_cnt;
     uint32_t current_bits;
     int last_bit;
-    int pulse_cnt;
+    int pulse_in_bit;
     bool sync_found;
-} slowrf_decoder_t;
-
-static void reset_decoder(slowrf_decoder_t *dec) {
-    memset(dec->data, 0, sizeof(dec->data));
-    dec->byte_cnt = 0;
-    dec->bit_cnt = 0;
-    dec->current_bits = 0;
-    dec->last_bit = -1;
-    dec->pulse_cnt = 0;
-    dec->sync_found = false;
-}
-
-static char* rssi_to_hex(uint8_t rssi_raw) {
-    static char rssi_str[4];
-    // CULFW uses a signed hex value or similar, but often just the raw hex from CC1101
-    snprintf(rssi_str, sizeof(rssi_str), "%02X", rssi_raw);
-    return rssi_str;
-}
+} fs20_dec_t;
 
 typedef struct {
     char s[13];
     int pos;
     int pulse_cnt;
     int64_t pulse_buf[4];
-} it_v1_decoder_t;
-
-static void reset_it_v1(it_v1_decoder_t *it) {
-    it->pos = 0;
-    it->pulse_cnt = 0;
-    memset(it->s, 0, sizeof(it->s));
-}
+} itv1_dec_t;
 
 typedef struct {
     char s[33];
@@ -85,9 +62,25 @@ typedef struct {
     int pulse_cnt;
     int64_t pulse_buf[4];
     bool sync_found;
-} it_v3_decoder_t;
+} itv3_dec_t;
 
-static void reset_it_v3(it_v3_decoder_t *it) {
+static void reset_fs20(fs20_dec_t *dec) {
+    memset(dec->data, 0, sizeof(dec->data));
+    dec->byte_cnt = 0;
+    dec->bit_cnt = 0;
+    dec->current_bits = 0;
+    dec->last_bit = -1;
+    dec->pulse_in_bit = 0;
+    dec->sync_found = false;
+}
+
+static void reset_itv1(itv1_dec_t *it) {
+    it->pos = 0;
+    it->pulse_cnt = 0;
+    memset(it->s, 0, sizeof(it->s));
+}
+
+static void reset_itv3(itv3_dec_t *it) {
     it->bit_pos = 0;
     it->pulse_cnt = 0;
     it->sync_found = false;
@@ -96,156 +89,135 @@ static void reset_it_v3(it_v3_decoder_t *it) {
 
 void slowrf_task(void *pvParameters) {
     int64_t pulse;
-    slowrf_decoder_t dec;
-    it_v1_decoder_t it_dec;
-    it_v3_decoder_t it3_dec;
-    reset_decoder(&dec);
-    reset_it_v1(&it_dec);
-    reset_it_v3(&it3_dec);
+    fs20_dec_t fs_dec;
+    itv1_dec_t it1_dec;
+    itv3_dec_t it3_dec;
     
-    int pulse_in_bit = 0;
-    int last_bit = -1;
+    reset_fs20(&fs_dec);
+    reset_itv1(&it1_dec);
+    reset_itv3(&it3_dec);
 
     while (1) {
         if (xQueueReceive(pulse_queue, &pulse, portMAX_DELAY)) {
             if (slowrf_debug) {
                 char d[32];
-                int dlen = snprintf(d, sizeof(d), "P: %lld\r\n", (long long)pulse);
+                int dlen = snprintf(d, sizeof(d), "P:%lld\r\n", (long long)pulse);
                 usb_serial_jtag_write_bytes(d, dlen, 0);
             }
+
+            // --- SYNC / END DETECTION ---
             if (pulse > SLOWRF_SYNC_MIN) {
                 if (slowrf_reporting) {
-                    // FS20 Check
-                    if (dec.byte_cnt >= 4) {
+                    uint8_t rssi = cc1101_read_rssi();
+                    if (fs_dec.byte_cnt >= 4) {
                         char out[64];
                         int len = snprintf(out, sizeof(out), "F");
-                        for (int i = 0; i < dec.byte_cnt; i++) {
-                            len += snprintf(out + len, sizeof(out) - len, "%02X", dec.data[i]);
+                        for (int i = 0; i < fs_dec.byte_cnt; i++) {
+                            len += snprintf(out + len, sizeof(out) - len, "%02X", fs_dec.data[i]);
                         }
-                        snprintf(out + len, sizeof(out) - len, "\r\n");
-                        usb_serial_jtag_write_bytes(out, strlen(out), 0);
-                    }
-                    // IT-V1 Check
-                    if (it_dec.pos == 12) {
-                        char out[32];
-                        int len = snprintf(out, sizeof(out), "is%s\r\n", it_dec.s);
+                        len += snprintf(out + len, sizeof(out) - len, "%02X\r\n", rssi);
                         usb_serial_jtag_write_bytes(out, len, 0);
                     }
-                    // IT-V3 Check
-                    if (it3_dec.bit_pos == 32) {
+                    if (it1_dec.pos == 12) {
                         char out[64];
-                        int len = snprintf(out, sizeof(out), "is%s\r\n", it3_dec.s);
+                        int len = snprintf(out, sizeof(out), "is%s%02X\r\n", it1_dec.s, rssi);
+                        usb_serial_jtag_write_bytes(out, len, 0);
+                    }
+                    if (it3_dec.bit_pos == 32) {
+                        char out[128];
+                        int len = snprintf(out, sizeof(out), "is%s%02X\r\n", it3_dec.s, rssi);
                         usb_serial_jtag_write_bytes(out, len, 0);
                     }
                 }
-                reset_decoder(&dec);
-                reset_it_v1(&it_dec);
-                reset_it_v3(&it3_dec);
-                pulse_in_bit = 0;
-            } else {
-                // 0. IT-V3 Decoder
-                if (pulse > 8000 && pulse < 11000) { // IT-V3 Sync Low (9300us)
-                    reset_it_v3(&it3_dec);
+                reset_fs20(&fs_dec);
+                reset_itv1(&it1_dec);
+                reset_itv3(&it3_dec);
+                
+                // IT-V3 starts AFTER a long low sync
+                if (pulse > 8000 && pulse < 11000) {
                     it3_dec.sync_found = true;
-                } else if (it3_dec.sync_found) {
-                    it3_dec.pulse_buf[it3_dec.pulse_cnt % 4] = pulse;
-                    it3_dec.pulse_cnt++;
-                    if (it3_dec.pulse_cnt >= 4) {
-                        int64_t p1 = it3_dec.pulse_buf[0];
-                        int64_t p2 = it3_dec.pulse_buf[1];
-                        int64_t p3 = it3_dec.pulse_buf[2];
-                        int64_t p4 = it3_dec.pulse_buf[3];
-                        
-                        #define IS_T_V3(p) (p > 150 && p < 550)
-                        #define IS_3T_V3(p) (p >= 700 && p < 1300)
-
-                        if (IS_T_V3(p1) && IS_3T_V3(p2) && IS_T_V3(p3) && IS_3T_V3(p4)) {
-                            it3_dec.s[it3_dec.bit_pos++] = '0';
-                            it3_dec.pulse_cnt = 0;
-                        } else if (IS_T_V3(p1) && IS_3T_V3(p2) && IS_3T_V3(p3) && IS_T_V3(p4)) {
-                            it3_dec.s[it3_dec.bit_pos++] = '1';
-                            it3_dec.pulse_cnt = 0;
-                        } else {
-                            // Invalid IT-V3 sequence
-                            it3_dec.sync_found = false;
-                        }
-                        if (it3_dec.bit_pos == 32) {
-                             it3_dec.sync_found = false; // complete
-                        }
-                    }
                 }
-                // 1. Intertechno V1 bit detection (on-the-fly)
-                it_dec.pulse_buf[it_dec.pulse_cnt % 4] = pulse;
-                it_dec.pulse_cnt++;
-                if (it_dec.pulse_cnt >= 4) {
-                    int idx = (it_dec.pulse_cnt - 4) % 4;
-                    int64_t p1 = it_dec.pulse_buf[idx];
-                    int64_t p2 = it_dec.pulse_buf[(idx+1)%4];
-                    int64_t p3 = it_dec.pulse_buf[(idx+2)%4];
-                    int64_t p4 = it_dec.pulse_buf[(idx+3)%4];
+                continue;
+            }
+
+            // --- IT-V3 DECODING ---
+            if (it3_dec.sync_found) {
+                it3_dec.pulse_buf[it3_dec.pulse_cnt++] = pulse;
+                if (it3_dec.pulse_cnt == 4) {
+                    int64_t p1 = it3_dec.pulse_buf[0];
+                    int64_t p2 = it3_dec.pulse_buf[1];
+                    int64_t p3 = it3_dec.pulse_buf[2];
+                    int64_t p4 = it3_dec.pulse_buf[3];
+                    it3_dec.pulse_cnt = 0;
                     
-                    #define IS_T(p) (p >= 200 && p <= 700)
-                    #define IS_3T(p) (p > 800 && p <= 1700)
-                    
-                    if (it_dec.pos < 12) {
-                        char it_bit = 0;
-                        if (IS_T(p1) && IS_3T(p2) && IS_T(p3) && IS_3T(p4)) it_bit = '0';
-                        else if (IS_3T(p1) && IS_T(p2) && IS_3T(p3) && IS_T(p4)) it_bit = '1';
-                        else if (IS_T(p1) && IS_3T(p2) && IS_3T(p3) && IS_T(p4)) it_bit = 'F';
-                        
-                        if (it_bit) {
-                            it_dec.s[it_dec.pos++] = it_bit;
-                            it_dec.pulse_cnt = 0; // consumed
-                        }
-                    }
-                }
+                    #define IS_T_V3(p) (p > 150 && p < 550)
+                    #define IS_3T_V3(p) (p >= 650 && p < 1350)
 
-                // 2. FS20 bit detection
-                int bit = -1;
-                int bit_ready = 0;
-                if (pulse >= 200 && pulse <= 550) { // Half-bit 0 (400us)
-                    if (pulse_in_bit == 1 && last_bit == 0) { bit = 0; bit_ready = 1; pulse_in_bit = 0; }
-                    else { last_bit = 0; pulse_in_bit = 1; }
-                } else if (pulse > 550 && pulse <= 850) { // Half-bit 1 (600us)
-                    if (pulse_in_bit == 1 && last_bit == 1) { bit = 1; bit_ready = 1; pulse_in_bit = 0; }
-                    else { last_bit = 1; pulse_in_bit = 1; }
-                } else if (pulse > 850 && pulse <= 1100) { // Full-bit 0 (missed edge)
-                    bit = 0; bit_ready = 1; pulse_in_bit = 0;
-                } else if (pulse > 1100 && pulse <= 1500) { // Full-bit 1 (missed edge)
-                    bit = 1; bit_ready = 1; pulse_in_bit = 0;
-                }
-
-                if (bit_ready) {
-                    if (!dec.sync_found) {
-                        if (bit == 1) {
-                            dec.sync_found = true;
-                            dec.bit_cnt = 0;
-                            dec.current_bits = 0;
-                        }
+                    if (IS_T_V3(p1) && IS_3T_V3(p2) && IS_T_V3(p3) && IS_3T_V3(p4)) {
+                        it3_dec.s[it3_dec.bit_pos++] = '0';
+                    } else if (IS_T_V3(p1) && IS_3T_V3(p2) && IS_3T_V3(p3) && IS_T_V3(p4)) {
+                        it3_dec.s[it3_dec.bit_pos++] = '1';
                     } else {
-                        dec.current_bits = (dec.current_bits << 1) | bit;
-                        dec.bit_cnt++;
-                        if (dec.bit_cnt == 9) {
-                            uint8_t data_byte = (dec.current_bits >> 1);
-                            uint8_t parity_bit = (dec.current_bits & 1);
-                            int ones = 0;
-                            for (int i = 0; i < 8; i++) { if ((data_byte >> i) & 1) ones++; }
-                            // FS20 EVEN Parity (matching culfw)
-                            if (parity_bit == (ones % 2)) {
-                                if (dec.byte_cnt < sizeof(dec.data)) { 
-                                    dec.data[dec.byte_cnt++] = data_byte; 
-                                }
-                            } else { 
-                                if (dec.byte_cnt > 0) {
-                                    if (slowrf_debug) usb_serial_jtag_write_bytes("PARERR\r\n", 8, 0);
-                                    reset_decoder(&dec); 
-                                } else {
-                                    dec.sync_found = false; // Look for sync again
-                                }
-                            }
-                            dec.bit_cnt = 0;
-                            dec.current_bits = 0;
+                        it3_dec.sync_found = false;
+                    }
+                    if (it3_dec.bit_pos == 32) it3_dec.sync_found = false;
+                }
+            }
+
+            // --- IT-V1 DECODING ---
+            it1_dec.pulse_buf[it1_dec.pulse_cnt % 4] = pulse;
+            it1_dec.pulse_cnt++;
+            if (it1_dec.pulse_cnt >= 4) {
+                int idx = (it1_dec.pulse_cnt - 4) % 4;
+                int64_t p1 = it1_dec.pulse_buf[idx];
+                int64_t p2 = it1_dec.pulse_buf[(idx+1)%4];
+                int64_t p3 = it1_dec.pulse_buf[(idx+2)%4];
+                int64_t p4 = it1_dec.pulse_buf[(idx+3)%4];
+                #define IS_T_V1(p) (p >= 200 && p <= 700)
+                #define IS_3T_V1(p) (p > 800 && p <= 1750)
+                if (it1_dec.pos < 12) {
+                    char bit = 0;
+                    if (IS_T_V1(p1) && IS_3T_V1(p2) && IS_T_V1(p3) && IS_3T_V1(p4)) bit = '0';
+                    else if (IS_3T_V1(p1) && IS_T_V1(p2) && IS_3T_V1(p3) && IS_T_V1(p4)) bit = '1';
+                    else if (IS_T_V1(p1) && IS_3T_V1(p2) && IS_3T_V1(p3) && IS_T_V1(p4)) bit = 'F';
+                    if (bit) { it1_dec.s[it1_dec.pos++] = bit; it1_dec.pulse_cnt = 0; }
+                }
+            }
+
+            // --- FS20 DECODING ---
+            int fs_bit = -1;
+            bool fs_ready = false;
+            if (pulse >= 250 && pulse <= 550) { // Half 0
+                if (fs_dec.pulse_in_bit == 1 && fs_dec.last_bit == 0) { fs_bit = 0; fs_ready = true; fs_dec.pulse_in_bit = 0; }
+                else { fs_dec.last_bit = 0; fs_dec.pulse_in_bit = 1; }
+            } else if (pulse > 550 && pulse <= 900) { // Half 1
+                if (fs_dec.pulse_in_bit == 1 && fs_dec.last_bit == 1) { fs_bit = 1; fs_ready = true; fs_dec.pulse_in_bit = 0; }
+                else { fs_dec.last_bit = 1; fs_dec.pulse_in_bit = 1; }
+            } else if (pulse > 900 && pulse <= 1150) { // Full 0
+                fs_bit = 0; fs_ready = true; fs_dec.pulse_in_bit = 0;
+            } else if (pulse > 1150 && pulse <= 1600) { // Full 1
+                fs_bit = 1; fs_ready = true; fs_dec.pulse_in_bit = 0;
+            }
+
+            if (fs_ready) {
+                if (!fs_dec.sync_found) {
+                    if (fs_bit == 1) { fs_dec.sync_found = true; fs_dec.bit_cnt = 0; fs_dec.current_bits = 0; }
+                } else {
+                    fs_dec.current_bits = (fs_dec.current_bits << 1) | fs_bit;
+                    fs_dec.bit_cnt++;
+                    if (fs_dec.bit_cnt == 9) {
+                        uint8_t val = (fs_dec.current_bits >> 1);
+                        uint8_t par = (fs_dec.current_bits & 1);
+                        int ones = 0;
+                        for (int i=0; i<8; i++) if ((val >> i) & 1) ones++;
+                        if (par == (ones % 2)) {
+                            if (fs_dec.byte_cnt < sizeof(fs_dec.data)) fs_dec.data[fs_dec.byte_cnt++] = val;
+                        } else {
+                            if (fs_dec.byte_cnt > 0) reset_fs20(&fs_dec);
+                            else fs_dec.sync_found = false;
                         }
+                        fs_dec.bit_cnt = 0;
+                        fs_dec.current_bits = 0;
                     }
                 }
             }
@@ -254,7 +226,7 @@ void slowrf_task(void *pvParameters) {
 }
 
 esp_err_t slowrf_init() {
-    pulse_queue = xQueueCreate(1024, sizeof(int64_t)); // Larger queue
+    pulse_queue = xQueueCreate(1024, sizeof(int64_t));
     
     gpio_config_t io_conf = {
         .intr_type = GPIO_INTR_ANYEDGE,
@@ -265,7 +237,6 @@ esp_err_t slowrf_init() {
     };
     gpio_config(&io_conf);
 
-    // GDO2 as Carrier Sense Input
     gpio_config_t gdo2_conf = {
         .pin_bit_mask = (1ULL << GPIO_GDO2),
         .mode = GPIO_MODE_INPUT,
@@ -274,10 +245,7 @@ esp_err_t slowrf_init() {
     };
     gpio_config(&gdo2_conf);
     
-    gpio_install_isr_service(0);
     gpio_isr_handler_add(GPIO_GDO0, gpio_isr_handler, NULL);
-    
-    // Lowered priority from 15 to 4 (above LED, below parser)
     xTaskCreate(slowrf_task, "slowrf_task", 4096, NULL, 4, NULL);
     
     return ESP_OK;
