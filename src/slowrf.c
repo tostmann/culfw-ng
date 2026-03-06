@@ -10,6 +10,11 @@
 static const char *TAG = "SLOWRF";
 static QueueHandle_t pulse_queue;
 static int64_t last_time = 0;
+static bool slowrf_debug = false;
+
+void slowrf_set_debug(bool enable) {
+    slowrf_debug = enable;
+}
 
 static void IRAM_ATTR gpio_isr_handler(void* arg) {
     int64_t current_time = esp_timer_get_time();
