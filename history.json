@@ -649,5 +649,85 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "~/.platformio/penv/bin/pio run && \\\n~/.platformio/penv/bin/pio run --target upload --upload-port /dev/ttyACM3\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\n\n... [OUTPUT TRUNCATED. Total size: 9673 bytes. Showing last 1500 bytes. Full output saved in 'last_execution.log'. Use 'grep' or 'read_file last_execution.log' to analyze!]\n\nWriting at 0x0001ba59 [\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  13.3% 16384/123095 bytes... \n\nWriting at 0x00021b37 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  26.6% 32768/123095 bytes... \n\nWriting at 0x00029614 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  39.9% 49152/123095 bytes... \n\nWriting at 0x00030e0f [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  53.2% 65536/123095 bytes... \n\nWriting at 0x00037ab5 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  66.6% 81920/123095 bytes... \n\nWriting at 0x0003ebbc [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  79.9% 98304/123095 bytes... \n\nWriting at 0x00045c60 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591]  93.2% 114688/123095 bytes... \n\nWriting at 0x0004a0c0 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588] 100.0% 123095/123095 bytes... \nWrote 237760 bytes (123095 compressed) at 0x00010000 in 1.3 seconds (1455.1 kbit/s).\nHash of data verified.\n\nHard resetting via RTS pin...\n========================= [SUCCESS] Took 10.60 seconds =========================\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "# Enable Reporting\nprintf \"X21\\n\" > /dev/ttyACM3\nsleep 1\n\n# Start monitor in background\ntimeout 15s cat /dev/ttyACM3 > /tmp/sensor_test.log &\nPID=$!\nsleep 1\n\n# Send HMS (Example HMS100-TF)\n# HMS typically: 10 bytes hex. Reference CUL often allows raw sending or has specific test commands.\n# Since we don't have a direct HMS-TX command in the refernece CUL (standard culfw),\n# we use the raw-send feature of our own target to simulate if possible, \n# or we use the reference CUL with a known command if available.\n\n# Reference CUL: Use 'G' command if enabled, or just send a string that mimics it if we had an HMS-TX.\n# Most culfw don't have HMS-TX. They only RX. \n# BUT: We can use our 868 Target to send a RAW pulse sequence to test itself (Echo test).\n# Or we test against the real air if sensors are present.\n\n# Let's try to simulate HMS via our raw pulse injector if we had one.\n# For now, let's just see if any 868 traffic is picked up and decoded.\necho \"Tr\" > /dev/ttyACM3 # This sends FS20 from the same device. Should be ignored by HMS/S300 decoders.\n\nsleep 10\nkill $PID || true\ncat /tmp/sensor_test.log\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\n/bin/sh: 26: kill: No such process\n\nCUL-TICK\r\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "void cc1101_send_fs20(const char* housecode, const char* addr, const char* cmd);\nvoid cc1101_send_it_v1(const char* data);\nvoid cc1101_send_it_v3(const char* data);\nvoid cc1101_send_hms(const char* hex_data);\nvoid cc1101_send_raw_slowrf(const char* hex_data);\nbool cc1101_is_433();\n",
+            "path": "include/cc1101.h",
+            "original_text": "void cc1101_send_fs20(const char* housecode, const char* addr, const char* cmd);\nvoid cc1101_send_it_v1(const char* data);\nvoid cc1101_send_it_v3(const char* data);\nvoid cc1101_send_raw_slowrf(const char* hex_data);\nbool cc1101_is_433();\n"
+          }
+        }
+      }
+    ]
   }
 ]

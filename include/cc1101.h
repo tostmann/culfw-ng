@@ -16,6 +16,7 @@ uint8_t cc1101_read_rssi();
 void cc1101_send_fs20(const char* housecode, const char* addr, const char* cmd);
 void cc1101_send_it_v1(const char* data);
 void cc1101_send_it_v3(const char* data);
+void cc1101_send_hms(const char* hex_data);
 void cc1101_send_raw_slowrf(const char* hex_data);
 bool cc1101_is_433();
 
