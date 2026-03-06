@@ -1,0 +1,8 @@
+The following files/directories have been created in /opt/ai_builder_data/users/763684262/projects/CULFW-NG
+include - Put project header files here
+lib - Put project specific (private) libraries here
+src - Put project source files here
+platformio.ini - Project Configuration File
+Resolving esp32-c6-devkitc-1 dependencies...
+Already up-to-date.
+Project has been successfully initialized!
