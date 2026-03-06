@@ -638,5 +638,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "static void handle_command(char *cmd) {\n    if (cmd[0] == 'V') {\n        bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);\n        printf(\"V 1.0.1-NG CUL32-C6-%sMHz\\r\\n\", is_433 ? \"433\" : \"868\");\n        fflush(stdout);\n    } else if (cmd[0] == 'X') {",
+            "path": "src/culfw_parser.c",
+            "original_text": "static void handle_command(char *cmd) {\n    if (cmd[0] == 'V') {\n        gpio_set_direction(GPIO_433MARKER, GPIO_MODE_INPUT);\n        bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);\n        printf(\"V 1.0.1-NG CUL32-C6-%sMHz\\r\\n\", is_433 ? \"433\" : \"868\");\n    } else if (cmd[0] == 'X') {"
+          }
+        }
+      }
+    ]
   }
 ]
