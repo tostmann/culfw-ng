@@ -82,9 +82,11 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 *   **[INFO]** Die Remote-Register-Befehle (`R`/`W`) sind ein mächtiges Werkzeug zur Feinabstimmung der RF-Parameter (z.B. AGC-Verhalten, Frequenz-Offsets), ohne dass eine Neukompilierung erforderlich ist.
 *   **[INFO]** Eine softwareseitige Prüfung des Frequenzbandes vor dem Melden eines dekodierten Pakets ist eine effektive und notwendige Methode, um Cross-Band-Störungen zu eliminieren, selbst wenn der RF-Chip physikalisch Signale außerhalb seines Zielbandes empfängt.
 *   **[INFO]** Die Frequenzregister (FREQ2, FREQ1, FREQ0) des CC1101 müssen präzise auf die Ziel-Mittenfrequenz (z.B. 433.92 MHz, 868.30 MHz) kalibriert werden, um die Empfängerempfindlichkeit zu maximieren und die Kanaltrennung zu verbessern.
+*   **[INFO]** Aktueller Protokoll-Umfang: FS20, Intertechno V1, Intertechno V3. Wichtige Sensor-Protokolle wie HMS, S300TH (868MHz) oder Oregon Scientific (433MHz) sind noch nicht implementiert.
 
 ## 5. Nächste Schritte
 
+*   **Protokoll-Erweiterung:** Implementierung der Dekoder für **HMS** (Gefahrenmelder) und **S300TH** (Temperatur/Feuchte) für das 868MHz-Band.
 *   **FHEM-Integration:** Validierung der Firmware mit einem Host-System (FHEM) zur Sicherstellung der Kompatibilität und Langzeitstabilität.
 *   **Dokumentation:** Erstellen einer kurzen Anleitung für die neuen Diagnose-Befehle (`R`, `W`, `X99`, `TX1`/`TX0`).
 *   **Langzeittests:** Überwachung der Stabilität und des Speicherverbrauchs über mehrere Tage.
