@@ -10,15 +10,16 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 *   **Board:** `esp32-c6-devkitc-1`
 *   **Kommunikation:** Nativer USB-JTAG/CDC Treiber (`usb_serial_jtag`) für eine nicht-blockierende serielle Schnittstelle.
 *   **RF-Modul:** CC1101 angebunden via SPI.
+*   **SPI-Kommunikation:** Die SPI-Geschwindigkeit wurde zur Erhöhung der Stabilität auf 500 kHz festgelegt. Für das Auslesen der Statusregister wird der `READ_BURST`-Modus verwendet, um korrekte Werte zu gewährleisten.
 *   **Software-Architektur:** FreeRTOS-Task-basiert.
     *   `culfw_parser_task`: Verarbeitet eingehende serielle Befehle (z.B. `V`, `X`, `F`).
     *   `slowrf_task`: Implementiert eine Zustandsmaschine (Sync-Erkennung -> Bit-Akkumulation -> Paritätsprüfung), um aus den vom CC1101 empfangenen Pulsfolgen gültige Datenpakete zu dekodieren.
 *   **Frequenzerkennung:** Automatische Erkennung der Modulfrequenz (433/868 MHz) über einen GPIO-Pin (`GPIO_433MARKER`) mit internem Pull-Up.
 *   **Signal-Erfassung (RX):** Ein GPIO-Pin (`GDO0_PIN`) wird als Interrupt-Quelle genutzt, um die Flanken der empfangenen Signale zu erfassen. Die Timestamps werden per Queue (`slowrf_queue`) an den `slowrf_task` übergeben.
 *   **Signal-Aussendung (TX):** Der `GDO0_PIN` wird dynamisch als Output konfiguriert, um Sendesequenzen per Bit-Banging mit präzisen Microsekunden-Delays (`ets_delay_us`) zu erzeugen. Pakete werden zur Erhöhung der Übertragungssicherheit mehrfach (3x) gesendet.
-*   **Versionierung:** Automatisierte Build-Nummer und detaillierter, culfw-kompatibler Versions-String (`V`-Kommando) zur besseren Identifikation durch Host-Systeme.
+*   **Versionierung:** Automatisierte Build-Nummer und detaillierter, culfw-kompatibler Versions-String (`V`-Kommando), um die Identifikation durch Host-Systeme (z.B. FHEM) sicherzustellen.
 *   **Test-Infrastruktur:** Ein `Tr`-Kommando generiert und sendet 5 zufällige FS20-Frames, um die TX/RX-Kette mit variierenden OOK-Pattern zu validieren.
-*   **Diagnose:** Das `C`-Kommando wurde erweitert, um die Part- und Versionsnummer des CC1101-Chips auszulesen.
+*   **Diagnose:** Erweitertes `C`-Kommando zur Diagnose, das Part- und Versionsnummer sowie weitere Konfigurationsregister des CC1101-Chips ausliest.
 
 ## 3. Implementierungsstatus
 
@@ -33,22 +34,22 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 *   **[DONE]** Test-Funktion (`Tr`) zum Senden von zufälligen, validen FS20-Paketen implementiert.
 *   **[DONE]** FS20-Paritätsprüfung im Decoder implementiert, um fehlerhafte Pakete zu verwerfen.
 *   **[DONE]** Build-System um eine automatische Build-Nummer und einen culfw-kompatiblen Versions-String erweitert.
+*   **[DONE]** SPI-Kommunikationsfehler behoben (Timing, Pinout, Read-Modus); CC1101 wird nun zuverlässig erkannt.
 
 ## 4. Neue Erkenntnisse / Probleme
 
-*   **[PROBLEM]** Die SPI-Kommunikation zum CC1101 scheint fehlerhaft. Das Auslesen der Chip-Register (`C`-Kommando) liefert ungültige Werte (`Part: 0xff, Vers: 0x0f`). Dies deutet auf mögliche Timing-, Initialisierungs- oder Pin-Konflikte hin.
+*   **[INFO]** Das ursprüngliche Pin-Mapping in `platformio.ini` für SPI MISO/MOSI war vertauscht und wurde korrigiert. Dies war eine der Ursachen für die fehlerhafte CC1101-Kommunikation.
 
 ## 5. Nächste Schritte
 
-*   **[BUGFIX]** Ursache für die fehlerhafte SPI-Kommunikation mit dem CC1101 analysieren und beheben.
 *   **Protokoll-Erweiterung:** Unterstützung für weitere SlowRF-Protokolle hinzufügen (z.B. Intertechno V1/V3) mit entsprechenden Timings für Senden und Empfangen.
 *   **Konfigurations-Management:** Speichern von culfw-Einstellungen (z.B. Reporting-Modus `X21`) im Non-Volatile Storage (NVS) des ESP32, um sie nach einem Neustart zu erhalten.
 
 ## 6. Hardware-Konfiguration (Pinout)
 
 *   **SPI (für CC1101):**
-    *   `MOSI`: GPIO 21
-    *   `MISO`: GPIO 20
+    *   `MOSI`: GPIO 20
+    *   `MISO`: GPIO 21
     *   `SCLK`: GPIO 19
     *   `CS`: GPIO 18
 *   **CC1101 Signale:**

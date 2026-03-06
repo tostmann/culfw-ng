@@ -1,2 +1,5 @@
-F7F7F7F7F7F7F7F7F7F7F7F
-C01 Part: 0x00, Vers: 0x14, FREQ2: 0x21, MDMCFG2: 0x30
+I (107) esp_image: segment 1: paddr=0001b5e0 vaddr=40800000 sizeCUL32-C6 READY
+F0320
+F0500
+F0000
+I (107) esp_image: segment 1: paddr=0001b5e0 vaddr=40800000 sizeCUL32-C6 READY
