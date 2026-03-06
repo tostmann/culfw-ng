@@ -40,8 +40,15 @@ esp_err_t cc1101_init() {
     if (version == 0 || version == 0xFF) return ESP_FAIL;
 
     // Default configuration for SlowRF (OOK/ASK)
-    gpio_set_direction(GPIO_433MARKER, GPIO_MODE_INPUT);
+    gpio_config_t marker_conf = {
+        .pin_bit_mask = (1ULL << GPIO_433MARKER),
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_ENABLE,
+    };
+    gpio_config(&marker_conf);
+    vTaskDelay(pdMS_TO_TICKS(10));
     bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);
+    ESP_LOGI(TAG, "Detected Frequency: %s MHz", is_433 ? "433" : "868");
 
     // Common SlowRF Setup (ASK, ~2.4k Baud, etc.)
     cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Output
