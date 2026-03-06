@@ -4,6 +4,7 @@
 #include "freertos/task.h"
 #include "culfw_parser.h"
 #include "esp_log.h"
+#include "esp_random.h"
 #include "driver/gpio.h"
 #include "driver/usb_serial_jtag.h"
 #include "cc1101.h"
