@@ -262,5 +262,87 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "write_file",
+          "args": {
+            "content": "#ifndef SLOWRF_H\n#define SLOWRF_H\n\n#include \"esp_err.h\"\n\nesp_err_t slowrf_init();\n\n#endif\n",
+            "path": "include/slowrf.h"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "write_file",
+          "response": {
+            "result": "Wrote to include/slowrf.h"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "write_file",
+          "args": {
+            "content": "#include \"slowrf.h\"\n#include \"driver/gpio.h\"\n#include \"esp_timer.h\"\n#include \"esp_log.h\"\n#include \"freertos/FreeRTOS.h\"\n#include \"freertos/queue.h\"\n\nstatic const char *TAG = \"SLOWRF\";\nstatic QueueHandle_t pulse_queue;\nstatic int64_t last_time = 0;\n\nstatic void IRAM_ATTR gpio_isr_handler(void* arg) {\n    int64_t current_time = esp_timer_get_time();\n    int64_t diff = current_time - last_time;\n    last_time = current_time;\n    \n    // We send the pulse length to a task for processing\n    xQueueSendFromISR(pulse_queue, &diff, NULL);\n}\n\nvoid slowrf_task(void *pvParameters) {\n    int64_t pulse;\n    while (1) {\n        if (xQueueReceive(pulse_queue, &pulse, portMAX_DELAY)) {\n            // Processing logic for FS20/EM would go here\n            // For now, we just monitor if pulses are in range\n            if (pulse > 300 && pulse < 1500) {\n                // Potential SlowRF pulse\n            }\n        }\n    }\n}\n\nesp_err_t slowrf_init() {\n    pulse_queue = xQueueCreate(100, sizeof(int64_t));\n    \n    gpio_config_t io_conf = {\n        .intr_type = GPIO_INTR_ANYEDGE,\n        .pin_bit_mask = (1ULL << GPIO_GDO0),\n        .mode = GPIO_MODE_INPUT,\n        .pull_up_en = 0,\n        .pull_down_en = 0,\n    };\n    gpio_config(&io_conf);\n    \n    gpio_install_isr_service(0);\n    gpio_isr_handler_add(GPIO_GDO0, gpio_isr_handler, NULL);\n    \n    xTaskCreate(slowrf_task, \"slowrf_task\", 4096, NULL, 15, NULL);\n    \n    return ESP_OK;\n}\n",
+            "path": "src/slowrf.c"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "write_file",
+          "response": {
+            "result": "Wrote to src/slowrf.c"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "    #include \"culfw_parser.h\"\n    #include \"slowrf.h\"\n    xTaskCreate(culfw_parser_task, \"culfw_parser_task\", 4096, NULL, 10, NULL);\n    slowrf_init();\n}",
+            "path": "src/main.c",
+            "original_text": "    #include \"culfw_parser.h\"\n    xTaskCreate(culfw_parser_task, \"culfw_parser_task\", 4096, NULL, 10, NULL);\n}"
+          }
+        }
+      }
+    ]
   }
 ]

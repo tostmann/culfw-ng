@@ -39,5 +39,7 @@ void app_main(void) {
     xTaskCreate(led_task, "led_task", 2048, NULL, 5, NULL);
     
     #include "culfw_parser.h"
+    #include "slowrf.h"
     xTaskCreate(culfw_parser_task, "culfw_parser_task", 4096, NULL, 10, NULL);
+    slowrf_init();
 }
