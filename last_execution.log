@@ -1,1 +1,3 @@
-V 1.0.1-NG CUL32-C6-868MHz
+I (107) esp_image: segment 1: paddr=0001b4f0 vaddr=40800000 sizeCUL32-C6 READY
+X21
+p5150
