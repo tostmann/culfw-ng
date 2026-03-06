@@ -1,0 +1,4 @@
+I (107) esp_image: segment 1: paddr=0001b600 vaddr=40800000 sizeCUL32-C6 READY
+F0000
+C01 Part: 0xc3, Vers: 0x0f, FREQ2: 0x1e, MDMCFG2: 0x02
+I (107) esp_image: segment 1: paddr=0001b600 vaddr=40800000 sizeCUL32-C6 READY
