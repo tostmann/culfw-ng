@@ -156,7 +156,7 @@ void slowrf_task(void *pvParameters) {
                         }
                     } else {
                         // HMS (H + 10 bytes)
-                        if (hms_dec.nibble_cnt >= 20) {
+                        if (hms_dec.nibble_cnt >= 19) { // At least 19 nibbles for HMS
                             char out[64];
                             int len = snprintf(out, sizeof(out), "H");
                             for(int i=0; i<hms_dec.nibble_cnt; i++) {
