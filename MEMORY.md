@@ -17,7 +17,7 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
     *   `slowrf_task`: Implementiert parallele Zustandsmaschinen/Decoder, um aus den vom CC1101 empfangenen Pulsfolgen gültige Datenpakete zu dekodieren.
         *   **FS20-Decoder:** Dedizierte Sync-Bit-Erkennung -> 9-Bit-Akkumulation (8 Daten + 1 Parität) -> Prüfung auf **gerade Parität (Even Parity)**. Der Decoder ist robust gegen Timing-Schwankungen und kann "missed edges" (zwei kurze Pulse als ein langer Puls) verarbeiten.
         *   **Intertechno V1 Decoder:** Verwendet ein 4-Puls-Schiebefenster, um das charakteristische IT-Timing-Muster (1xT, 3xT) zu erkennen und Trits zu dekodieren. Die Timing-Toleranzen wurden erweitert, um auch Sender mit leichten Abweichungen zu erfassen.
-        *   **Intertechno V3 Encoder:** Sende-Logik für das PWM-basierte IT-V3 Protokoll implementiert (300µs Basis-Timing).
+        *   **Intertechno V3 Decoder:** Erkennt das lange Sync-Signal (~9.3ms) und dekodiert die nachfolgenden 32 PWM-kodierten Bits.
 *   **Frequenzerkennung:** Automatische Erkennung der Modulfrequenz (433/868 MHz) über einen GPIO-Pin (`GPIO_433MARKER`) mit internem Pull-Up.
 *   **Signal-Erfassung (RX):**
     *   Der CC1101 wird im **asynchronen seriellen Modus** (`PKTCTRL0 = 0x32`) betrieben, um ein rohes, demoduliertes ASK/OOK-Signal am `GDO0_PIN` bereitzustellen. Dieser Pin wird als Interrupt-Quelle genutzt, um die Timestamps der Signalflanken an den `slowrf_task` zu übergeben.
@@ -32,8 +32,11 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 *   **Diagnose & Feedback:**
     *   Erweitertes `C`-Kommando zur Diagnose, das Part-, Versionsnummer und den **MARCSTATE** (`0x35`) ausliest.
     *   Ein `X99`-Kommando gibt die rohen Puls-Timings (in µs) der empfangenen Signale aus.
+    *   **Remote-Registerzugriff:** `Rxx`-Kommando zum Lesen und `WxxYY`-Kommando zum Schreiben von CC1101-Registern zur Laufzeit.
+    *   **RSSI-Reporting:** An alle empfangenen Datenpakete wird der RSSI-Wert (Signalstärke) als Hex-Wert angehängt (z.B. `F12345678C1`).
     *   Diagnose-Befehle `TX1`/`TX0` zum manuellen Schalten des Sendeträgers für Frequenzmessungen.
-    *   Eine LED (`GPIO_10`) signalisiert aktive Sendevorgänge.
+    *   Eine LED (`GPIO_8`) signalisiert aktive Sendevorgänge.
+    *   Ein periodischer "CUL-TICK" wird über die serielle Schnittstelle gesendet, um die Verbindung zum Host zu signalisieren.
 
 ## 3. Implementierungsstatus
 
@@ -61,28 +64,30 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 *   **[DONE]** Konfigurations-Management: Speichern von culfw-Einstellungen (z.B. `X21`-Modus) im Non-Volatile Storage (NVS).
 *   **[DONE]** Code-Refactoring: Protokollspezifische Sende-Funktionen (`cc1101_send_fs20`, etc.) ausgelagert.
 *   **[DONE]** Stabilisierung des TX-Modus durch Warten auf korrekten `MARCSTATE`.
+*   **[DONE]** Protokoll-Erweiterung: Implementierung des Empfangs-Decoders für Intertechno V3.
+*   **[DONE]** RSSI-Reporting: Empfangene Datenpakete werden um den RSSI-Wert ergänzt.
+*   **[DONE]** Remote-Diagnose: Implementierung von `R`/`W`-Befehlen zum Lesen/Schreiben von CC1101-Registern.
 *   **[DONE]** End-to-End Test: Intertechno V1 (433MHz) und FS20 (868MHz) RX/TX sind gegen einen Referenz-CUL validiert.
 
 ## 4. Neue Erkenntnisse / Probleme
 
 *   **[INFO]** Die culfw-Implementierung des FS20-Protokolls verwendet **gerade Parität (Even Parity)**, abweichend von manchen Spezifikationen. Dies ist für die Kompatibilität entscheidend.
 *   **[INFO]** Eine längere Präambel (z.B. 24 '0'-Bits statt 12) und eine hohe Wiederholrate (z.B. 10x) verbessern die FS20-Übertragungssicherheit signifikant.
-*   **[INFO]** Für maximale Reichweite wurde die Sendeleistung auf +10dBm (`0xC0`) gesetzt. Bei Tests im Nahbereich kann eine Reduktion (`0x50`) Signalverzerrungen beim Empfänger vermeiden.
 *   **[INFO]** Hardwareseitiges Carrier Sense (RSSI-Schwellwert) über den GDO2-Pin ist eine sehr effektive Methode, um den RX-Prozessor von der Verarbeitung von reinem Rauschen zu entlasten.
-*   **[INFO]** Das Speichern von Konfigurationen im NVS ist essentiell für eine nahtlose Integration in Host-Systeme wie FHEM, da diese erwarten, dass der CUL seinen Zustand (z.B. den Reporting-Modus) nach einem Neustart beibehält.
+*   **[INFO]** Das Speichern von Konfigurationen im NVS ist essentiell für eine nahtlose Integration in Host-Systeme wie FHEM, da diese erwarten, dass der CUL seinen Zustand nach einem Neustart beibehält.
+*   **[INFO]** Die Remote-Register-Befehle (`R`/`W`) sind ein mächtiges Werkzeug zur Feinabstimmung der RF-Parameter (z.B. AGC-Verhalten, Frequenz-Offsets), ohne dass eine Neukompilierung erforderlich ist.
 
 ## 5. Nächste Schritte
 
-*   **Protokoll-Erweiterung:** Implementierung des **Empfangs-Decoders** für Intertechno V3.
-*   **RSSI-Reporting:** Ergänzen der empfangenen Datenpakete um den RSSI-Wert (Signalstärke) zur besseren Diagnose.
 *   **FHEM-Integration:** Validierung der Firmware mit einem Host-System (FHEM) zur Sicherstellung der Kompatibilität und Langzeitstabilität.
-*   **Remote-Diagnose:** Implementierung von `GET`-Befehlen zum Auslesen von CC1101-Registern aus der Ferne.
+*   **Dokumentation:** Erstellen einer kurzen Anleitung für die neuen Diagnose-Befehle (`R`, `W`, `TX1`/`TX0`).
+*   **Langzeittests:** Überwachung der Stabilität und des Speicherverbrauchs über mehrere Tage.
 
 ## 6. Hardware-Konfiguration (Pinout)
 
 *   **SPI (für CC1101):**
-    *   `MOSI`: GPIO 20
-    *   `MISO`: GPIO 21
+    *   `MOSI`: GPIO 21
+    *   `MISO`: GPIO 20
     *   `SCLK`: GPIO 19
     *   `CS`: GPIO 18
 *   **CC1101 Signale:**
@@ -90,5 +95,6 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
     *   `GDO2`: GPIO 3 (Input für Carrier Sense)
 *   **Frequenzerkennung:**
     *   `GPIO_433MARKER`: GPIO 4 (Input mit Pull-Up)
-*   **Visuelles Feedback:**
-    *   `LED`: GPIO 10
+*   **Visuelles Feedback / Taster:**
+    *   `LED`: GPIO 8
+    *   `SW`: GPIO 9
