@@ -1143,5 +1143,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "static bool slowrf_debug = false;\nstatic bool slowrf_reporting = false;\n\nvoid slowrf_set_debug(bool enable) {\n    slowrf_debug = enable;\n}\n\nvoid slowrf_set_reporting(bool enable) {\n    slowrf_reporting = enable;\n}\n",
+            "path": "src/slowrf.c",
+            "original_text": "static bool slowrf_debug = false;\n\nvoid slowrf_set_debug(bool enable) {\n    slowrf_debug = enable;\n}\n"
+          }
+        }
+      }
+    ]
   }
 ]

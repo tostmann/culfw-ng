@@ -11,9 +11,14 @@ static const char *TAG = "SLOWRF";
 static QueueHandle_t pulse_queue;
 static int64_t last_time = 0;
 static bool slowrf_debug = false;
+static bool slowrf_reporting = false;
 
 void slowrf_set_debug(bool enable) {
     slowrf_debug = enable;
+}
+
+void slowrf_set_reporting(bool enable) {
+    slowrf_reporting = enable;
 }
 
 static void IRAM_ATTR gpio_isr_handler(void* arg) {
