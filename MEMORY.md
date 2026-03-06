@@ -12,10 +12,11 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 *   **RF-Modul:** CC1101 angebunden via SPI.
 *   **Software-Architektur:** FreeRTOS-Task-basiert.
     *   `culfw_parser_task`: Verarbeitet eingehende serielle Befehle (z.B. `V`, `X`, `F`).
-    *   `slowrf_task`: Verarbeitet die vom CC1101-Modul empfangenen Pulsfolgen und gibt sie formatiert aus.
+    *   `slowrf_task`: Implementiert eine Zustandsmaschine (Sync-Erkennung -> Bit-Akkumulation), um aus den vom CC1101 empfangenen Pulsfolgen Datenpakete zu dekodieren.
 *   **Frequenzerkennung:** Automatische Erkennung der Modulfrequenz (433/868 MHz) über einen GPIO-Pin (`GPIO_433MARKER`), der auf GND gezogen wird.
 *   **Signal-Erfassung (RX):** Ein GPIO-Pin (`GDO0_PIN`) wird als Interrupt-Quelle genutzt, um die Flanken der empfangenen Signale zu erfassen. Die Timestamps werden per Queue (`slowrf_queue`) an den `slowrf_task` übergeben.
-*   **Signal-Aussendung (TX):** Der `GDO0_PIN` wird dynamisch als Output konfiguriert, um Sendesequenzen per Bit-Banging mit präzisen Microsekunden-Delays (`ets_delay_us`) zu erzeugen.
+*   **Signal-Aussendung (TX):** Der `GDO0_PIN` wird dynamisch als Output konfiguriert, um Sendesequenzen per Bit-Banging mit präzisen Microsekunden-Delays (`ets_delay_us`) zu erzeugen. Pakete werden zur Erhöhung der Übertragungssicherheit mehrfach (3x) gesendet.
+*   **Test-Infrastruktur:** Ein `Tr`-Kommando wurde implementiert, das zufällige FS20-Frames generiert und sendet, um die TX/RX-Kette zu validieren.
 
 ## 3. Implementierungsstatus
 
@@ -25,13 +26,14 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 *   **[DONE]** Grundgerüst für die SlowRF-Signalverarbeitung (`slowrf.c`) mit ISR und RTOS-Queue.
 *   **[DONE]** Frequenz-Auto-Detektion implementiert.
 *   **[DONE]** Firmware kompiliert erfolgreich und wurde auf Ziel-Hardware geflasht.
-*   **[DONE]** **[FIXED]** Task Watchdog Timeout durch Umstellung auf nativen USB-JTAG-Treiber behoben. Die serielle Kommunikation ist jetzt stabil.
-*   **[DONE]** Basis-Implementierung für SlowRF-Empfang (RX) mit Ausgabe im `F<HEX>`-Format.
-*   **[DONE]** Basis-Implementierung für SlowRF-Senden (TX) von FS20-kompatiblen Frames über das `F`-Kommando.
+*   **[DONE]** Task Watchdog Timeout durch Umstellung auf nativen USB-JTAG-Treiber behoben. Die serielle Kommunikation ist jetzt stabil.
+*   **[DONE]** Erweiterter SlowRF-Empfang (RX) mit Zustandsmaschine zur Sync- und Bit-Erkennung. Dekodierte Pakete werden im `F<HEX>`-Format ausgegeben.
+*   **[DONE]** SlowRF-Senden (TX) implementiert, inklusive Paket-Wiederholung (3x) zur Erhöhung der Zuverlässigkeit.
+*   **[DONE]** Test-Funktion (`Tr`) zum Senden von zufälligen, validen FS20-Paketen implementiert.
 
 ## 4. Nächste Schritte
 
-*   **Protokoll-Verfeinerung (RX):** Detaillierte Implementierung der Protokoll-Decoder im `slowrf_task`, inklusive Sync-Wort-Erkennung, Paritätsprüfung und Plausibilitäts-Checks für FS20.
+*   **Protokoll-Verfeinerung (RX):** Implementierung der FS20-Paritätsprüfung im Decoder, um fehlerhafte Pakete (Rauschen) zuverlässig zu verwerfen.
 *   **Protokoll-Erweiterung:** Unterstützung für weitere SlowRF-Protokolle hinzufügen (z.B. Intertechno V1/V3) mit entsprechenden Timings für Senden und Empfangen.
 *   **Konfigurations-Management:** Speichern von culfw-Einstellungen (z.B. Reporting-Modus `X21`) im Non-Volatile Storage (NVS) des ESP32, um sie nach einem Neustart zu erhalten.
 
