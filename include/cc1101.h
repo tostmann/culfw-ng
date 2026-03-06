@@ -12,6 +12,7 @@ esp_err_t cc1101_cmd_strobe(uint8_t cmd);
 void cc1101_set_rx_mode();
 void cc1101_set_tx_mode();
 void cc1101_set_idle_mode();
+uint8_t cc1101_read_rssi();
 void cc1101_send_fs20(const char* housecode, const char* addr, const char* cmd);
 void cc1101_send_it_v1(const char* data);
 void cc1101_send_it_v3(const char* data);
