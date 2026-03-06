@@ -915,5 +915,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "                            // FS20 EVEN Parity (matching culfw)\n                            if (parity_bit == (ones % 2)) {\n                                if (dec.byte_cnt < sizeof(dec.data)) { \n                                    dec.data[dec.byte_cnt++] = data_byte; \n                                }\n                            } else { \n",
+            "path": "src/slowrf.c",
+            "original_text": "                            // FS20 ODD Parity\n                            if (parity_bit == ((ones % 2) ? 0 : 1)) {\n                                if (dec.byte_cnt < sizeof(dec.data)) { \n                                    dec.data[dec.byte_cnt++] = data_byte; \n                                }\n                            } else { \n"
+          }
+        }
+      }
+    ]
   }
 ]
