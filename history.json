@@ -666,5 +666,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "static uint32_t isr_count = 0;\nstatic void IRAM_ATTR gpio_isr_handler(void* arg) {\n    int64_t current_time = esp_timer_get_time();\n    int64_t diff = current_time - last_time;\n    last_time = current_time;\n    \n    isr_count++;\n    if (diff > 100) { // Ignore extremely short glitches\n        xQueueSendFromISR(pulse_queue, &diff, NULL);\n    }\n}",
+            "path": "src/slowrf.c",
+            "original_text": "static void IRAM_ATTR gpio_isr_handler(void* arg) {\n    int64_t current_time = esp_timer_get_time();\n    int64_t diff = current_time - last_time;\n    last_time = current_time;\n    \n    // We send the pulse length to a task for processing\n    xQueueSendFromISR(pulse_queue, &diff, NULL);\n}"
+          }
+        }
+      }
+    ]
   }
 ]

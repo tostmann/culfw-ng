@@ -9,13 +9,16 @@ static const char *TAG = "SLOWRF";
 static QueueHandle_t pulse_queue;
 static int64_t last_time = 0;
 
+static uint32_t isr_count = 0;
 static void IRAM_ATTR gpio_isr_handler(void* arg) {
     int64_t current_time = esp_timer_get_time();
     int64_t diff = current_time - last_time;
     last_time = current_time;
     
-    // We send the pulse length to a task for processing
-    xQueueSendFromISR(pulse_queue, &diff, NULL);
+    isr_count++;
+    if (diff > 100) { // Ignore extremely short glitches
+        xQueueSendFromISR(pulse_queue, &diff, NULL);
+    }
 }
 
 void slowrf_task(void *pvParameters) {
