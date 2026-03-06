@@ -220,6 +220,7 @@ void cc1101_send_slowrf(const char* hex_data) {
     }
     
     cc1101_set_rx_mode();
+    gpio_set_level(GPIO_LED, 1); // LED OFF
 }
 
 esp_err_t cc1101_write_reg(uint8_t reg, uint8_t val) {

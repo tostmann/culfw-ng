@@ -1537,5 +1537,61 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "    cc1101_set_rx_mode();\n    gpio_set_level(GPIO_LED, 1); // LED OFF\n}\n",
+            "path": "src/cc1101.c",
+            "original_text": "    cc1101_set_rx_mode();\n}\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Error: Found 2 matches. Provide more context."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "    }\n    \n    cc1101_set_rx_mode();\n    gpio_set_level(GPIO_LED, 1); // LED OFF\n}\n",
+            "path": "src/cc1101.c",
+            "original_text": "    }\n    \n    cc1101_set_rx_mode();\n}\n"
+          }
+        }
+      }
+    ]
   }
 ]
