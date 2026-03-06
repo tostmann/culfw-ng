@@ -289,6 +289,35 @@ void cc1101_send_it_v3(const char* data) {
     gpio_set_level(GPIO_LED, 1);
 }
 
+void cc1101_send_hms(const char* hex_data) {
+    gpio_set_level(GPIO_LED, 0);
+    cc1101_set_tx_mode();
+    vTaskDelay(pdMS_TO_TICKS(5));
+
+    for (int repeat = 0; repeat < 3; repeat++) {
+        // Preamble
+        for(int i=0; i<16; i++) {
+            gpio_set_level(GPIO_GDO0, 1); ets_delay_us(400);
+            gpio_set_level(GPIO_GDO0, 0); ets_delay_us(400);
+        }
+        for(int i=0; hex_data[i]; i++) {
+            uint8_t n = (hex_data[i] >= 'A') ? (hex_data[i]-'A'+10) : (hex_data[i]-'0');
+            for(int b=3; b>=0; b--) {
+                if((n >> b) & 1) {
+                    gpio_set_level(GPIO_GDO0, 1); ets_delay_us(800);
+                    gpio_set_level(GPIO_GDO0, 0); ets_delay_us(400);
+                } else {
+                    gpio_set_level(GPIO_GDO0, 1); ets_delay_us(400);
+                    gpio_set_level(GPIO_GDO0, 0); ets_delay_us(400);
+                }
+            }
+        }
+        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(10000);
+    }
+    cc1101_set_rx_mode();
+    gpio_set_level(GPIO_LED, 1);
+}
+
 esp_err_t cc1101_write_reg(uint8_t reg, uint8_t val) {
     spi_transaction_t t = {
         .length = 16,
