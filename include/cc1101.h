@@ -8,6 +8,9 @@ esp_err_t cc1101_init();
 esp_err_t cc1101_write_reg(uint8_t reg, uint8_t val);
 uint8_t cc1101_read_reg(uint8_t reg);
 esp_err_t cc1101_cmd_strobe(uint8_t cmd);
+void cc1101_set_rx_mode();
+void cc1101_set_tx_mode();
+void cc1101_set_idle_mode();
 
 #define CC1101_WRITE_BURST  0x40
 #define CC1101_READ_SINGLE  0x80
