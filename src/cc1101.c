@@ -90,8 +90,9 @@ esp_err_t cc1101_init() {
     cc1101_write_reg(0x25, 0x00); // FSCAL1
     cc1101_write_reg(0x26, 0x1F); // FSCAL0
 
-    // PATABLE: [0]=0x00 (for '0'), [1]=0xC0 (for '1')
-    uint8_t patable[] = {0x00, 0xC0};
+    // PATABLE: [0]=0x00 (for '0'), [1]=0x60 (for '1' -> ~0dBm to reduce crosstalk in close range)
+    // 0xC0 would be max power (~10dBm)
+    uint8_t patable[] = {0x00, 0x60};
     cc1101_write_burst(0x3E, patable, 2);
     
 
