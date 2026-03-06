@@ -80,17 +80,14 @@ void slowrf_task(void *pvParameters) {
                             dec.current_byte = (dec.current_byte << 1) | bit;
                             dec.bit_cnt++;
                             
-                            // In FS20, every byte has a parity bit (9 bits total)
-                            // For simplicity, we just collect all bits and see.
-                            // But here let's just do 8 bits for now.
-                            if (dec.bit_cnt == 8) {
+                            // FS20: 8 data bits + 1 parity bit = 9 bits
+                            if (dec.bit_cnt == 9) {
                                 if (dec.byte_cnt < sizeof(dec.data)) {
-                                    dec.data[dec.byte_cnt++] = dec.current_byte;
+                                    // Extract 8 bits (the first 8 of the 9)
+                                    dec.data[dec.byte_cnt++] = (dec.current_byte >> 1);
                                 }
                                 dec.current_byte = 0;
                                 dec.bit_cnt = 0;
-                                // Skip the 9th parity bit if we wanted to be precise
-                                // but our sender/receiver needs to agree.
                             }
                         }
                         pulse_in_bit = 0;
