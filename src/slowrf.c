@@ -299,28 +299,23 @@ void slowrf_task(void *pvParameters) {
                     }
                 }
 
-                // HMS Decoding
-                // HMS uses a lot of 400us pulses as sync. We just try to decode bits.
-                // HMS Bit: 0 = 400/400, 1 = 800/400
+                // HMS Decoding (0: 400/400, 1: 800/400)
                 if (hms_dec.pulse_state == 0) {
-                    hms_dec.last_pulse = pulse;
-                    hms_dec.pulse_state = 1;
+                    if (pulse >= 300 && pulse <= 900) {
+                        hms_dec.last_pulse = pulse;
+                        hms_dec.pulse_state = 1;
+                    } else if (hms_dec.nibble_cnt > 0) reset_sensor(&hms_dec);
                 } else {
-                    int bit = -1;
-                    if (hms_dec.last_pulse < 600 && pulse < 600) bit = 0;      // 400/400
-                    else if (hms_dec.last_pulse > 600 && pulse < 600) bit = 1; // 800/400
-                    
-                    if (bit != -1) {
+                    if (pulse >= 300 && pulse <= 600) {
+                        int bit = (hms_dec.last_pulse > 600) ? 1 : 0;
                         hms_dec.current_nibble = (hms_dec.current_nibble << 1) | bit;
                         if (++hms_dec.bit_cnt == 4) {
                             if (hms_dec.nibble_cnt < 24) hms_dec.nibbles[hms_dec.nibble_cnt++] = hms_dec.current_nibble;
                             hms_dec.current_nibble = 0;
                             hms_dec.bit_cnt = 0;
                         }
-                    } else {
-                        if (hms_dec.nibble_cnt < 20) reset_sensor(&hms_dec);
-                    }
-                    hms_dec.pulse_state = 0;
+                        hms_dec.pulse_state = 0;
+                    } else reset_sensor(&hms_dec);
                 }
             }
         }

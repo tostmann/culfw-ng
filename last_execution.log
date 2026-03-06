@@ -1,3 +1,4 @@
-/bin/sh: 26: kill: No such process
+/bin/sh: 22: kill: No such process
 
+--- 868 MONITOR LOG ---
 CUL-TICK
