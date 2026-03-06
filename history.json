@@ -1523,5 +1523,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "static void reset_decoder(slowrf_decoder_t *dec) {\n    memset(dec->data, 0, sizeof(dec->data));\n    dec->byte_cnt = 0;\n    dec->bit_cnt = 0;\n    dec->current_bits = 0;\n    dec->last_bit = -1;\n    dec->pulse_cnt = 0;\n    dec->sync_found = false;\n}\n",
+            "path": "src/slowrf.c",
+            "original_text": "static void reset_decoder(slowrf_decoder_t *dec) {\n    memset(dec->data, 0, sizeof(dec->data));\n    dec->byte_cnt = 0;\n    dec->bit_cnt = 0;\n    dec->current_bits = 0;\n    dec->last_bit = -1;\n    dec->pulse_cnt = 0;\n}\n"
+          }
+        }
+      }
+    ]
   }
 ]
