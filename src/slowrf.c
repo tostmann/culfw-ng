@@ -1,45 +1,45 @@
 #include "slowrf.h"
 #include "driver/gpio.h"
+#include "driver/usb_serial_jtag.h"
 #include "esp_timer.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
+#include "culfw_parser.h"
 
 static const char *TAG = "SLOWRF";
 static QueueHandle_t pulse_queue;
 static int64_t last_time = 0;
 
-static uint32_t isr_count = 0;
 static void IRAM_ATTR gpio_isr_handler(void* arg) {
     int64_t current_time = esp_timer_get_time();
     int64_t diff = current_time - last_time;
     last_time = current_time;
     
-    isr_count++;
-    // Simple filter: 200us < duration < 10ms
-    if (diff > 200 && diff < 10000) { 
+    // Simple filter for SlowRF: 200us < duration < 15ms
+    if (diff > 200 && diff < 15000) { 
         xQueueSendFromISR(pulse_queue, &diff, NULL);
     }
 }
 
 void slowrf_task(void *pvParameters) {
     int64_t pulse;
-    int bit_count = 0;
-    uint8_t current_data[10]; // FS20 is usually 5.5 bytes
     
     while (1) {
         if (xQueueReceive(pulse_queue, &pulse, portMAX_DELAY)) {
-            // Extremely simplified decoder logic for debugging
-            // In a real CUL, we would use a more sophisticated state machine
-            if (pulse > 3000) {
-                // Sync Gap
-                bit_count = 0;
-            } else if (pulse > 300 && pulse < 900) {
-                // Potential bit pulse
-                bit_count++;
+            if (culfw_reporting_enabled()) {
+                char out[32];
+                // In culfwNG style, we might want to report like SignalDuino
+                // but let's just do a simple debug for now
+                int len = snprintf(out, sizeof(out), "p%lld\r\n", (long long)pulse);
+                usb_serial_jtag_write_bytes(out, len, 0);
             }
             
-            // Periodically yield to prevent WDT
+            // To prevent flooding the console if noise is high, 
+            // we should actually only report after a full packet is decoded.
+            // But for testing the ISR and the queue, this is fine.
+            
+            // Periodically yield to prevent WDT if we have high-frequency noise
             static int loop_cnt = 0;
             if (++loop_cnt > 50) {
                 vTaskDelay(1);

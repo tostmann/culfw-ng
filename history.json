@@ -1336,5 +1336,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "#include \"slowrf.h\"\n#include \"driver/gpio.h\"\n#include \"driver/usb_serial_jtag.h\"\n#include \"esp_timer.h\"\n#include \"esp_log.h\"\n#include \"freertos/FreeRTOS.h\"\n#include \"freertos/queue.h\"\n#include \"culfw_parser.h\"\n\nstatic const char *TAG = \"SLOWRF\";\nstatic QueueHandle_t pulse_queue;\nstatic int64_t last_time = 0;\n\nstatic void IRAM_ATTR gpio_isr_handler(void* arg) {\n    int64_t current_time = esp_timer_get_time();\n    int64_t diff = current_time - last_time;\n    last_time = current_time;\n    \n    // Simple filter for SlowRF: 200us < duration < 15ms\n    if (diff > 200 && diff < 15000) { \n        xQueueSendFromISR(pulse_queue, &diff, NULL);\n    }\n}\n\nvoid slowrf_task(void *pvParameters) {\n    int64_t pulse;\n    \n    while (1) {\n        if (xQueueReceive(pulse_queue, &pulse, portMAX_DELAY)) {\n            if (culfw_reporting_enabled()) {\n                char out[32];\n                // In culfwNG style, we might want to report like SignalDuino\n                // but let's just do a simple debug for now\n                int len = snprintf(out, sizeof(out), \"p%lld\\r\\n\", (long long)pulse);\n                usb_serial_jtag_write_bytes(out, len, 0);\n            }\n            \n            // To prevent flooding the console if noise is high, \n            // we should actually only report after a full packet is decoded.\n            // But for testing the ISR and the queue, this is fine.\n            \n            // Periodically yield to prevent WDT if we have high-frequency noise\n            static int loop_cnt = 0;\n            if (++loop_cnt > 50) {\n                vTaskDelay(1);\n                loop_cnt = 0;\n            }\n        }\n    }\n}",
+            "path": "src/slowrf.c",
+            "original_text": "#include \"slowrf.h\"\n#include \"driver/gpio.h\"\n#include \"esp_timer.h\"\n#include \"esp_log.h\"\n#include \"freertos/FreeRTOS.h\"\n#include \"freertos/queue.h\"\n\nstatic const char *TAG = \"SLOWRF\";\nstatic QueueHandle_t pulse_queue;\nstatic int64_t last_time = 0;\n\nstatic uint32_t isr_count = 0;\nstatic void IRAM_ATTR gpio_isr_handler(void* arg) {\n    int64_t current_time = esp_timer_get_time();\n    int64_t diff = current_time - last_time;\n    last_time = current_time;\n    \n    isr_count++;\n    // Simple filter: 200us < duration < 10ms\n    if (diff > 200 && diff < 10000) { \n        xQueueSendFromISR(pulse_queue, &diff, NULL);\n    }\n}\n\nvoid slowrf_task(void *pvParameters) {\n    int64_t pulse;\n    int bit_count = 0;\n    uint8_t current_data[10]; // FS20 is usually 5.5 bytes\n    \n    while (1) {\n        if (xQueueReceive(pulse_queue, &pulse, portMAX_DELAY)) {\n            // Extremely simplified decoder logic for debugging\n            // In a real CUL, we would use a more sophisticated state machine\n            if (pulse > 3000) {\n                // Sync Gap\n                bit_count = 0;\n            } else if (pulse > 300 && pulse < 900) {\n                // Potential bit pulse\n                bit_count++;\n            }\n            \n            // Periodically yield to prevent WDT\n            static int loop_cnt = 0;\n            if (++loop_cnt > 50) {\n                vTaskDelay(1);\n                loop_cnt = 0;\n            }\n        }\n    }\n}"
+          }
+        }
+      }
+    ]
   }
 ]
