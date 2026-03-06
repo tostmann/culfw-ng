@@ -111,9 +111,17 @@ void cc1101_set_rx_mode() {
 void cc1101_set_tx_mode() {
     gpio_intr_disable(GPIO_GDO0);
     cc1101_cmd_strobe(CC1101_SIDLE);
+    vTaskDelay(pdMS_TO_TICKS(1));
     cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Input
     gpio_set_direction(GPIO_GDO0, GPIO_MODE_OUTPUT);
+    gpio_set_level(GPIO_GDO0, 0);
     cc1101_cmd_strobe(CC1101_STX);
+    
+    // Wait for TX mode
+    int timeout = 100;
+    while (((cc1101_read_reg(0x35 | CC1101_READ_BURST) & 0x70) != 0x30) && timeout--) {
+        vTaskDelay(1);
+    }
 }
 
 void cc1101_set_idle_mode() {

@@ -1560,5 +1560,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "void cc1101_set_tx_mode() {\n    gpio_intr_disable(GPIO_GDO0);\n    cc1101_cmd_strobe(CC1101_SIDLE);\n    vTaskDelay(pdMS_TO_TICKS(1));\n    cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Input\n    gpio_set_direction(GPIO_GDO0, GPIO_MODE_OUTPUT);\n    gpio_set_level(GPIO_GDO0, 0);\n    cc1101_cmd_strobe(CC1101_STX);\n    \n    // Wait for TX mode\n    int timeout = 100;\n    while (((cc1101_read_reg(0x35 | CC1101_READ_BURST) & 0x70) != 0x30) && timeout--) {\n        vTaskDelay(1);\n    }\n}\n",
+            "path": "src/cc1101.c",
+            "original_text": "void cc1101_set_tx_mode() {\n    gpio_intr_disable(GPIO_GDO0);\n    cc1101_cmd_strobe(CC1101_SIDLE);\n    cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Input\n    gpio_set_direction(GPIO_GDO0, GPIO_MODE_OUTPUT);\n    cc1101_cmd_strobe(CC1101_STX);\n}\n"
+          }
+        }
+      }
+    ]
   }
 ]
