@@ -23,6 +23,7 @@ esp_err_t cc1101_init() {
         .queue_size = 7,
     };
 
+    ESP_LOGI(TAG, "Initializing SPI: SCK=%d, MISO=%d, MOSI=%d, SS=%d", GPIO_SCK, GPIO_MISO, GPIO_MOSI, GPIO_SS);
     esp_err_t ret = spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_CH_AUTO);
     if (ret != ESP_OK) return ret;
 
