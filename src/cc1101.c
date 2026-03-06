@@ -56,7 +56,7 @@ esp_err_t cc1101_init() {
 
     // Common SlowRF Setup (ASK, ~2.4k Baud, etc.)
     cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Output
-    cc1101_write_reg(0x00, 0x2E); // IOCFG2: GDO2 High Impedance
+    cc1101_write_reg(0x00, 0x0E); // IOCFG2: Carrier Sense (High when RSSI > Threshold)
     cc1101_write_reg(0x08, 0x32); // PKTCTRL0: Asynchronous Serial Mode
     cc1101_write_reg(0x0B, 0x06); // FSCTRL1
     cc1101_write_reg(0x0C, 0x00); // FSCTRL0
