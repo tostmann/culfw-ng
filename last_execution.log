@@ -1,12 +1,3 @@
-/bin/sh: 27: kill: No such process
-
-/bin/sh: 28: kill: No such process
-
---- 868 TARGET LOG ---
-is0010FFFFF0FFC0
-CUL-TICK
-is10F000FFF00F33
-F666666003835
-F66666600383B
-CUL-TICK
---- 433 TARGET LOG ---
+cc1101.h
+culfw_parser.h
+slowrf.h

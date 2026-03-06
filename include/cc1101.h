@@ -17,6 +17,7 @@ void cc1101_send_fs20(const char* housecode, const char* addr, const char* cmd);
 void cc1101_send_it_v1(const char* data);
 void cc1101_send_it_v3(const char* data);
 void cc1101_send_raw_slowrf(const char* hex_data);
+bool cc1101_is_433();
 
 #define CC1101_WRITE_BURST  0x40
 #define CC1101_READ_SINGLE  0x80
