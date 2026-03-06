@@ -1239,5 +1239,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "    // Simple filter for SlowRF: 200us < duration < 15ms\n    if (diff > 200 && diff < 15000) {\n        xQueueSendFromISR(pulse_queue, &diff, NULL);\n    }\n",
+            "path": "src/slowrf.c",
+            "original_text": "    // Simple filter for SlowRF: 200us < duration < 15ms\n    // Also check GDO2 (Carrier Sense) if available to reduce noise processing\n    if (diff > 200 && diff < 15000) {\n        if (gpio_get_level(GPIO_GDO2)) {\n            xQueueSendFromISR(pulse_queue, &diff, NULL);\n        }\n    }\n"
+          }
+        }
+      }
+    ]
   }
 ]

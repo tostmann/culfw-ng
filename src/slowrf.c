@@ -27,11 +27,8 @@ static void IRAM_ATTR gpio_isr_handler(void* arg) {
     last_time = current_time;
     
     // Simple filter for SlowRF: 200us < duration < 15ms
-    // Also check GDO2 (Carrier Sense) if available to reduce noise processing
     if (diff > 200 && diff < 15000) {
-        if (gpio_get_level(GPIO_GDO2)) {
-            xQueueSendFromISR(pulse_queue, &diff, NULL);
-        }
+        xQueueSendFromISR(pulse_queue, &diff, NULL);
     }
 }
 
