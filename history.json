@@ -1131,5 +1131,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "void cc1101_send_it_v1(const char* data) {\n    cc1101_set_tx_mode();\n    vTaskDelay(pdMS_TO_TICKS(5));\n    \n    // Check MARCSTATE\n    uint8_t marc = cc1101_read_reg(0x35 | CC1101_READ_BURST);\n    if ((marc & 0x1F) != 0x13) { // 0x13 is TX\n        // Try again\n        cc1101_cmd_strobe(CC1101_SIDLE);\n        cc1101_cmd_strobe(CC1101_STX);\n        vTaskDelay(pdMS_TO_TICKS(2));\n    }\n\n    for (int repeat = 0; repeat < 6; repeat++) {\n",
+            "path": "src/cc1101.c",
+            "original_text": "void cc1101_send_it_v1(const char* data) {\n    cc1101_set_tx_mode();\n    vTaskDelay(pdMS_TO_TICKS(2));\n    \n    for (int repeat = 0; repeat < 6; repeat++) {\n"
+          }
+        }
+      }
+    ]
   }
 ]

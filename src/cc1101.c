@@ -161,8 +161,17 @@ static void it_v1_send_bit(char bit) {
 
 void cc1101_send_it_v1(const char* data) {
     cc1101_set_tx_mode();
-    vTaskDelay(pdMS_TO_TICKS(2));
+    vTaskDelay(pdMS_TO_TICKS(5));
     
+    // Check MARCSTATE
+    uint8_t marc = cc1101_read_reg(0x35 | CC1101_READ_BURST);
+    if ((marc & 0x1F) != 0x13) { // 0x13 is TX
+        // Try again
+        cc1101_cmd_strobe(CC1101_SIDLE);
+        cc1101_cmd_strobe(CC1101_STX);
+        vTaskDelay(pdMS_TO_TICKS(2));
+    }
+
     for (int repeat = 0; repeat < 6; repeat++) {
         for (int i = 0; data[i]; i++) {
             it_v1_send_bit(data[i]);
