@@ -84,7 +84,7 @@ esp_err_t cc1101_init() {
     cc1101_write_reg(0x1C, 0x40); // AGCCTRL1
     cc1101_write_reg(0x1D, 0x91); // AGCCTRL0
     cc1101_write_reg(0x21, 0x56); // FREND1
-    cc1101_write_reg(0x22, 0x10); // FREND0
+    cc1101_write_reg(0x22, 0x11); // FREND0: ASK/OOK use PATABLE[1] for '1'
     cc1101_write_reg(0x23, 0xE9); // FSCAL3
     cc1101_write_reg(0x24, 0x2A); // FSCAL2
     cc1101_write_reg(0x25, 0x00); // FSCAL1

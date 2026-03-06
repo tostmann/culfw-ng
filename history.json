@@ -1271,5 +1271,85 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "~/.platformio/penv/bin/pio run && \\\n~/.platformio/penv/bin/pio run --target upload --upload-port /dev/ttyACM2 && \\\n~/.platformio/penv/bin/pio run --target upload --upload-port /dev/ttyACM3\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\n\n... [OUTPUT TRUNCATED. Total size: 15115 bytes. Showing last 1500 bytes. Full output saved in 'last_execution.log'. Use 'grep' or 'read_file last_execution.log' to analyze!]\nHash of data verified.\nCompressed 211536 bytes to 107367...\n\nWriting at 0x00010000 [\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]   0.0% 0/107367 bytes... \n\nWriting at 0x0001b886 [\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  15.3% 16384/107367 bytes... \n\nWriting at 0x000221b4 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  30.5% 32768/107367 bytes... \n\nWriting at 0x00029602 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  45.8% 49152/107367 bytes... \n\nWriting at 0x000311a8 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  61.0% 65536/107367 bytes... \n\nWriting at 0x00037fbf [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  76.3% 81920/107367 bytes... \n\nWriting at 0x0003f0c8 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591]  91.6% 98304/107367 bytes... \n\nWriting at 0x00043a50 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588] 100.0% 107367/107367 bytes... \nWrote 211536 bytes (107367 compressed) at 0x00010000 in 1.1 seconds (1588.8 kbit/s).\nHash of data verified.\n\nHard resetting via RTS pin...\n========================= [SUCCESS] Took 10.43 seconds =========================\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "# Prepare Reference CUL 868\necho \"X21\" > /dev/ttyACM1\n# Listen\ntimeout 10s cat /dev/ttyACM1 > /tmp/ref868.log &\nsleep 2\n# Send FS20 command from ESP32 868\necho \"F12340111\" > /dev/ttyACM3\nsleep 8\ncat /tmp/ref868.log\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "    cc1101_write_reg(0x21, 0x56); // FREND1\n    cc1101_write_reg(0x22, 0x11); // FREND0: ASK/OOK use PATABLE[1] for '1'\n    cc1101_write_reg(0x23, 0xE9); // FSCAL3\n",
+            "path": "src/cc1101.c",
+            "original_text": "    cc1101_write_reg(0x21, 0x56); // FREND1\n    cc1101_write_reg(0x22, 0x10); // FREND0\n    cc1101_write_reg(0x23, 0xE9); // FSCAL3\n"
+          }
+        }
+      }
+    ]
   }
 ]
