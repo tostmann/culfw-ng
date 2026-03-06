@@ -59,6 +59,13 @@ static void reset_decoder(slowrf_decoder_t *dec) {
     dec->sync_found = false;
 }
 
+static char* rssi_to_hex(uint8_t rssi_raw) {
+    static char rssi_str[4];
+    // CULFW uses a signed hex value or similar, but often just the raw hex from CC1101
+    snprintf(rssi_str, sizeof(rssi_str), "%02X", rssi_raw);
+    return rssi_str;
+}
+
 typedef struct {
     char s[13];
     int pos;
