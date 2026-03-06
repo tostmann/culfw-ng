@@ -175,15 +175,16 @@ void cc1101_send_it_v1(const char* data) {
 
 void cc1101_send_slowrf(const char* hex_data) {
     cc1101_set_tx_mode();
-    vTaskDelay(pdMS_TO_TICKS(2)); // Settling
+    vTaskDelay(pdMS_TO_TICKS(5)); // More settling
 
     // Multi-transmit for reliability (standard culfw behavior)
-    for (int repeat = 0; repeat < 3; repeat++) {
-        // 1. Preamble (13 bits of 0)
-        for(int i=0; i<13; i++) fs20_send_bit(0);
+    for (int repeat = 0; repeat < 6; repeat++) { // Increased repeats
+        // 1. Preamble (standard culfw uses ~12-13 '0' bits)
+        for(int i=0; i<16; i++) fs20_send_bit(0); // slightly more
         
-        // 2. Sync bit (bit 0)
-        fs20_send_bit(0);
+        // 2. Sync bit (The sync bit is a '1' in FS20 protocol spec, culfw calls it 1)
+        // Actually Spec says: 12-13 zero bits, then one '1' bit as sync.
+        fs20_send_bit(1); 
 
         // 3. Data (hex string to bits)
         int hex_len = strlen(hex_data);
@@ -196,14 +197,14 @@ void cc1101_send_slowrf(const char* hex_data) {
                 fs20_send_bit(bit);
                 if (bit) parity++;
             }
-            // FS20 uses ODD parity: number of 1-bits in the 9 bits must be odd.
+            // FS20 uses ODD parity: total bits including parity must be odd.
             fs20_send_bit((parity % 2) ? 0 : 1);
         }
         
         // 4. End bit (bit 0)
         fs20_send_bit(0);
         
-        // Gap between repeats
+        // Gap between repeats (standard FS20 is ~10ms)
         ets_delay_us(10000);
     }
     
