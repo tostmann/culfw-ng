@@ -1005,5 +1005,215 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "~/.platformio/penv/bin/pio run && \\\n~/.platformio/penv/bin/pio run --target upload --upload-port /dev/ttyACM2 && \\\n~/.platformio/penv/bin/pio run --target upload --upload-port /dev/ttyACM3\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\n\n... [OUTPUT TRUNCATED. Total size: 99256 bytes. Showing last 1500 bytes. Full output saved in 'last_execution.log'. Use 'grep' or 'read_file last_execution.log' to analyze!]\nHash of data verified.\nCompressed 210912 bytes to 107059...\n\nWriting at 0x00010000 [\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]   0.0% 0/107059 bytes... \n\nWriting at 0x0001b85d [\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  15.3% 16384/107059 bytes... \n\nWriting at 0x0002223a [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  30.6% 32768/107059 bytes... \n\nWriting at 0x000295a5 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  45.9% 49152/107059 bytes... \n\nWriting at 0x00031198 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  61.2% 65536/107059 bytes... \n\nWriting at 0x00037fc7 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  76.5% 81920/107059 bytes... \n\nWriting at 0x0003f11e [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591]  91.8% 98304/107059 bytes... \n\nWriting at 0x000437e0 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588] 100.0% 107059/107059 bytes... \nWrote 210912 bytes (107059 compressed) at 0x00010000 in 1.1 seconds (1592.9 kbit/s).\nHash of data verified.\n\nHard resetting via RTS pin...\n========================= [SUCCESS] Took 10.29 seconds =========================\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "(printf \"V\\n\"; sleep 1) > /dev/ttyACM2 & timeout 3s cat /dev/ttyACM2\n(printf \"V\\n\"; sleep 1) > /dev/ttyACM3 & timeout 3s cat /dev/ttyACM3\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\nI (107) esp_image: segment 1: paddr=0001b550 vaddr=40800000 sizeCUL32-C6 READY\r\nF450900001C\r\nF10000B300029500200\r\nF00401200\r\nF010000080228240010204110201000\r\nF0040000202010A\r\nF180001000123484010081508400002\r\nF220853\r\nF4304440142340000\r\nF0000\r\nF0200\r\nF140004\r\nI (107) esp_image: segment 1: paddr=0001b550 vaddr=40800000 sizeCUL32-C6 READY\r\nV 1.0.2-NG culfw-NG Build: 2 (Mar  6 2026 17:16:03) CUL32-C6 (F-Band: 868MHz)\r\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "(printf \"V\\n\"; sleep 1) > /dev/ttyACM2 & timeout 2s cat /dev/ttyACM2\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\nF5F7F5B7F7F7F7F7F\r\nV 1.0.2-NG culfw-NG Build: 2 (Mar  6 2026 17:16:03) CUL32-C6 (F-Band: 433MHz)\r\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "# ESP32-C6 868 listener\n(printf \"X21\\n\"; sleep 10) > /dev/ttyACM3 &\n# Legacy CUL 868 transmitter\n(sleep 2; printf \"F11223344\\n\"; sleep 2) > /dev/ttyACM1 &\ntimeout 12s cat /dev/ttyACM3\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\nF7D7F7F7F7F7F7F7F7F\r\nX21\r\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "read_file",
+          "args": {
+            "path": "include/cc1101.h"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "read_file",
+          "response": {
+            "result": "#ifndef CC1101_H\n#define CC1101_H\n\n#include \"esp_err.h\"\n#include \"driver/spi_master.h\"\n\nesp_err_t cc1101_init();\nesp_err_t cc1101_write_reg(uint8_t reg, uint8_t val);\nuint8_t cc1101_read_reg(uint8_t reg);\nesp_err_t cc1101_cmd_strobe(uint8_t cmd);\nvoid cc1101_set_rx_mode();\nvoid cc1101_set_tx_mode();\nvoid cc1101_set_idle_mode();\nvoid cc1101_send_slowrf(const char* hex_data);\n\n#define CC1101_WRITE_BURST  0x40\n#define CC1101_READ_SINGLE  0x80\n#define CC1101_READ_BURST   0xC0\n\n// Status Registers\n#define CC1101_PARTNUM      0x30\n#define CC1101_VERSION      0x31\n\n// Command Strobes\n#define CC1101_SRES         0x30\n#define CC1101_SFSTX        0x31\n#define CC1101_SXOFF        0x32\n#define CC1101_SCAL         0x33\n#define CC1101_SRX          0x34\n#define CC1101_STX          0x35\n#define CC1101_SIDLE        0x36\n#define CC1101_SWOR         0x38\n#define CC1101_SPWD         0x39\n#define CC1101_SFTX         0x3B\n#define CC1101_SFRX         0x3C\n#define CC1101_SNOP         0x3D\n\n#endif\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "read_file",
+          "args": {
+            "path": "src/slowrf.c"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "read_file",
+          "response": {
+            "result": "#include \"slowrf.h\"\n#include \"driver/gpio.h\"\n#include \"driver/usb_serial_jtag.h\"\n#include \"esp_timer.h\"\n#include \"esp_log.h\"\n#include \"freertos/FreeRTOS.h\"\n#include \"freertos/queue.h\"\n#include \"culfw_parser.h\"\n\nstatic const char *TAG = \"SLOWRF\";\nstatic QueueHandle_t pulse_queue;\nstatic int64_t last_time = 0;\n\nstatic void IRAM_ATTR gpio_isr_handler(void* arg) {\n    int64_t current_time = esp_timer_get_time();\n    int64_t diff = current_time - last_time;\n    last_time = current_time;\n    \n    // Simple filter for SlowRF: 200us < duration < 15ms\n    if (diff > 200 && diff < 15000) { \n        xQueueSendFromISR(pulse_queue, &diff, NULL);\n    }\n}\n\n#define SLOWRF_BIT_S_MIN 300\n#define SLOWRF_BIT_S_MAX 550\n#define SLOWRF_BIT_L_MIN 550\n#define SLOWRF_BIT_L_MAX 900\n#define SLOWRF_SYNC_MIN  8000\n\ntypedef struct {\n    uint8_t data[16];\n    int byte_cnt;\n    int bit_cnt;\n    uint8_t current_byte;\n} slowrf_decoder_t;\n\nstatic void reset_decoder(slowrf_decoder_t *dec) {\n    memset(dec->data, 0, sizeof(dec->data));\n    dec->byte_cnt = 0;\n    dec->bit_cnt = 0;\n    dec->current_byte = 0;\n}\n\nvoid slowrf_task(void *pvParameters) {\n    int64_t pulse;\n    slowrf_decoder_t dec;\n    reset_decoder(&dec);\n    \n    int pulse_in_bit = 0;\n    int last_bit = -1;\n\n    while (1) {\n        if (xQueueReceive(pulse_queue, &pulse, portMAX_DELAY)) {\n            if (pulse > SLOWRF_SYNC_MIN) {\n                if (dec.byte_cnt >= 2) {\n                    char out[64];\n                    int len = snprintf(out, sizeof(out), \"F\");\n                    for (int i = 0; i < dec.byte_cnt; i++) {\n                        len += snprintf(out + len, sizeof(out) - len, \"%02X\", dec.data[i]);\n                    }\n                    snprintf(out + len, sizeof(out) - len, \"\\r\\n\");\n                    usb_serial_jtag_write_bytes(out, strlen(out), 0);\n                }\n                reset_decoder(&dec);\n                pulse_in_bit = 0;\n            } else {\n                int bit = -1;\n                // Wider tolerances for noise\n                if (pulse >= 250 && pulse <= 550) bit = 0;\n                else if (pulse >= 550 && pulse <= 950) bit = 1;\n\n                if (bit != -1) {\n                    if (pulse_in_bit == 0) {\n                        last_bit = bit;\n                        pulse_in_bit = 1;\n                    } else {\n                        if (bit == last_bit) {\n                            // Valid FS20 bit (two identical pulses)\n                            dec.current_byte = (dec.current_byte << 1) | bit;\n                            dec.bit_cnt++;\n                            \n                            // FS20: 8 data bits + 1 parity bit = 9 bits\n                            if (dec.bit_cnt == 9) {\n                                if (dec.byte_cnt < sizeof(dec.data)) {\n                                    // Extract 8 bits (the first 8 of the 9)\n                                    dec.data[dec.byte_cnt++] = (dec.current_byte >> 1);\n                                }\n                                dec.current_byte = 0;\n                                dec.bit_cnt = 0;\n                            }\n                        }\n                        pulse_in_bit = 0;\n                    }\n                } else {\n                    pulse_in_bit = 0;\n                }\n            }\n\n            static int loop_cnt = 0;\n            if (++loop_cnt > 100) {\n                vTaskDelay(1);\n                loop_cnt = 0;\n            }\n        }\n    }\n}\n\nesp_err_t slowrf_init() {\n    pulse_queue = xQueueCreate(256, sizeof(int64_t));\n    \n    gpio_config_t io_conf = {\n        .intr_type = GPIO_INTR_ANYEDGE,\n        .pin_bit_mask = (1ULL << GPIO_GDO0),\n        .mode = GPIO_MODE_INPUT,\n        .pull_up_en = 0,\n        .pull_down_en = 0,\n    };\n    gpio_config(&io_conf);\n    \n    gpio_install_isr_service(0);\n    gpio_isr_handler_add(GPIO_GDO0, gpio_isr_handler, NULL);\n    \n    // Lowered priority from 15 to 4 (above LED, below parser)\n    xTaskCreate(slowrf_task, \"slowrf_task\", 4096, NULL, 4, NULL);\n    \n    return ESP_OK;\n}\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "read_file",
+          "args": {
+            "path": "src/cc1101.c"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "read_file",
+          "response": {
+            "result": "#include \"cc1101.h\"\n#include \"driver/spi_master.h\"\n#include \"driver/gpio.h\"\n#include \"esp_log.h\"\n\nstatic const char *TAG = \"CC1101\";\nstatic spi_device_handle_t spi;\n\nesp_err_t cc1101_init() {\n    spi_bus_config_t buscfg = {\n        .miso_io_num = GPIO_MISO,\n        .mosi_io_num = GPIO_MOSI,\n        .sclk_io_num = GPIO_SCK,\n        .quadwp_io_num = -1,\n        .quadhd_io_num = -1,\n        .max_transfer_sz = 64\n    };\n    \n    spi_device_interface_config_t devcfg = {\n        .clock_speed_hz = 1000000, // 1MHz\n        .mode = 0,\n        .spics_io_num = GPIO_SS,\n        .queue_size = 7,\n    };\n\n    esp_err_t ret = spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_CH_AUTO);\n    if (ret != ESP_OK) return ret;\n\n    ret = spi_bus_add_device(SPI2_HOST, &devcfg, &spi);\n    if (ret != ESP_OK) return ret;\n\n    cc1101_cmd_strobe(CC1101_SRES);\n    vTaskDelay(pdMS_TO_TICKS(10));\n\n    uint8_t partnum = cc1101_read_reg(CC1101_PARTNUM | CC1101_READ_SINGLE);\n    uint8_t version = cc1101_read_reg(CC1101_VERSION | CC1101_READ_SINGLE);\n\n    ESP_LOGI(TAG, \"CC1101 Partnum: 0x%02x, Version: 0x%02x\", partnum, version);\n\n    if (version == 0 || version == 0xFF) return ESP_FAIL;\n\n    // Default configuration for SlowRF (OOK/ASK)\n    gpio_set_direction(GPIO_433MARKER, GPIO_MODE_INPUT);\n    bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);\n\n    // Common SlowRF Setup (ASK, ~2.4k Baud, etc.)\n    cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Output\n    cc1101_write_reg(0x00, 0x2E); // IOCFG2: GDO2 High Impedance\n    cc1101_write_reg(0x0B, 0x06); // FSCTRL1\n    cc1101_write_reg(0x0C, 0x00); // FSCTRL0\n    \n    if (is_433) {\n        cc1101_write_reg(0x0D, 0x10); // FREQ2\n        cc1101_write_reg(0x0E, 0xB1); // FREQ1\n        cc1101_write_reg(0x0F, 0x3B); // FREQ0\n    } else {\n        cc1101_write_reg(0x0D, 0x21); // FREQ2\n        cc1101_write_reg(0x0E, 0x62); // FREQ1\n        cc1101_write_reg(0x0F, 0x76); // FREQ0\n    }\n    \n    cc1101_write_reg(0x10, 0xF8); // MDMCFG4\n    cc1101_write_reg(0x11, 0x93); // MDMCFG3\n    cc1101_write_reg(0x12, 0x30); // MDMCFG2: ASK/OOK, No sync\n    cc1101_write_reg(0x13, 0x22); // MDMCFG1\n    cc1101_write_reg(0x14, 0xF8); // MDMCFG0\n    cc1101_write_reg(0x15, 0x15); // DEVIATN\n    cc1101_write_reg(0x18, 0x18); // MCSM0\n    cc1101_write_reg(0x19, 0x16); // FOCCFG\n    cc1101_write_reg(0x1A, 0x6C); // BSCFG\n    cc1101_write_reg(0x1B, 0x03); // AGCCTRL2\n    cc1101_write_reg(0x1C, 0x40); // AGCCTRL1\n    cc1101_write_reg(0x1D, 0x91); // AGCCTRL0\n    cc1101_write_reg(0x21, 0x56); // FREND1\n    cc1101_write_reg(0x22, 0x10); // FREND0\n    cc1101_write_reg(0x23, 0xE9); // FSCAL3\n    cc1101_write_reg(0x24, 0x2A); // FSCAL2\n    cc1101_write_reg(0x25, 0x00); // FSCAL1\n    cc1101_write_reg(0x26, 0x1F); // FSCAL0\n\n    cc1101_write_reg(0x3E, 0xC0); // PATABLE: For ASK/OOK, first byte is the value for \"1\"\n\n    cc1101_set_rx_mode();\n\n    return ESP_OK;\n}\n\nvoid cc1101_set_rx_mode() {\n    cc1101_cmd_strobe(CC1101_SIDLE);\n    cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Output\n    gpio_set_direction(GPIO_GDO0, GPIO_MODE_INPUT);\n    cc1101_cmd_strobe(CC1101_SRX);\n}\n\nvoid cc1101_set_tx_mode() {\n    cc1101_cmd_strobe(CC1101_SIDLE);\n    cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Input (actually 0x0D is same pin but CC1101 will use it as input in TX)\n    gpio_set_direction(GPIO_GDO0, GPIO_MODE_OUTPUT);\n    cc1101_cmd_strobe(CC1101_STX);\n}\n\nvoid cc1101_set_idle_mode() {\n    cc1101_cmd_strobe(CC1101_SIDLE);\n}\n\n#include \"rom/ets_sys.h\"\n\nstatic void fs20_send_bit(int bit) {\n    if (bit) {\n        gpio_set_level(GPIO_GDO0, 1);\n        ets_delay_us(600);\n        gpio_set_level(GPIO_GDO0, 0);\n        ets_delay_us(600);\n    } else {\n        gpio_set_level(GPIO_GDO0, 1);\n        ets_delay_us(400);\n        gpio_set_level(GPIO_GDO0, 0);\n        ets_delay_us(400);\n    }\n}\n\nvoid cc1101_send_slowrf(const char* hex_data) {\n    cc1101_set_tx_mode();\n    vTaskDelay(pdMS_TO_TICKS(2)); // Settling\n\n    // Multi-transmit for reliability (standard culfw behavior)\n    for (int repeat = 0; repeat < 3; repeat++) {\n        // 1. Preamble (13 bits of 0)\n        for(int i=0; i<13; i++) fs20_send_bit(0);\n        \n        // 2. Sync bit (bit 0)\n        fs20_send_bit(0);\n\n        // 3. Data (hex string to bits)\n        int hex_len = strlen(hex_data);\n        for(int i=0; i<hex_len; i+=2) {\n            char h[3] = {hex_data[i], hex_data[i+1], 0};\n            uint8_t b = (uint8_t)strtol(h, NULL, 16);\n            int parity = 0;\n            for(int j=7; j>=0; j--) {\n                int bit = (b >> j) & 1;\n                fs20_send_bit(bit);\n                if (bit) parity++;\n            }\n            // Parity bit (even parity)\n            fs20_send_bit(parity % 2);\n        }\n        \n        // 4. End bit (bit 0)\n        fs20_send_bit(0);\n        \n        // Gap between repeats\n        ets_delay_us(10000);\n    }\n    \n    cc1101_set_rx_mode();\n}\n\nesp_err_t cc1101_write_reg(uint8_t reg, uint8_t val) {\n    spi_transaction_t t = {\n        .length = 16,\n        .tx_data = {reg, val},\n        .flags = SPI_TRANS_USE_TXDATA\n    };\n    return spi_device_transmit(spi, &t);\n}\n\nuint8_t cc1101_read_reg(uint8_t reg) {\n    uint8_t tx_data[2] = {reg | CC1101_READ_SINGLE, 0x00};\n    uint8_t rx_data[2] = {0, 0};\n    spi_transaction_t t = {\n        .length = 16,\n        .tx_buffer = tx_data,\n        .rx_buffer = rx_data,\n    };\n    spi_device_transmit(spi, &t);\n    return rx_data[1];\n}\n\nesp_err_t cc1101_cmd_strobe(uint8_t cmd) {\n    spi_transaction_t t = {\n        .length = 8,\n        .tx_data = {cmd},\n        .flags = SPI_TRANS_USE_TXDATA\n    };\n    return spi_device_transmit(spi, &t);\n}\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "                            // FS20: 8 data bits + 1 parity bit = 9 bits\n                            if (dec.bit_cnt == 9) {\n                                uint8_t data_byte = (dec.current_byte >> 1);\n                                uint8_t parity_bit = (dec.current_byte & 1);\n                                int ones = 0;\n                                for (int i = 0; i < 8; i++) {\n                                    if ((data_byte >> i) & 1) ones++;\n                                }\n                                if ((ones % 2) == parity_bit) {\n                                    if (dec.byte_cnt < sizeof(dec.data)) {\n                                        dec.data[dec.byte_cnt++] = data_byte;\n                                    }\n                                } else {\n                                    // Parity error, discard packet\n                                    reset_decoder(&dec);\n                                }\n                                dec.current_byte = 0;\n                                dec.bit_cnt = 0;\n                            }",
+            "path": "src/slowrf.c",
+            "original_text": "                            // FS20: 8 data bits + 1 parity bit = 9 bits\n                            if (dec.bit_cnt == 9) {\n                                if (dec.byte_cnt < sizeof(dec.data)) {\n                                    // Extract 8 bits (the first 8 of the 9)\n                                    dec.data[dec.byte_cnt++] = (dec.current_byte >> 1);\n                                }\n                                dec.current_byte = 0;\n                                dec.bit_cnt = 0;\n                            }"
+          }
+        }
+      }
+    ]
   }
 ]

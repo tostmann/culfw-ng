@@ -82,9 +82,19 @@ void slowrf_task(void *pvParameters) {
                             
                             // FS20: 8 data bits + 1 parity bit = 9 bits
                             if (dec.bit_cnt == 9) {
-                                if (dec.byte_cnt < sizeof(dec.data)) {
-                                    // Extract 8 bits (the first 8 of the 9)
-                                    dec.data[dec.byte_cnt++] = (dec.current_byte >> 1);
+                                uint8_t data_byte = (dec.current_byte >> 1);
+                                uint8_t parity_bit = (dec.current_byte & 1);
+                                int ones = 0;
+                                for (int i = 0; i < 8; i++) {
+                                    if ((data_byte >> i) & 1) ones++;
+                                }
+                                if ((ones % 2) == parity_bit) {
+                                    if (dec.byte_cnt < sizeof(dec.data)) {
+                                        dec.data[dec.byte_cnt++] = data_byte;
+                                    }
+                                } else {
+                                    // Parity error, discard packet
+                                    reset_decoder(&dec);
                                 }
                                 dec.current_byte = 0;
                                 dec.bit_cnt = 0;
