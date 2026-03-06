@@ -38,8 +38,6 @@ typedef struct {
     int byte_cnt;
     int bit_cnt;
     uint32_t current_bits;
-    int pulse_cnt;
-    int64_t pulse_buf[4];
 } slowrf_decoder_t;
 
 static void reset_decoder(slowrf_decoder_t *dec) {
@@ -47,16 +45,18 @@ static void reset_decoder(slowrf_decoder_t *dec) {
     dec->byte_cnt = 0;
     dec->bit_cnt = 0;
     dec->current_bits = 0;
-    dec->pulse_cnt = 0;
 }
 
 typedef struct {
     char s[13];
     int pos;
+    int pulse_cnt;
+    int64_t pulse_buf[4];
 } it_v1_decoder_t;
 
 static void reset_it_v1(it_v1_decoder_t *it) {
     it->pos = 0;
+    it->pulse_cnt = 0;
     memset(it->s, 0, sizeof(it->s));
 }
 
