@@ -92,9 +92,8 @@ esp_err_t cc1101_init() {
 
     // PATABLE: [0]=0x00 (for '0'), [1]=0xC0 (for '1')
     uint8_t patable[] = {0x00, 0xC0};
-    for(int i=0; i<2; i++) {
-        cc1101_write_reg(0x3E, patable[i]);
-    }
+    cc1101_write_burst(0x3E, patable, 2);
+    
 
     cc1101_set_rx_mode();
 
