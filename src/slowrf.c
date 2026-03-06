@@ -271,6 +271,58 @@ void slowrf_task(void *pvParameters) {
                     }
                 }
             }
+
+            // --- HMS / S300TH DECODING (868 MHz) ---
+            if (!cc1101_is_433()) {
+                // S300TH Sync
+                if (!s300_dec.sync_found && pulse > 1000 && pulse < 1500) {
+                    s300_dec.sync_found = true;
+                    s300_dec.pulse_state = 0;
+                } else if (s300_dec.sync_found) {
+                    if (s300_dec.pulse_state == 0) {
+                        s300_dec.last_pulse = pulse;
+                        s300_dec.pulse_state = 1;
+                    } else {
+                        int bit = -1;
+                        if (s300_dec.last_pulse < 600 && pulse > 600) bit = 0;      // 400/800
+                        else if (s300_dec.last_pulse < 600 && pulse < 600) bit = 1; // 400/400
+                        
+                        if (bit != -1) {
+                            s300_dec.current_nibble |= (bit << s300_dec.bit_cnt);
+                            if (++s300_dec.bit_cnt == 4) {
+                                if (s300_dec.nibble_cnt < 24) s300_dec.nibbles[s300_dec.nibble_cnt++] = s300_dec.current_nibble;
+                                s300_dec.current_nibble = 0;
+                                s300_dec.bit_cnt = 0;
+                            }
+                        } else s300_dec.sync_found = false;
+                        s300_dec.pulse_state = 0;
+                    }
+                }
+
+                // HMS Decoding
+                // HMS uses a lot of 400us pulses as sync. We just try to decode bits.
+                // HMS Bit: 0 = 400/400, 1 = 800/400
+                if (hms_dec.pulse_state == 0) {
+                    hms_dec.last_pulse = pulse;
+                    hms_dec.pulse_state = 1;
+                } else {
+                    int bit = -1;
+                    if (hms_dec.last_pulse < 600 && pulse < 600) bit = 0;      // 400/400
+                    else if (hms_dec.last_pulse > 600 && pulse < 600) bit = 1; // 800/400
+                    
+                    if (bit != -1) {
+                        hms_dec.current_nibble = (hms_dec.current_nibble << 1) | bit;
+                        if (++hms_dec.bit_cnt == 4) {
+                            if (hms_dec.nibble_cnt < 24) hms_dec.nibbles[hms_dec.nibble_cnt++] = hms_dec.current_nibble;
+                            hms_dec.current_nibble = 0;
+                            hms_dec.bit_cnt = 0;
+                        }
+                    } else {
+                        if (hms_dec.nibble_cnt < 20) reset_sensor(&hms_dec);
+                    }
+                    hms_dec.pulse_state = 0;
+                }
+            }
         }
     }
 }
