@@ -47,6 +47,8 @@ static void reset_decoder(slowrf_decoder_t *dec) {
     dec->byte_cnt = 0;
     dec->bit_cnt = 0;
     dec->current_bits = 0;
+    dec->last_bit = -1;
+    dec->pulse_cnt = 0;
 }
 
 typedef struct {
