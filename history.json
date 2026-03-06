@@ -1021,5 +1021,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "    vTaskDelay(pdMS_TO_TICKS(10));\n    cc1101_is_433_flag = (gpio_get_level(GPIO_433MARKER) == 0);\n    ESP_LOGI(TAG, \"Detected Frequency: %s MHz\", cc1101_is_433_flag ? \"433\" : \"868\");\n    bool is_433 = cc1101_is_433_flag;\n",
+            "path": "src/cc1101.c",
+            "original_text": "    vTaskDelay(pdMS_TO_TICKS(10));\n    bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);\n    ESP_LOGI(TAG, \"Detected Frequency: %s MHz\", is_433 ? \"433\" : \"868\");\n"
+          }
+        }
+      }
+    ]
   }
 ]

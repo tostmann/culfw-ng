@@ -56,8 +56,9 @@ esp_err_t cc1101_init() {
     };
     gpio_config(&marker_conf);
     vTaskDelay(pdMS_TO_TICKS(10));
-    bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);
-    ESP_LOGI(TAG, "Detected Frequency: %s MHz", is_433 ? "433" : "868");
+    cc1101_is_433_flag = (gpio_get_level(GPIO_433MARKER) == 0);
+    ESP_LOGI(TAG, "Detected Frequency: %s MHz", cc1101_is_433_flag ? "433" : "868");
+    bool is_433 = cc1101_is_433_flag;
 
     // Common SlowRF Setup (ASK, ~2.4k Baud, etc.)
     cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Output
