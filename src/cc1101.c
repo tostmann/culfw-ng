@@ -17,7 +17,7 @@ esp_err_t cc1101_init() {
     };
     
     spi_device_interface_config_t devcfg = {
-        .clock_speed_hz = 50000, // 50kHz
+        .clock_speed_hz = 500000, // 500kHz
         .mode = 0,
         .spics_io_num = GPIO_SS,
         .queue_size = 7,

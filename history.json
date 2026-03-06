@@ -1399,5 +1399,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "    spi_device_interface_config_t devcfg = {\n        .clock_speed_hz = 500000, // 500kHz\n        .mode = 0,\n        .spics_io_num = GPIO_SS,\n        .queue_size = 7,\n    };\n",
+            "path": "src/cc1101.c",
+            "original_text": "    spi_device_interface_config_t devcfg = {\n        .clock_speed_hz = 50000, // 50kHz\n        .mode = 0,\n        .spics_io_num = GPIO_SS,\n        .queue_size = 7,\n    };\n"
+          }
+        }
+      }
+    ]
   }
 ]
