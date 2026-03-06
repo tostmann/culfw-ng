@@ -77,6 +77,7 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 *   **[DONE]** Protokoll-Erweiterung: Sende-Encoder für HMS (`H...`-Kommando) implementiert.
 *   **[DONE]** End-to-End Test: HMS und S300TH Empfang gegen Referenz-CUL validiert.
 *   **[DONE]** End-to-End Test: Intertechno V1 (433MHz) und FS20 (868MHz) RX/TX sind gegen einen Referenz-CUL validiert, inklusive strikter Kanaltrennung.
+*   **[DONE]** Projekt-Setup: Initiales Git-Repository auf GitHub erstellt, bereinigt und Code gepusht.
 
 ## 4. Neue Erkenntnisse / Probleme
 
@@ -111,3 +112,8 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 *   **Visuelles Feedback / Taster:**
     *   `LED`: GPIO 8
     *   `SW`: GPIO 9
+
+## 7. Projekt-Infrastruktur
+
+*   **Versionskontrolle:** Das Projekt wird auf GitHub verwaltet.
+    *   **Repository:** `https://github.com/tostmann/culfw-ng`
