@@ -117,11 +117,7 @@ void slowrf_task(void *pvParameters) {
                 }
             }
 
-            static int loop_cnt = 0;
-            if (++loop_cnt > 100) {
-                vTaskDelay(1);
-                loop_cnt = 0;
-            }
+            // Removed busy-wait-prevention delay
         }
     }
 }
