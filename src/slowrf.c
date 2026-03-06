@@ -153,29 +153,36 @@ void slowrf_task(void *pvParameters) {
                 }
 
                 if (bit_ready) {
-                    dec.current_bits = (dec.current_bits << 1) | bit;
-                    dec.bit_cnt++;
-                    if (dec.bit_cnt == 9) {
-                        uint8_t data_byte = (dec.current_bits >> 1);
-                        uint8_t parity_bit = (dec.current_bits & 1);
-                        int ones = 0;
-                        for (int i = 0; i < 8; i++) { if ((data_byte >> i) & 1) ones++; }
-                        // FS20 ODD Parity (Standard)
-                        if (parity_bit == ((ones % 2) ? 0 : 1)) {
-                            if (dec.byte_cnt < sizeof(dec.data)) { 
-                                dec.data[dec.byte_cnt++] = data_byte; 
-                            }
-                        } else { 
-                            // Only reset if we already had some data, otherwise it's just noise
-                            if (dec.byte_cnt > 0) {
-                                if (slowrf_debug) usb_serial_jtag_write_bytes("PARERR\r\n", 8, 0);
-                                reset_decoder(&dec); 
-                            } else {
-                                dec.bit_cnt = 0;
-                                dec.current_bits = 0;
-                            }
+                    if (!dec.sync_found) {
+                        if (bit == 1) {
+                            dec.sync_found = true;
+                            dec.bit_cnt = 0;
+                            dec.current_bits = 0;
                         }
-                        dec.current_bits = 0; dec.bit_cnt = 0;
+                    } else {
+                        dec.current_bits = (dec.current_bits << 1) | bit;
+                        dec.bit_cnt++;
+                        if (dec.bit_cnt == 9) {
+                            uint8_t data_byte = (dec.current_bits >> 1);
+                            uint8_t parity_bit = (dec.current_bits & 1);
+                            int ones = 0;
+                            for (int i = 0; i < 8; i++) { if ((data_byte >> i) & 1) ones++; }
+                            // FS20 ODD Parity
+                            if (parity_bit == ((ones % 2) ? 0 : 1)) {
+                                if (dec.byte_cnt < sizeof(dec.data)) { 
+                                    dec.data[dec.byte_cnt++] = data_byte; 
+                                }
+                            } else { 
+                                if (dec.byte_cnt > 0) {
+                                    if (slowrf_debug) usb_serial_jtag_write_bytes("PARERR\r\n", 8, 0);
+                                    reset_decoder(&dec); 
+                                } else {
+                                    dec.sync_found = false; // Look for sync again
+                                }
+                            }
+                            dec.bit_cnt = 0;
+                            dec.current_bits = 0;
+                        }
                     }
                 }
             }
