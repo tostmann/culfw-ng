@@ -1397,5 +1397,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "    cc1101_write_reg(0x10, 0x58); // MDMCFG4: BW 325kHz\n",
+            "path": "src/cc1101.c",
+            "original_text": "    cc1101_write_reg(0x10, 0xF8); // MDMCFG4\n"
+          }
+        }
+      }
+    ]
   }
 ]

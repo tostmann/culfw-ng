@@ -71,7 +71,7 @@ esp_err_t cc1101_init() {
         cc1101_write_reg(0x0F, 0x76); // FREQ0
     }
     
-    cc1101_write_reg(0x10, 0xF8); // MDMCFG4
+    cc1101_write_reg(0x10, 0x58); // MDMCFG4: BW 325kHz
     cc1101_write_reg(0x11, 0x93); // MDMCFG3
     cc1101_write_reg(0x12, 0x30); // MDMCFG2: ASK/OOK, No sync
     cc1101_write_reg(0x13, 0x22); // MDMCFG1
