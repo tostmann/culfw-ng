@@ -98,7 +98,7 @@ void slowrf_task(void *pvParameters) {
                                 for (int i = 0; i < 8; i++) {
                                     if ((data_byte >> i) & 1) ones++;
                                 }
-                                if ((ones % 2) == parity_bit) {
+                                if ((ones % 2) != parity_bit) {
                                     if (dec.byte_cnt < sizeof(dec.data)) {
                                         dec.data[dec.byte_cnt++] = data_byte;
                                     }
