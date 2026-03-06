@@ -59,7 +59,8 @@ static void handle_command(char *cmd) {
             slowrf_set_debug(false);
             slowrf_set_reporting(true);
         }
-        len = snprintf(out, sizeof(out), "X21\r\n");
+        save_reporting_state(reporting_enabled);
+        len = snprintf(out, sizeof(out), "X%02d\r\n", reporting_enabled ? 21 : 0);
     } else if (cmd[0] == 'C') {
         uint8_t part = cc1101_read_reg(CC1101_PARTNUM | CC1101_READ_BURST);
         uint8_t vers = cc1101_read_reg(CC1101_VERSION | CC1101_READ_BURST);
