@@ -4,6 +4,7 @@
 #include "freertos/task.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
+#include "nvs_flash.h"
 #include "cc1101.h"
 
 static const char *TAG = "CUL32-C6";
