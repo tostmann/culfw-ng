@@ -971,5 +971,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "esp_err_t slowrf_init() {\n    pulse_queue = xQueueCreate(1024, sizeof(int64_t)); // Larger queue\n    \n    gpio_config_t io_conf = {\n        .intr_type = GPIO_INTR_ANYEDGE,\n        .pin_bit_mask = (1ULL << GPIO_GDO0),\n        .mode = GPIO_MODE_INPUT,\n        .pull_up_en = 0,\n        .pull_down_en = 0,\n    };\n    gpio_config(&io_conf);\n\n    // GDO2 as Carrier Sense Input\n    gpio_config_t gdo2_conf = {\n        .pin_bit_mask = (1ULL << GPIO_GDO2),\n        .mode = GPIO_MODE_INPUT,\n        .pull_up_en = 0,\n        .pull_down_en = 0,\n    };\n    gpio_config(&gdo2_conf);\n    \n    gpio_install_isr_service(0);\n",
+            "path": "src/slowrf.c",
+            "original_text": "esp_err_t slowrf_init() {\n    pulse_queue = xQueueCreate(512, sizeof(int64_t));\n    \n    gpio_config_t io_conf = {\n        .intr_type = GPIO_INTR_ANYEDGE,\n        .pin_bit_mask = (1ULL << GPIO_GDO0),\n        .mode = GPIO_MODE_INPUT,\n        .pull_up_en = 0,\n        .pull_down_en = 0,\n    };\n    gpio_config(&io_conf);\n    \n    gpio_install_isr_service(0);\n"
+          }
+        }
+      }
+    ]
   }
 ]

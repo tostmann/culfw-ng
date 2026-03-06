@@ -194,7 +194,7 @@ void slowrf_task(void *pvParameters) {
 }
 
 esp_err_t slowrf_init() {
-    pulse_queue = xQueueCreate(512, sizeof(int64_t));
+    pulse_queue = xQueueCreate(1024, sizeof(int64_t)); // Larger queue
     
     gpio_config_t io_conf = {
         .intr_type = GPIO_INTR_ANYEDGE,
@@ -204,6 +204,15 @@ esp_err_t slowrf_init() {
         .pull_down_en = 0,
     };
     gpio_config(&io_conf);
+
+    // GDO2 as Carrier Sense Input
+    gpio_config_t gdo2_conf = {
+        .pin_bit_mask = (1ULL << GPIO_GDO2),
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = 0,
+        .pull_down_en = 0,
+    };
+    gpio_config(&gdo2_conf);
     
     gpio_install_isr_service(0);
     gpio_isr_handler_add(GPIO_GDO0, gpio_isr_handler, NULL);
