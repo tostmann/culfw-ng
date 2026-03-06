@@ -87,19 +87,21 @@ void slowrf_task(void *pvParameters) {
                     } else {
                         if (bit == last_bit) {
                             // Valid FS20 bit (two identical pulses)
-                            dec.current_byte = (dec.current_byte << 1) | bit;
+                            dec.current_bits = (dec.current_bits << 1) | bit;
                             dec.bit_cnt++;
-                            // ESP_LOGD(TAG, "Bit: %d, Cnt: %d", bit, dec.bit_cnt);
                             
                             // FS20: 8 data bits + 1 parity bit = 9 bits
                             if (dec.bit_cnt == 9) {
-                                uint8_t data_byte = (dec.current_byte >> 1);
-                                uint8_t parity_bit = (dec.current_byte & 1);
+                                uint8_t data_byte = (dec.current_bits >> 1);
+                                uint8_t parity_bit = (dec.current_bits & 1);
                                 int ones = 0;
                                 for (int i = 0; i < 8; i++) {
                                     if ((data_byte >> i) & 1) ones++;
                                 }
-                                if ((ones % 2) != parity_bit) {
+                                // FS20 uses ODD parity: sum over 9 bits must be odd.
+                                // so parity_bit must be 1 if (ones % 2 == 0) and 0 if (ones % 2 != 0).
+                                // i.e. parity_bit == !(ones % 2).
+                                if (parity_bit == ((ones % 2) ? 0 : 1)) {
                                     if (dec.byte_cnt < sizeof(dec.data)) {
                                         dec.data[dec.byte_cnt++] = data_byte;
                                     }
@@ -107,7 +109,7 @@ void slowrf_task(void *pvParameters) {
                                     // Parity error, discard packet
                                     reset_decoder(&dec);
                                 }
-                                dec.current_byte = 0;
+                                dec.current_bits = 0;
                                 dec.bit_cnt = 0;
                             }
                         }
