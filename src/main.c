@@ -25,8 +25,6 @@ void led_task(void *pvParameters) {
     }
 }
 
-#include "driver/usb_serial_jtag.h"
-
 void app_main(void) {
     ESP_LOGI(TAG, "Starting CUL32-C6 Firmware...");
 

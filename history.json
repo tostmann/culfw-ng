@@ -1342,5 +1342,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "    }\n}\n\nvoid app_main(void) {\n",
+            "path": "src/main.c",
+            "original_text": "    }\n}\n\n#include \"driver/usb_serial_jtag.h\"\n\nvoid app_main(void) {\n"
+          }
+        }
+      }
+    ]
   }
 ]
