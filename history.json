@@ -967,5 +967,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "#include \"esp_log.h\"\n#include \"esp_random.h\"\n#include \"nvs_flash.h\"\n#include \"nvs.h\"\n#include \"driver/gpio.h\"\n#include \"driver/usb_serial_jtag.h\"\n#include \"cc1101.h\"\n#include \"slowrf.h\"\n\nstatic const char *TAG = \"CULFW_PARSER\";\nstatic bool reporting_enabled = false;\n\nstatic void save_reporting_state(bool state) {\n    nvs_handle_t my_handle;\n    if (nvs_open(\"storage\", NVS_READWRITE, &my_handle) == ESP_OK) {\n        nvs_set_u8(my_handle, \"reporting\", state ? 1 : 0);\n        nvs_commit(my_handle);\n        nvs_close(my_handle);\n    }\n}\n\nstatic bool load_reporting_state() {\n    nvs_handle_t my_handle;\n    uint8_t state = 0;\n    if (nvs_open(\"storage\", NVS_READONLY, &my_handle) == ESP_OK) {\n        nvs_get_u8(my_handle, \"reporting\", &state);\n        nvs_close(my_handle);\n    }\n    return state != 0;\n}\n",
+            "path": "src/culfw_parser.c",
+            "original_text": "#include \"esp_log.h\"\n#include \"esp_random.h\"\n#include \"driver/gpio.h\"\n#include \"driver/usb_serial_jtag.h\"\n#include \"cc1101.h\"\n#include \"slowrf.h\"\n\nstatic const char *TAG = \"CULFW_PARSER\";\nstatic bool reporting_enabled = false;\n"
+          }
+        }
+      }
+    ]
   }
 ]

@@ -5,6 +5,8 @@
 #include "culfw_parser.h"
 #include "esp_log.h"
 #include "esp_random.h"
+#include "nvs_flash.h"
+#include "nvs.h"
 #include "driver/gpio.h"
 #include "driver/usb_serial_jtag.h"
 #include "cc1101.h"
@@ -12,6 +14,25 @@
 
 static const char *TAG = "CULFW_PARSER";
 static bool reporting_enabled = false;
+
+static void save_reporting_state(bool state) {
+    nvs_handle_t my_handle;
+    if (nvs_open("storage", NVS_READWRITE, &my_handle) == ESP_OK) {
+        nvs_set_u8(my_handle, "reporting", state ? 1 : 0);
+        nvs_commit(my_handle);
+        nvs_close(my_handle);
+    }
+}
+
+static bool load_reporting_state() {
+    nvs_handle_t my_handle;
+    uint8_t state = 0;
+    if (nvs_open("storage", NVS_READONLY, &my_handle) == ESP_OK) {
+        nvs_get_u8(my_handle, "reporting", &state);
+        nvs_close(my_handle);
+    }
+    return state != 0;
+}
 
 bool culfw_reporting_enabled() {
     return reporting_enabled;
