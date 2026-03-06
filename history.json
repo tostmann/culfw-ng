@@ -1267,5 +1267,138 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "read_file",
+          "args": {
+            "path": "src/culfw_parser.c"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "read_file",
+          "response": {
+            "result": "#include <stdio.h>\n#include <string.h>\n#include \"freertos/FreeRTOS.h\"\n#include \"freertos/task.h\"\n#include \"culfw_parser.h\"\n#include \"esp_log.h\"\n#include \"esp_random.h\"\n#include \"nvs_flash.h\"\n#include \"nvs.h\"\n#include \"driver/gpio.h\"\n#include \"driver/usb_serial_jtag.h\"\n#include \"cc1101.h\"\n#include \"slowrf.h\"\n\nstatic const char *TAG = \"CULFW_PARSER\";\nstatic bool reporting_enabled = false;\n\nstatic void save_reporting_state(bool state) {\n    nvs_handle_t my_handle;\n    if (nvs_open(\"storage\", NVS_READWRITE, &my_handle) == ESP_OK) {\n        nvs_set_u8(my_handle, \"reporting\", state ? 1 : 0);\n        nvs_commit(my_handle);\n        nvs_close(my_handle);\n    }\n}\n\nstatic bool load_reporting_state() {\n    nvs_handle_t my_handle;\n    uint8_t state = 0;\n    if (nvs_open(\"storage\", NVS_READONLY, &my_handle) == ESP_OK) {\n        nvs_get_u8(my_handle, \"reporting\", &state);\n        nvs_close(my_handle);\n    }\n    return state != 0;\n}\n\nbool culfw_reporting_enabled() {\n    return reporting_enabled;\n}\n\nstatic void handle_command(char *cmd) {\n    char out[128];\n    int len = 0;\n    if (cmd[0] == 'V') {\n        bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);\n        len = snprintf(out, sizeof(out), \"V %s culfw-NG Build: %d (%s %s) CUL32-C6 (F-Band: %sMHz)\\r\\n\", \n                       FW_VERSION, BUILD_NUMBER, __DATE__, __TIME__, is_433 ? \"433\" : \"868\");\n    } else if (cmd[0] == 'X') {\n        if (cmd[1] == '0' && cmd[2] == '0') {\n            reporting_enabled = false;\n            slowrf_set_debug(false);\n            slowrf_set_reporting(false);\n        } else if (cmd[1] == '9' && cmd[2] == '9') {\n            slowrf_set_debug(true);\n            reporting_enabled = true;\n            slowrf_set_reporting(true);\n        } else {\n            reporting_enabled = true;\n            slowrf_set_debug(false);\n            slowrf_set_reporting(true);\n        }\n        save_reporting_state(reporting_enabled);\n        len = snprintf(out, sizeof(out), \"X%02d\\r\\n\", reporting_enabled ? 21 : 0);\n    } else if (cmd[0] == 'C') {\n        uint8_t part = cc1101_read_reg(CC1101_PARTNUM | CC1101_READ_BURST);\n        uint8_t vers = cc1101_read_reg(CC1101_VERSION | CC1101_READ_BURST);\n        uint8_t marc = cc1101_read_reg(0x35 | CC1101_READ_BURST);\n        len = snprintf(out, sizeof(out), \"C01 Part: 0x%02x, Vers: 0x%02x, MARC: 0x%02x\\r\\n\", part, vers, marc);\n    } else if (cmd[0] == 'F') {\n        // F <housecode 4> <addr 2> <cmd 2>\n        if (strlen(cmd) == 9) {\n            char hc[5], ad[3], cm[3];\n            strncpy(hc, cmd + 1, 4); hc[4] = 0;\n            strncpy(ad, cmd + 5, 2); ad[2] = 0;\n            strncpy(cm, cmd + 7, 2); cm[2] = 0;\n            cc1101_send_fs20(hc, ad, cm);\n            len = snprintf(out, sizeof(out), \"F OK\\r\\n\");\n        } else {\n            cc1101_send_raw_slowrf(cmd + 1);\n            len = snprintf(out, sizeof(out), \"F OK (raw)\\r\\n\");\n        }\n    } else if (cmd[0] == 'i' && cmd[1] == 's') {\n        const char* is_data = cmd + 2;\n        if (strlen(is_data) == 32) {\n            cc1101_send_it_v3(is_data);\n        } else {\n            cc1101_send_it_v1(is_data);\n        }\n        len = snprintf(out, sizeof(out), \"is OK\\r\\n\");\n    } else if (cmd[0] == 'T') {\n        if (cmd[1] == 'r') {\n            // Test Random: Send 5 random FS20 packets\n            len = snprintf(out, sizeof(out), \"Tr START\\r\\n\");\n            usb_serial_jtag_write_bytes(out, len, portMAX_DELAY);\n            for (int i = 0; i < 5; i++) {\n                char rnd_hex[11];\n                uint32_t r = esp_random();\n                snprintf(rnd_hex, sizeof(rnd_hex), \"%08X\", r);\n                char msg[64];\n                int mlen = snprintf(msg, sizeof(msg), \"TX: %s\\r\\n\", rnd_hex);\n                usb_serial_jtag_write_bytes(msg, mlen, portMAX_DELAY);\n                cc1101_send_raw_slowrf(rnd_hex);\n                vTaskDelay(pdMS_TO_TICKS(500));\n            }\n            len = snprintf(out, sizeof(out), \"Tr DONE\\r\\n\");\n        } else if (strlen(cmd) >= 7) {\n            // T <housecode 4> <addr 2> -> T010101 (for compatibility with some systems)\n            cc1101_send_raw_slowrf(cmd + 1);\n            len = snprintf(out, sizeof(out), \"T OK\\r\\n\");\n        }\n        // Test Random: Send 5 random FS20 packets\n        len = snprintf(out, sizeof(out), \"Tr START\\r\\n\");\n        usb_serial_jtag_write_bytes(out, len, portMAX_DELAY);\n        for (int i = 0; i < 5; i++) {\n            char rnd_hex[11];\n            uint32_t r = esp_random();\n            // Just use the bytes directly for simplicity\n            snprintf(rnd_hex, sizeof(rnd_hex), \"%08X\", r);\n            \n            char msg[64];\n            int mlen = snprintf(msg, sizeof(msg), \"TX: %s\\r\\n\", rnd_hex);\n            usb_serial_jtag_write_bytes(msg, mlen, portMAX_DELAY);\n\n            cc1101_send_slowrf(rnd_hex);\n            vTaskDelay(pdMS_TO_TICKS(500));\n        }\n        len = snprintf(out, sizeof(out), \"Tr DONE\\r\\n\");\n    } else {\n        len = snprintf(out, sizeof(out), \"E %s unknown\\r\\n\", cmd);\n    }\n    \n    if (len > 0) {\n        usb_serial_jtag_write_bytes(out, len, portMAX_DELAY);\n    }\n}\n\nvoid culfw_parser_task(void *pvParameters) {\n    reporting_enabled = load_reporting_state();\n    slowrf_set_reporting(reporting_enabled);\n    ESP_LOGI(TAG, \"Loaded reporting state: %d\", reporting_enabled);\n\n    // Check if driver is already installed (might be by another task or earlier boot stage)\n    if (!usb_serial_jtag_is_driver_installed()) {\n        usb_serial_jtag_driver_config_t usb_serial_jtag_config = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();\n        usb_serial_jtag_driver_install(&usb_serial_jtag_config);\n    }\n\n    uint8_t buf[128];\n    char cmd_buf[128];\n    int cmd_pos = 0;\n\n    while (1) {\n        int n = usb_serial_jtag_read_bytes(buf, sizeof(buf), pdMS_TO_TICKS(50));\n        if (n > 0) {\n            for (int i = 0; i < n; i++) {\n                char c = (char)buf[i];\n                if (c == '\\r' || c == '\\n') {\n                    if (cmd_pos > 0) {\n                        cmd_buf[cmd_pos] = '\\0';\n                        handle_command(cmd_buf);\n                        cmd_pos = 0;\n                    }\n                } else if (cmd_pos < sizeof(cmd_buf) - 1) {\n                    cmd_buf[cmd_pos++] = c;\n                }\n            }\n        }\n        vTaskDelay(pdMS_TO_TICKS(10));\n    }\n}\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "write_file",
+          "args": {
+            "content": "#include <stdio.h>\n#include <string.h>\n#include \"freertos/FreeRTOS.h\"\n#include \"freertos/task.h\"\n#include \"culfw_parser.h\"\n#include \"esp_log.h\"\n#include \"esp_random.h\"\n#include \"nvs_flash.h\"\n#include \"nvs.h\"\n#include \"driver/gpio.h\"\n#include \"driver/usb_serial_jtag.h\"\n#include \"cc1101.h\"\n#include \"slowrf.h\"\n\nstatic const char *TAG = \"CULFW_PARSER\";\nstatic bool reporting_enabled = false;\n\nstatic void save_reporting_state(bool state) {\n    nvs_handle_t my_handle;\n    if (nvs_open(\"storage\", NVS_READWRITE, &my_handle) == ESP_OK) {\n        nvs_set_u8(my_handle, \"reporting\", state ? 1 : 0);\n        nvs_commit(my_handle);\n        nvs_close(my_handle);\n    }\n}\n\nstatic bool load_reporting_state() {\n    nvs_handle_t my_handle;\n    uint8_t state = 0;\n    if (nvs_open(\"storage\", NVS_READONLY, &my_handle) == ESP_OK) {\n        nvs_get_u8(my_handle, \"reporting\", &state);\n        nvs_close(my_handle);\n    }\n    return state != 0;\n}\n\nbool culfw_reporting_enabled() {\n    return reporting_enabled;\n}\n\nstatic void handle_command(char *cmd) {\n    char out[128];\n    int len = 0;\n    if (cmd[0] == 'V') {\n        bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);\n        len = snprintf(out, sizeof(out), \"V %s culfw-NG Build: %d (%s %s) CUL32-C6 (F-Band: %sMHz)\\r\\n\", \n                       FW_VERSION, BUILD_NUMBER, __DATE__, __TIME__, is_433 ? \"433\" : \"868\");\n    } else if (cmd[0] == 'X') {\n        if (cmd[1] == '0' && cmd[2] == '0') {\n            reporting_enabled = false;\n            slowrf_set_debug(false);\n            slowrf_set_reporting(false);\n        } else if (cmd[1] == '9' && cmd[2] == '9') {\n            slowrf_set_debug(true);\n            reporting_enabled = true;\n            slowrf_set_reporting(true);\n        } else {\n            reporting_enabled = true;\n            slowrf_set_debug(false);\n            slowrf_set_reporting(true);\n        }\n        save_reporting_state(reporting_enabled);\n        len = snprintf(out, sizeof(out), \"X%02d\\r\\n\", reporting_enabled ? 21 : 0);\n    } else if (cmd[0] == 'C') {\n        uint8_t part = cc1101_read_reg(CC1101_PARTNUM | CC1101_READ_BURST);\n        uint8_t vers = cc1101_read_reg(CC1101_VERSION | CC1101_READ_BURST);\n        uint8_t marc = cc1101_read_reg(0x35 | CC1101_READ_BURST);\n        len = snprintf(out, sizeof(out), \"C01 Part: 0x%02x, Vers: 0x%02x, MARC: 0x%02x\\r\\n\", part, vers, marc);\n    } else if (cmd[0] == 'F') {\n        if (strlen(cmd) == 9) {\n            char hc[5], ad[3], cm[3];\n            strncpy(hc, cmd + 1, 4); hc[4] = 0;\n            strncpy(ad, cmd + 5, 2); ad[2] = 0;\n            strncpy(cm, cmd + 7, 2); cm[2] = 0;\n            cc1101_send_fs20(hc, ad, cm);\n            len = snprintf(out, sizeof(out), \"F OK\\r\\n\");\n        } else {\n            cc1101_send_raw_slowrf(cmd + 1);\n            len = snprintf(out, sizeof(out), \"F OK (raw)\\r\\n\");\n        }\n    } else if (cmd[0] == 'i' && cmd[1] == 's') {\n        const char* is_data = cmd + 2;\n        if (strlen(is_data) == 32) {\n            cc1101_send_it_v3(is_data);\n        } else {\n            cc1101_send_it_v1(is_data);\n        }\n        len = snprintf(out, sizeof(out), \"is OK\\r\\n\");\n    } else if (cmd[0] == 'T') {\n        if (cmd[1] == 'r') {\n            len = snprintf(out, sizeof(out), \"Tr START\\r\\n\");\n            usb_serial_jtag_write_bytes(out, len, portMAX_DELAY);\n            for (int i = 0; i < 5; i++) {\n                char rnd_hex[11];\n                uint32_t r = esp_random();\n                snprintf(rnd_hex, sizeof(rnd_hex), \"%08X\", r);\n                char msg[64];\n                int mlen = snprintf(msg, sizeof(msg), \"TX: %s\\r\\n\", rnd_hex);\n                usb_serial_jtag_write_bytes(msg, mlen, portMAX_DELAY);\n                cc1101_send_raw_slowrf(rnd_hex);\n                vTaskDelay(pdMS_TO_TICKS(500));\n            }\n            len = snprintf(out, sizeof(out), \"Tr DONE\\r\\n\");\n        } else if (strlen(cmd) >= 7) {\n            cc1101_send_raw_slowrf(cmd + 1);\n            len = snprintf(out, sizeof(out), \"T OK\\r\\n\");\n        }\n    } else {\n        len = snprintf(out, sizeof(out), \"E %s unknown\\r\\n\", cmd);\n    }\n    \n    if (len > 0) {\n        usb_serial_jtag_write_bytes(out, len, portMAX_DELAY);\n    }\n}\n\nvoid culfw_parser_task(void *pvParameters) {\n    reporting_enabled = load_reporting_state();\n    slowrf_set_reporting(reporting_enabled);\n    ESP_LOGI(TAG, \"Loaded reporting state: %d\", reporting_enabled);\n\n    if (!usb_serial_jtag_is_driver_installed()) {\n        usb_serial_jtag_driver_config_t usb_serial_jtag_config = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();\n        usb_serial_jtag_driver_install(&usb_serial_jtag_config);\n    }\n\n    uint8_t buf[128];\n    char cmd_buf[128];\n    int cmd_pos = 0;\n\n    while (1) {\n        int n = usb_serial_jtag_read_bytes(buf, sizeof(buf), pdMS_TO_TICKS(50));\n        if (n > 0) {\n            for (int i = 0; i < n; i++) {\n                char c = (char)buf[i];\n                if (c == '\\r' || c == '\\n') {\n                    if (cmd_pos > 0) {\n                        cmd_buf[cmd_pos] = '\\0';\n                        handle_command(cmd_buf);\n                        cmd_pos = 0;\n                    }\n                } else if (cmd_pos < sizeof(cmd_buf) - 1) {\n                    cmd_buf[cmd_pos++] = c;\n                }\n            }\n        }\n        vTaskDelay(pdMS_TO_TICKS(10));\n    }\n}\n",
+            "path": "src/culfw_parser.c"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "write_file",
+          "response": {
+            "result": "Wrote to src/culfw_parser.c"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "~/.platformio/penv/bin/pio run && \\\n~/.platformio/penv/bin/pio run --target upload --upload-port /dev/ttyACM2 && \\\n~/.platformio/penv/bin/pio run --target upload --upload-port /dev/ttyACM3\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\n\n... [OUTPUT TRUNCATED. Total size: 15322 bytes. Showing last 1500 bytes. Full output saved in 'last_execution.log'. Use 'grep' or 'read_file last_execution.log' to analyze!]\n\nWriting at 0x0001ba4b [\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  13.4% 16384/122089 bytes... \n\nWriting at 0x00021e08 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  26.8% 32768/122089 bytes... \n\nWriting at 0x0002967c [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  40.3% 49152/122089 bytes... \n\nWriting at 0x00030d92 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  53.7% 65536/122089 bytes... \n\nWriting at 0x00037a23 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591]  67.1% 81920/122089 bytes... \n\nWriting at 0x0003ec90 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591]  80.5% 98304/122089 bytes... \n\nWriting at 0x00045b7e [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591]  93.9% 114688/122089 bytes... \n\nWriting at 0x00049a10 [\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588] 100.0% 122089/122089 bytes... \nWrote 236048 bytes (122089 compressed) at 0x00010000 in 1.3 seconds (1476.2 kbit/s).\nHash of data verified.\n\nHard resetting via RTS pin...\n========================= [SUCCESS] Took 11.03 seconds =========================\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "execute_shell",
+          "args": {
+            "command": "# Ref CUL 868 listen\n(printf \"\\n\\nX21\\n\"; sleep 1) > /dev/ttyACM1\ntimeout 5s cat /dev/ttyACM1 > /tmp/ref868_fs20_f_cmd.log &\nsleep 1\n# ESP32 868 send FS20 using F command\necho \"F11220101\" > /dev/ttyACM3\nsleep 3\ncat /tmp/ref868_fs20_f_cmd.log\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "execute_shell",
+          "response": {
+            "result": "Exit: 0\nOutput:\n"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "void cc1101_send_fs20(const char* housecode, const char* addr, const char* cmd) {\n    char hex[16];\n    char tmp[3] = {0, 0, 0};\n    \n    tmp[0] = housecode[0]; tmp[1] = housecode[1];\n    uint8_t hc1 = strtol(tmp, NULL, 16);\n    \n    tmp[0] = housecode[2]; tmp[1] = housecode[3];\n    uint8_t hc2 = strtol(tmp, NULL, 16);\n    \n    uint8_t ad  = strtol(addr, NULL, 16);\n    uint8_t cm  = strtol(cmd, NULL, 16);\n    uint8_t cs  = (hc1 + hc2 + ad + cm + 6) & 0xFF;\n    \n    snprintf(hex, sizeof(hex), \"%02X%02X%02X%02X%02X\", hc1, hc2, ad, cm, cs);\n    cc1101_send_raw_slowrf(hex);\n}\n",
+            "path": "src/cc1101.c",
+            "original_text": "void cc1101_send_fs20(const char* housecode, const char* addr, const char* cmd) {\n    char hex[16];\n    uint8_t hc1 = strtol((char[]){housecode[0], housecode[1], 0}, NULL, 16);\n    uint8_t hc2 = strtol((char[]){housecode[2], housecode[3], 0}, NULL, 16);\n    uint8_t ad  = strtol(addr, NULL, 16);\n    uint8_t cm  = strtol(cmd, NULL, 16);\n    uint8_t cs  = (hc1 + hc2 + ad + cm + 6) & 0xFF;\n    \n    snprintf(hex, sizeof(hex), \"%02X%02X%02X%02X%02X\", hc1, hc2, ad, cm, cs);\n    cc1101_send_raw_slowrf(hex);\n}\n"
+          }
+        }
+      }
+    ]
   }
 ]

@@ -67,7 +67,6 @@ static void handle_command(char *cmd) {
         uint8_t marc = cc1101_read_reg(0x35 | CC1101_READ_BURST);
         len = snprintf(out, sizeof(out), "C01 Part: 0x%02x, Vers: 0x%02x, MARC: 0x%02x\r\n", part, vers, marc);
     } else if (cmd[0] == 'F') {
-        // F <housecode 4> <addr 2> <cmd 2>
         if (strlen(cmd) == 9) {
             char hc[5], ad[3], cm[3];
             strncpy(hc, cmd + 1, 4); hc[4] = 0;
@@ -89,7 +88,6 @@ static void handle_command(char *cmd) {
         len = snprintf(out, sizeof(out), "is OK\r\n");
     } else if (cmd[0] == 'T') {
         if (cmd[1] == 'r') {
-            // Test Random: Send 5 random FS20 packets
             len = snprintf(out, sizeof(out), "Tr START\r\n");
             usb_serial_jtag_write_bytes(out, len, portMAX_DELAY);
             for (int i = 0; i < 5; i++) {
@@ -104,27 +102,9 @@ static void handle_command(char *cmd) {
             }
             len = snprintf(out, sizeof(out), "Tr DONE\r\n");
         } else if (strlen(cmd) >= 7) {
-            // T <housecode 4> <addr 2> -> T010101 (for compatibility with some systems)
             cc1101_send_raw_slowrf(cmd + 1);
             len = snprintf(out, sizeof(out), "T OK\r\n");
         }
-        // Test Random: Send 5 random FS20 packets
-        len = snprintf(out, sizeof(out), "Tr START\r\n");
-        usb_serial_jtag_write_bytes(out, len, portMAX_DELAY);
-        for (int i = 0; i < 5; i++) {
-            char rnd_hex[11];
-            uint32_t r = esp_random();
-            // Just use the bytes directly for simplicity
-            snprintf(rnd_hex, sizeof(rnd_hex), "%08X", r);
-            
-            char msg[64];
-            int mlen = snprintf(msg, sizeof(msg), "TX: %s\r\n", rnd_hex);
-            usb_serial_jtag_write_bytes(msg, mlen, portMAX_DELAY);
-
-            cc1101_send_slowrf(rnd_hex);
-            vTaskDelay(pdMS_TO_TICKS(500));
-        }
-        len = snprintf(out, sizeof(out), "Tr DONE\r\n");
     } else {
         len = snprintf(out, sizeof(out), "E %s unknown\r\n", cmd);
     }
@@ -139,7 +119,6 @@ void culfw_parser_task(void *pvParameters) {
     slowrf_set_reporting(reporting_enabled);
     ESP_LOGI(TAG, "Loaded reporting state: %d", reporting_enabled);
 
-    // Check if driver is already installed (might be by another task or earlier boot stage)
     if (!usb_serial_jtag_is_driver_installed()) {
         usb_serial_jtag_driver_config_t usb_serial_jtag_config = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();
         usb_serial_jtag_driver_install(&usb_serial_jtag_config);

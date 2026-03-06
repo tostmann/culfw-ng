@@ -215,8 +215,14 @@ void cc1101_send_raw_slowrf(const char* hex_data) {
 
 void cc1101_send_fs20(const char* housecode, const char* addr, const char* cmd) {
     char hex[16];
-    uint8_t hc1 = strtol((char[]){housecode[0], housecode[1], 0}, NULL, 16);
-    uint8_t hc2 = strtol((char[]){housecode[2], housecode[3], 0}, NULL, 16);
+    char tmp[3] = {0, 0, 0};
+    
+    tmp[0] = housecode[0]; tmp[1] = housecode[1];
+    uint8_t hc1 = strtol(tmp, NULL, 16);
+    
+    tmp[0] = housecode[2]; tmp[1] = housecode[3];
+    uint8_t hc2 = strtol(tmp, NULL, 16);
+    
     uint8_t ad  = strtol(addr, NULL, 16);
     uint8_t cm  = strtol(cmd, NULL, 16);
     uint8_t cs  = (hc1 + hc2 + ad + cm + 6) & 0xFF;
