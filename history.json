@@ -906,5 +906,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "typedef struct {\n    char s[13];\n    int pos;\n    int pulse_cnt;\n    int64_t pulse_buf[4];\n} it_v1_decoder_t;\n\nstatic void reset_it_v1(it_v1_decoder_t *it) {\n    it->pos = 0;\n    it->pulse_cnt = 0;\n    memset(it->s, 0, sizeof(it->s));\n}\n\ntypedef struct {\n    char s[33];\n    int bit_pos;\n    int pulse_cnt;\n    int64_t pulse_buf[4];\n    bool sync_found;\n} it_v3_decoder_t;\n\nstatic void reset_it_v3(it_v3_decoder_t *it) {\n    it->bit_pos = 0;\n    it->pulse_cnt = 0;\n    it->sync_found = false;\n    memset(it->s, 0, sizeof(it->s));\n}\n\nvoid slowrf_task(void *pvParameters) {\n    int64_t pulse;\n    slowrf_decoder_t dec;\n    it_v1_decoder_t it_dec;\n    it_v3_decoder_t it3_dec;\n    reset_decoder(&dec);\n    reset_it_v1(&it_dec);\n    reset_it_v3(&it3_dec);\n    \n    int pulse_in_bit = 0;\n    int last_bit = -1;\n\n    while (1) {\n        if (xQueueReceive(pulse_queue, &pulse, portMAX_DELAY)) {\n",
+            "path": "src/slowrf.c",
+            "original_text": "typedef struct {\n    char s[13];\n    int pos;\n    int pulse_cnt;\n    int64_t pulse_buf[4];\n} it_v1_decoder_t;\n\nstatic void reset_it_v1(it_v1_decoder_t *it) {\n    it->pos = 0;\n    it->pulse_cnt = 0;\n    memset(it->s, 0, sizeof(it->s));\n}\n\nvoid slowrf_task(void *pvParameters) {\n    int64_t pulse;\n    slowrf_decoder_t dec;\n    it_v1_decoder_t it_dec;\n    reset_decoder(&dec);\n    reset_it_v1(&it_dec);\n    \n    int pulse_in_bit = 0;\n    int last_bit = -1;\n\n    while (1) {\n        if (xQueueReceive(pulse_queue, &pulse, portMAX_DELAY)) {\n"
+          }
+        }
+      }
+    ]
   }
 ]

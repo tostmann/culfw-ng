@@ -71,12 +71,29 @@ static void reset_it_v1(it_v1_decoder_t *it) {
     memset(it->s, 0, sizeof(it->s));
 }
 
+typedef struct {
+    char s[33];
+    int bit_pos;
+    int pulse_cnt;
+    int64_t pulse_buf[4];
+    bool sync_found;
+} it_v3_decoder_t;
+
+static void reset_it_v3(it_v3_decoder_t *it) {
+    it->bit_pos = 0;
+    it->pulse_cnt = 0;
+    it->sync_found = false;
+    memset(it->s, 0, sizeof(it->s));
+}
+
 void slowrf_task(void *pvParameters) {
     int64_t pulse;
     slowrf_decoder_t dec;
     it_v1_decoder_t it_dec;
+    it_v3_decoder_t it3_dec;
     reset_decoder(&dec);
     reset_it_v1(&it_dec);
+    reset_it_v3(&it3_dec);
     
     int pulse_in_bit = 0;
     int last_bit = -1;
