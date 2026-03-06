@@ -9,6 +9,11 @@
 #include "cc1101.h"
 
 static const char *TAG = "CULFW_PARSER";
+static bool reporting_enabled = false;
+
+bool culfw_reporting_enabled() {
+    return reporting_enabled;
+}
 
 static void handle_command(char *cmd) {
     char out[128];
@@ -17,6 +22,11 @@ static void handle_command(char *cmd) {
         bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);
         len = snprintf(out, sizeof(out), "V 1.0.1-NG CUL32-C6-%sMHz\r\n", is_433 ? "433" : "868");
     } else if (cmd[0] == 'X') {
+        if (cmd[1] == '0' && cmd[2] == '0') {
+            reporting_enabled = false;
+        } else {
+            reporting_enabled = true;
+        }
         len = snprintf(out, sizeof(out), "X21\r\n");
     } else if (cmd[0] == 'C') {
         len = snprintf(out, sizeof(out), "C01\r\n");

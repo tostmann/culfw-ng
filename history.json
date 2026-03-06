@@ -1280,5 +1280,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "static const char *TAG = \"CULFW_PARSER\";\nstatic bool reporting_enabled = false;\n\nbool culfw_reporting_enabled() {\n    return reporting_enabled;\n}\n\nstatic void handle_command(char *cmd) {\n    char out[128];\n    int len = 0;\n    if (cmd[0] == 'V') {\n        bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);\n        len = snprintf(out, sizeof(out), \"V 1.0.1-NG CUL32-C6-%sMHz\\r\\n\", is_433 ? \"433\" : \"868\");\n    } else if (cmd[0] == 'X') {\n        if (cmd[1] == '0' && cmd[2] == '0') {\n            reporting_enabled = false;\n        } else {\n            reporting_enabled = true;\n        }\n        len = snprintf(out, sizeof(out), \"X21\\r\\n\");\n    } else if (cmd[0] == 'C') {\n        len = snprintf(out, sizeof(out), \"C01\\r\\n\");\n    } else {\n        len = snprintf(out, sizeof(out), \"E %s unknown\\r\\n\", cmd);\n    }\n    \n    if (len > 0) {\n        usb_serial_jtag_write_bytes(out, len, portMAX_DELAY);\n    }\n}",
+            "path": "src/culfw_parser.c",
+            "original_text": "static const char *TAG = \"CULFW_PARSER\";\n\nstatic void handle_command(char *cmd) {\n    char out[128];\n    int len = 0;\n    if (cmd[0] == 'V') {\n        bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);\n        len = snprintf(out, sizeof(out), \"V 1.0.1-NG CUL32-C6-%sMHz\\r\\n\", is_433 ? \"433\" : \"868\");\n    } else if (cmd[0] == 'X') {\n        len = snprintf(out, sizeof(out), \"X21\\r\\n\");\n    } else if (cmd[0] == 'C') {\n        len = snprintf(out, sizeof(out), \"C01\\r\\n\");\n    } else {\n        len = snprintf(out, sizeof(out), \"E %s unknown\\r\\n\", cmd);\n    }\n    \n    if (len > 0) {\n        usb_serial_jtag_write_bytes(out, len, portMAX_DELAY);\n    }\n}"
+          }
+        }
+      }
+    ]
   }
 ]
