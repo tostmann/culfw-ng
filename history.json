@@ -878,5 +878,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "void cc1101_set_idle_mode() {\n    cc1101_cmd_strobe(CC1101_SIDLE);\n}\n\nuint8_t cc1101_read_rssi() {\n    // RSSI is in 0x34 status register\n    uint8_t rssi_raw = cc1101_read_reg(0x34 | CC1101_READ_BURST);\n    return rssi_raw;\n}\n",
+            "path": "src/cc1101.c",
+            "original_text": "void cc1101_set_idle_mode() {\n    cc1101_cmd_strobe(CC1101_SIDLE);\n}\n"
+          }
+        }
+      }
+    ]
   }
 ]

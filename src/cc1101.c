@@ -128,6 +128,12 @@ void cc1101_set_idle_mode() {
     cc1101_cmd_strobe(CC1101_SIDLE);
 }
 
+uint8_t cc1101_read_rssi() {
+    // RSSI is in 0x34 status register
+    uint8_t rssi_raw = cc1101_read_reg(0x34 | CC1101_READ_BURST);
+    return rssi_raw;
+}
+
 #include "rom/ets_sys.h"
 
 static void fs20_send_bit(int bit) {
