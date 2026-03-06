@@ -8,42 +8,49 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 
 *   **Plattform:** ESP32-C6 mit ESP-IDF Framework, verwaltet über PlatformIO.
 *   **Board:** `esp32-c6-devkitc-1`
-*   **Kommunikation:** Nativer USB-JTAG/CDC Treiber (`usb_serial_jtag`) für eine nicht-blockierende serielle Schnittstelle (culfw-Kommandos). Standard-`printf`/`getchar` verursachten Watchdog-Timeouts und wurden ersetzt.
+*   **Kommunikation:** Nativer USB-JTAG/CDC Treiber (`usb_serial_jtag`) für eine nicht-blockierende serielle Schnittstelle.
 *   **RF-Modul:** CC1101 angebunden via SPI.
 *   **Software-Architektur:** FreeRTOS-Task-basiert.
     *   `culfw_parser_task`: Verarbeitet eingehende serielle Befehle (z.B. `V`, `X`, `F`).
-    *   `slowrf_task`: Implementiert eine Zustandsmaschine (Sync-Erkennung -> Bit-Akkumulation), um aus den vom CC1101 empfangenen Pulsfolgen Datenpakete zu dekodieren.
-*   **Frequenzerkennung:** Automatische Erkennung der Modulfrequenz (433/868 MHz) über einen GPIO-Pin (`GPIO_433MARKER`), der auf GND gezogen wird.
+    *   `slowrf_task`: Implementiert eine Zustandsmaschine (Sync-Erkennung -> Bit-Akkumulation -> Paritätsprüfung), um aus den vom CC1101 empfangenen Pulsfolgen gültige Datenpakete zu dekodieren.
+*   **Frequenzerkennung:** Automatische Erkennung der Modulfrequenz (433/868 MHz) über einen GPIO-Pin (`GPIO_433MARKER`) mit internem Pull-Up.
 *   **Signal-Erfassung (RX):** Ein GPIO-Pin (`GDO0_PIN`) wird als Interrupt-Quelle genutzt, um die Flanken der empfangenen Signale zu erfassen. Die Timestamps werden per Queue (`slowrf_queue`) an den `slowrf_task` übergeben.
 *   **Signal-Aussendung (TX):** Der `GDO0_PIN` wird dynamisch als Output konfiguriert, um Sendesequenzen per Bit-Banging mit präzisen Microsekunden-Delays (`ets_delay_us`) zu erzeugen. Pakete werden zur Erhöhung der Übertragungssicherheit mehrfach (3x) gesendet.
-*   **Test-Infrastruktur:** Ein `Tr`-Kommando wurde implementiert, das zufällige FS20-Frames generiert und sendet, um die TX/RX-Kette zu validieren.
+*   **Versionierung:** Automatisierte Build-Nummer und detaillierter, culfw-kompatibler Versions-String (`V`-Kommando) zur besseren Identifikation durch Host-Systeme.
+*   **Test-Infrastruktur:** Ein `Tr`-Kommando generiert und sendet 5 zufällige FS20-Frames, um die TX/RX-Kette mit variierenden OOK-Pattern zu validieren.
+*   **Diagnose:** Das `C`-Kommando wurde erweitert, um die Part- und Versionsnummer des CC1101-Chips auszulesen.
 
 ## 3. Implementierungsstatus
 
 *   **[DONE]** Projektinitialisierung mit PlatformIO.
-*   **[DONE]** Basis-Implementierung des CC1101 SPI-Treibers (`cc1101.c`), erweitert um TX/RX-Modusumschaltung.
-*   **[DONE]** Grundgerüst für den culfw-Kommando-Parser (`culfw_parser.c`) mit Erkennung von `V`, `X`, `C` und `F`.
-*   **[DONE]** Grundgerüst für die SlowRF-Signalverarbeitung (`slowrf.c`) mit ISR und RTOS-Queue.
-*   **[DONE]** Frequenz-Auto-Detektion implementiert.
-*   **[DONE]** Firmware kompiliert erfolgreich und wurde auf Ziel-Hardware geflasht.
-*   **[DONE]** Task Watchdog Timeout durch Umstellung auf nativen USB-JTAG-Treiber behoben. Die serielle Kommunikation ist jetzt stabil.
-*   **[DONE]** Erweiterter SlowRF-Empfang (RX) mit Zustandsmaschine zur Sync- und Bit-Erkennung. Dekodierte Pakete werden im `F<HEX>`-Format ausgegeben.
-*   **[DONE]** SlowRF-Senden (TX) implementiert, inklusive Paket-Wiederholung (3x) zur Erhöhung der Zuverlässigkeit.
+*   **[DONE]** Basis-Implementierung des CC1101 SPI-Treibers (`cc1101.c`).
+*   **[DONE]** Grundgerüst für den culfw-Kommando-Parser (`culfw_parser.c`).
+*   **[DONE]** Grundgerüst für die SlowRF-Signalverarbeitung (`slowrf.c`).
+*   **[DONE]** Frequenz-Auto-Detektion implementiert und stabilisiert.
+*   **[DONE]** Task Watchdog Timeout durch Umstellung auf nativen USB-JTAG-Treiber behoben.
+*   **[DONE]** Erweiterter SlowRF-Empfang (RX) mit Zustandsmaschine.
+*   **[DONE]** SlowRF-Senden (TX) implementiert, inklusive Paket-Wiederholung.
 *   **[DONE]** Test-Funktion (`Tr`) zum Senden von zufälligen, validen FS20-Paketen implementiert.
+*   **[DONE]** FS20-Paritätsprüfung im Decoder implementiert, um fehlerhafte Pakete zu verwerfen.
+*   **[DONE]** Build-System um eine automatische Build-Nummer und einen culfw-kompatiblen Versions-String erweitert.
 
-## 4. Nächste Schritte
+## 4. Neue Erkenntnisse / Probleme
 
-*   **Protokoll-Verfeinerung (RX):** Implementierung der FS20-Paritätsprüfung im Decoder, um fehlerhafte Pakete (Rauschen) zuverlässig zu verwerfen.
+*   **[PROBLEM]** Die SPI-Kommunikation zum CC1101 scheint fehlerhaft. Das Auslesen der Chip-Register (`C`-Kommando) liefert ungültige Werte (`Part: 0xff, Vers: 0x0f`). Dies deutet auf mögliche Timing-, Initialisierungs- oder Pin-Konflikte hin.
+
+## 5. Nächste Schritte
+
+*   **[BUGFIX]** Ursache für die fehlerhafte SPI-Kommunikation mit dem CC1101 analysieren und beheben.
 *   **Protokoll-Erweiterung:** Unterstützung für weitere SlowRF-Protokolle hinzufügen (z.B. Intertechno V1/V3) mit entsprechenden Timings für Senden und Empfangen.
 *   **Konfigurations-Management:** Speichern von culfw-Einstellungen (z.B. Reporting-Modus `X21`) im Non-Volatile Storage (NVS) des ESP32, um sie nach einem Neustart zu erhalten.
 
-## 5. Hardware-Konfiguration (Pinout)
+## 6. Hardware-Konfiguration (Pinout)
 
 *   **SPI (für CC1101):**
-    *   `MOSI`: GPIO 7
+    *   `MOSI`: GPIO 21
     *   `MISO`: GPIO 20
-    *   `SCLK`: GPIO 6
-    *   `CS`: GPIO 10
+    *   `SCLK`: GPIO 19
+    *   `CS`: GPIO 18
 *   **CC1101 Signale:**
     *   `GDO0`: GPIO 2 (Input/Interrupt für RX, Output für TX)
 *   **Frequenzerkennung:**
