@@ -6,6 +6,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "culfw_parser.h"
+#include "cc1101.h"
 
 static const char *TAG = "SLOWRF";
 static QueueHandle_t pulse_queue;

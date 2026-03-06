@@ -962,5 +962,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "#include \"esp_timer.h\"\n#include \"esp_log.h\"\n#include \"freertos/FreeRTOS.h\"\n#include \"freertos/queue.h\"\n#include \"culfw_parser.h\"\n#include \"cc1101.h\"\n\nstatic const char *TAG = \"SLOWRF\";\n",
+            "path": "src/slowrf.c",
+            "original_text": "#include \"esp_timer.h\"\n#include \"esp_log.h\"\n#include \"freertos/FreeRTOS.h\"\n#include \"freertos/queue.h\"\n#include \"culfw_parser.h\"\n\nstatic const char *TAG = \"SLOWRF\";\n"
+          }
+        }
+      }
+    ]
   }
 ]
