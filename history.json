@@ -1308,5 +1308,33 @@
         }
       }
     ]
+  },
+  {
+    "role": "user",
+    "parts": [
+      {
+        "function_response": {
+          "name": "edit_file",
+          "response": {
+            "result": "Successfully edited file."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "role": "model",
+    "parts": [
+      {
+        "function_call": {
+          "name": "edit_file",
+          "args": {
+            "replacement_text": "#ifndef CULFW_PARSER_H\n#define CULFW_PARSER_H\n\n#include <stdbool.h>\n\nvoid culfw_parser_task(void *pvParameters);\nbool culfw_reporting_enabled();\n\n#endif",
+            "path": "include/culfw_parser.h",
+            "original_text": "#ifndef CULFW_PARSER_H\n#define CULFW_PARSER_H\n\nvoid culfw_parser_task(void *pvParameters);\n\n#endif"
+          }
+        }
+      }
+    ]
   }
 ]
