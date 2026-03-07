@@ -34,6 +34,7 @@ typedef struct {
     
     uint16_t min_bits;
     uint16_t max_bits;
+    int matter_type; // 0=Switch, 1=Sensor
 } rf_proto_internal_t;
 
 typedef enum {
