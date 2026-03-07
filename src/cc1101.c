@@ -59,7 +59,19 @@ esp_err_t cc1101_init() {
     gpio_config(&marker_conf);
     vTaskDelay(pdMS_TO_TICKS(10));
     cc1101_is_433_flag = (gpio_get_level(GPIO_433MARKER) == 0);
-    ESP_LOGI(TAG, "Detected Frequency: %s MHz", cc1101_is_433_flag ? "433" : "868");
+
+    // Load from NVS
+    nvs_handle_t my_handle;
+    if (nvs_open("storage", NVS_READONLY, &my_handle) == ESP_OK) {
+        uint8_t freq_val = 0;
+        if (nvs_get_u8(my_handle, "freq", &freq_val) == ESP_OK) {
+            if (freq_val == 43) cc1101_is_433_flag = true;
+            else if (freq_val == 86) cc1101_is_433_flag = false;
+        }
+        nvs_close(my_handle);
+    }
+
+    ESP_LOGI(TAG, "Active Frequency: %s MHz", cc1101_is_433_flag ? "433" : "868");
     bool is_433 = cc1101_is_433_flag;
 
     // Common SlowRF Setup (ASK, ~2.4k Baud, etc.)
