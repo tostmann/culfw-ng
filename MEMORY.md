@@ -64,12 +64,12 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Remote-Diagnose-Befehle (`R`, `W`, `X99`, `m`) implementiert.
 *   **[DONE]** Periodischer "CUL-TICK" als Heartbeat implementiert.
 *   **[DONE]** Laufzeit-Frequenzumschaltung (`f433`/`f868`) implementiert.
+*   **[DONE]** RTOS-Architektur gehärtet (Core-Pinning, Task-Priorisierung, SPI-Mutex).
 *   **[DONE]** End-to-End Validierung aller implementierten Protokolle.
 *   **[DONE]** Benutzer-Dokumentation (`COMMANDS.md`) erstellt.
 *   **[DONE]** Release Management: Finaler Code-Stand als **Release v1.0.1** auf GitHub getaggt.
 *   **[DONE]** Partitionsschema für Dateisystem (SPIFFS) erweitert.
 *   **[DONE]** Build-System um Upload einer Filesystem-Partition (`data/`) erweitert.
-*   **[DONE]** RTOS-Architektur gehärtet (Core-Pinning, Task-Priorisierung, SPI-Mutex).
 *   **[IN PROGRESS]** Entwicklung einer generischen, tabellengesteuerten Decoding-Engine.
 *   **[TODO]** Implementierung des SPIFFS-Treibers und des JSON-Parsers in der Firmware.
 *   **[TODO]** Implementierung des bivalenten Betriebsmodus (CUL vs. SIGNALduino).
