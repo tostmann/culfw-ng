@@ -88,6 +88,8 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Implementierung von Diagnose-Kommandos für Matter (`ML` zum Auflisten der Endpunkte).
 *   **[DONE]** SIGNALduino `MU;` Logik verfeinert: Rohdaten-Ausgabe wird unterdrückt, wenn ein Decoder (fest oder generisch) gematcht hat.
 *   **[DONE]** WiFi-Konnektivität implementiert (Verbindung zu "PalmBeach WiFi").
+*   **[DONE]** Device-Identität: Erweiterung des `V` (Version) Kommandos um die eindeutige Chip-ID (MAC).
+*   **[DONE]** Web-Interface: Implementierung eines einfachen HTTP-Servers zur Anzeige von Live-Funk-Events und Systemstatus.
 
 ## 4. Neue Erkenntnisse / Probleme
 
