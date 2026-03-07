@@ -17,5 +17,6 @@ uint8_t slowrf_get_mode();
 void slowrf_mark_matched();
 void slowrf_add_web_event(const char* msg);
 int slowrf_get_web_events(char* buf, int max_len);
+void slowrf_process_pulse(uint16_t duration, uint8_t level);
 
 #endif
