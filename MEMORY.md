@@ -98,8 +98,8 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 *   **[DONE]** Protokoll-Erweiterung: Generischer PWM-Decoder für rtl_433-ähnliche Sensoren (Raw-Hex-Ausgabe `r...`) implementiert.
 *   **[DONE]** Implementierung einer Laufzeit-Frequenzumschaltung (`f433`/`f868`) mit Speicherung im NVS.
 *   **[DONE]** End-to-End Validierung: Alle implementierten Protokolle (FS20, IT, HMS, FHT, OS) wurden in einem Cross-Validation-Setup erfolgreich validiert.
-*   **[DONE]** Projekt-Setup: Initiales Git-Repository auf GitHub erstellt, bereinigt und Code gepusht.
 *   **[DONE]** Benutzer-Dokumentation: Eine Übersicht der culfw-kompatiblen und erweiterten Befehle wurde erstellt (`COMMANDS.md`).
+*   **[DONE]** Release Management: Finaler Code-Stand als **Release v1.0.1** auf GitHub getaggt und gepusht.
 
 ## 4. Neue Erkenntnisse / Probleme
 
@@ -110,13 +110,14 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 *   **[INFO]** Ein Cross-Validation-Testaufbau mit zwei CUL32-C6 (einer als Sender/Emulator, einer als Empfänger) und einem Legacy-CUL als Referenz hat sich als sehr effektiv für das Debugging von Protokoll-Decodern erwiesen.
 *   **[INFO]** Hardwareseitiges Carrier Sense (RSSI-Schwellwert) über den GDO2-Pin ist eine sehr effektive Methode, um den RX-Prozessor von der Verarbeitung von reinem Rauschen zu entlasten.
 *   **[INFO]** Das Speichern von Konfigurationen (Modus, Frequenz) im NVS ist essentiell für eine nahtlose Integration in Host-Systeme wie FHEM, da diese erwarten, dass der CUL seinen Zustand nach einem Neustart beibehält.
-*   **[INFO]** Die Protokoll-Implementierungen (insbesondere HMS und Oregon Scientific) wurden durch den Cross-Validation-Testaufbau weiter verfeinert und stabilisiert.
+*   **[INFO]** Die Firmware hat die finale Cross-Validation-Testphase bestanden und läuft stabil. Alle implementierten Protokolldecoder und -encoder funktionieren wie erwartet.
 
 ## 5. Nächste Schritte
 
 *   **FHEM-Integration:** Validierung der Firmware mit einem Host-System (FHEM) zur Sicherstellung der Kompatibilität und Langzeitstabilität.
 *   **RSSI-Kalibrierung:** Abgleich der ausgegebenen RSSI-Hex-Werte mit realen dBm-Werten für eine genauere Signalstärken-Anzeige.
 *   **Langzeittests:** Überwachung der Stabilität und des Speicherverbrauchs über mehrere Tage im produktiven Einsatz.
+*   **Roadmap-Planung:** Evaluierung der Integration in moderne IoT-Ökosysteme (z.B. als Matter/Thread-Bridge).
 
 ## 6. Hardware-Konfiguration (Pinout)
 
