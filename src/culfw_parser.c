@@ -15,6 +15,7 @@
 #include "slowrf.h"
 #include "matter_bridge.h"
 #include "rom/ets_sys.h"
+#include "esp_netif.h"
 
 static const char *TAG = "CULFW_PARSER";
 static bool reporting_enabled = false;
