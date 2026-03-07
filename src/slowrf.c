@@ -117,6 +117,11 @@ void slowrf_mark_matched() {
     protocol_matched = true;
 }
 
+void slowrf_process_pulse(uint16_t duration, uint8_t level) {
+    pulse_t p = { .duration = duration, .level = level };
+    xQueueSend(pulse_queue, &p, 0);
+}
+
 static void IRAM_ATTR gpio_isr_handler(void* arg) {
     int64_t current_time = esp_timer_get_time();
     int diff = (int)(current_time - last_time);
