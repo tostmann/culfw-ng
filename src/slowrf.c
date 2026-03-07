@@ -44,8 +44,9 @@ static uint16_t mu_idx = 0;
 
 static void flush_mu_buffer() {
     if (mu_idx == 0) return;
-    if (slowrf_mode != SLOWRF_MODE_SIGNALDUINO || !slowrf_reporting) {
+    if (slowrf_mode != SLOWRF_MODE_SIGNALDUINO || !slowrf_reporting || protocol_matched) {
         mu_idx = 0;
+        protocol_matched = false;
         return;
     }
     
@@ -58,6 +59,7 @@ static void flush_mu_buffer() {
     len += snprintf(out + len, sizeof(out) - len, ";RSS=%d;\r\n", cc1101_read_rssi());
     usb_serial_jtag_write_bytes(out, len, 0);
     mu_idx = 0;
+    protocol_matched = false;
 }
 
 void slowrf_set_debug(bool enable) {
