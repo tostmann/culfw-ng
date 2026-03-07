@@ -44,6 +44,7 @@ static const httpd_uri_t index_uri = {
 void web_server_init(void) {
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    config.stack_size = 8192; // Increase stack size
 
     ESP_LOGI(TAG, "Starting Web Server on port: '%d'", config.server_port);
     if (httpd_start(&server, &config) == ESP_OK) {
