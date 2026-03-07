@@ -87,15 +87,16 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 4. Neue Erkenntnisse / Probleme
 
-*   **Decoder-Architektur:** Der generische Decoder läuft nun parallel zu den festen Decodern. Er wird über `protocols.json` konfiguriert, was Flexibilität für neue Protokolle ohne Recompile bietet.
-*   **JSON-Parsing:** Das Parsing komplexer Bit-Strukturen (High/Low-Paare als Multiplikatoren) funktioniert.
-*   **Build-System:** Der Build ist stabil, nachdem `esp_hid` Abhängigkeiten maskiert wurden. Das SPIFFS-Image wird im Code per Fallback emuliert, falls kein Dateisystem geflasht wurde.
+*   **Build-System gehärtet:** Ein hartnäckiges Build-Problem mit der `esp_hid`-Komponente, die eine nicht benötigte Bluetooth-Abhängigkeit (`nimble/ble.h`) erfordert, wurde final gelöst. Der Workaround besteht darin, eine **lokale Dummy-Komponente** (`components/esp_hid`) zu erstellen, die vom Build-System bevorzugt und anstelle der fehlerhaften Framework-Komponente verwendet wird. Dies stellt einen stabilen Build ohne Bluetooth sicher.
+*   **Decoder-Architektur validiert:** Der generische Decoder (`generic_decoder`) läuft nun erfolgreich parallel zu den festen, hard-codierten Decodern. Jeder empfangene Puls wird an alle Decoder zur Verarbeitung weitergeleitet.
+*   **Robuste Konfigurations-Engine:** Die SPIFFS-Ladelogik in `config_loader.c` ist mit einem **Fallback-Mechanismus** ausgestattet. Falls `protocols.json` nicht auf dem Dateisystem gefunden wird, wird ein hartcodierter Default-JSON-String geladen. Dies gewährleistet die grundlegende Funktionsfähigkeit der Firmware auch ohne ein geflashtes SPIFFS-Image.
+*   **JSON-Protokoll-Format:** Das Format für `protocols.json` wurde verfeinert. Es nutzt ein `timing`-Objekt mit Basis-Pulsbreiten und `definitions` für `bit0`, `bit1`, `sync`, die **Multiplikatoren** dieser Basis-Zeiten verwenden. Dieses Format ist flexibel und kompakt.
 
 ## 5. Nächste Schritte
 
 *   **Decoder-Logik:** Implementierung der State-Machine für das Bit-Reading im `generic_decoder`. Aktuell wird nur der Sync-Puls erkannt.
 *   **Bivalenter Modus:** Umschaltung zwischen `X21` (CUL) und `X25` (SIGNALduino) implementieren. Dies erfordert eine Anpassung des `culfw_parser` und der Ausgabe-Logik in `slowrf.c`.
-*   **Matter-Integration:** Weiterführung der Matter-Bridge-Logik basierend auf den dekodierten Events.
+*   **Matter-Integration:** Weiterführung der Matter-Bridge-Logik basierend auf den dekodierten Events des generischen und der festen Decoder.
 
 ## 6. Hardware-Konfiguration (Pinout)
 
