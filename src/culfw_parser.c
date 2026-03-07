@@ -61,17 +61,28 @@ static void handle_command(char *cmd) {
             reporting_enabled = false;
             slowrf_set_debug(false);
             slowrf_set_reporting(false);
+            len = snprintf(out, sizeof(out), "X00\r\n");
         } else if (cmd[1] == '9' && cmd[2] == '9') {
             slowrf_set_debug(true);
             reporting_enabled = true;
             slowrf_set_reporting(true);
-        } else {
+            len = snprintf(out, sizeof(out), "X99\r\n");
+        } else if (cmd[1] == '2' && cmd[2] == '1') {
+            slowrf_set_mode(SLOWRF_MODE_CUL);
             reporting_enabled = true;
-            slowrf_set_debug(false);
             slowrf_set_reporting(true);
+            len = snprintf(out, sizeof(out), "X21\r\n");
+        } else if (cmd[1] == '2' && cmd[2] == '5') {
+            slowrf_set_mode(SLOWRF_MODE_SIGNALDUINO);
+            reporting_enabled = true;
+            slowrf_set_reporting(true);
+            len = snprintf(out, sizeof(out), "X25\r\n");
+        } else {
+            // Default behavior for other X commands (like X? -> status)
+            uint8_t m = slowrf_get_mode();
+            len = snprintf(out, sizeof(out), "X%02X\r\n", reporting_enabled ? m : 0);
         }
         save_reporting_state(reporting_enabled);
-        len = snprintf(out, sizeof(out), "X%02d\r\n", reporting_enabled ? 21 : 0);
     } else if (cmd[0] == 'C') {
         uint8_t part = cc1101_read_reg(CC1101_PARTNUM | CC1101_READ_BURST);
         uint8_t vers = cc1101_read_reg(CC1101_VERSION | CC1101_READ_BURST);
