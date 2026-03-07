@@ -34,7 +34,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **Zukünftige Architektur: On-Board Intelligence & Matter**
     *   **Dateisystem:** Integration eines **SPIFFS-Dateisystems** zur Speicherung einer flexiblen Protokoll-Datenbank (`protocols.json`).
     *   **Table-Driven Decoding Engine:** Anstelle von fest einkompilierten Decodern wird eine generische Engine die Pulsfolgen mit den in `protocols.json` definierten Mustern abgleichen.
-    *   **Matter-Architektur:** Der Stick wird als **Matter Aggregator (Bridge)** implementiert. Nur das Gateway wird einmalig gepaired. Erkannte SlowRF-Geräte werden als dynamische **Endpoints** (z.B. Temperatursensor, Schalter) im Matter-Netzwerk on-the-fly angelegt und über eine **"Dynamic Endpoint Registry"** (`matter_bridge.c`) verwaltet.
+    *   **Matter-Architektur:** Der Stick wird als **Matter Aggregator (Bridge)** implementiert. Nur das Gateway wird einmalig gepaired. Erkannte SlowRF-Geräte werden als dynamische **Endpoints** (z.B. Temperatursensor, Schalter) im Matter-Netzwerk on-the-fly angelegt und über eine **"Dynamic Endpoint Registry"** (`matter_bridge.c`) verwaltet. Die Anwendungslogik ist gegen eine **API-Wrapper-Schicht** (`matter_wrapper.h`) entwickelt, um die Kompilierbarkeit ohne das vollständige SDK zu gewährleisten.
 *   **Bivalenter Betriebsmodus (Hybride Intelligenz):** Die Firmware wird umschaltbar gestaltet, um die Stärken von CUL und SIGNALduino zu vereinen.
     *   **CUL-Modus (`X21`):** 100%ige Kompatibilität zum etablierten CUL-Protokoll.
     *   **SIGNALduino-Modus (`X25`):** Vollständige Emulation eines SIGNALduino mit Rohdaten-Ausgabe (`MU;...`, `MS;...`).
@@ -78,8 +78,8 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Basis-Struktur für Matter-Bridge-Modul (`matter_bridge.c/h`) erstellt (Dynamic Endpoint Registry).
 *   **[DONE]** Diagnose-Kommando (`MT`) zur Simulation von Sensor-Events für Matter-Tests implementiert.
 *   **[DONE]** Anbindung der RF-Decoder in `slowrf.c` an die `matter_bridge` zur automatischen Event-Weiterleitung.
+*   **[DONE]** Implementierung der Matter-Bridge-Logik (Dynamic Endpoints) gegen eine API-Wrapper-Schicht (`matter_wrapper.h`), um die Entwicklung vom SDK-Build zu entkoppeln.
 *   **[IN PROGRESS]** Entwicklung einer generischen, tabellengesteuerten Decoding-Engine.
-*   **[IN PROGRESS]** Integration des ESP-Matter-SDKs (Infrastruktur vorbereitet, API-Wrapper für Kompilierung implementiert).
 *   **[TODO]** Implementierung des SPIFFS-Treibers und des JSON-Parsers in der Firmware.
 *   **[TODO]** Implementierung des bivalenten Betriebsmodus (CUL vs. SIGNALduino).
 
@@ -88,8 +88,8 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **Voraussetzung für Matter:** Die **On-Board-Dekodierung** ist die zwingende Voraussetzung für eine Matter-Bridge-Funktionalität. Nur wenn der Stick die Semantik der Daten versteht (z.B. "Temperatur: 21.5°C"), kann er diese als standardisierten Matter-Endpunkt bereitstellen.
 *   **Kopierschutz-Strategie definiert:** Eine 3-Säulen-Strategie (Matter-Zertifikat, Hardware-Verschlüsselung, Software-Bindung) wurde als Kern des Produktschutzes festgelegt, um "nanoCUL"-Effekte zu verhindern.
 *   **Matter Test-Strategie definiert:** Die Validierung der Matter-Integration erfolgt primär über das CLI-Tool **`chip-tool`**. Ein neues Firmware-Kommando (`MT ...`) wurde implementiert, um Sensor-Events zu simulieren und die Bridge-Logik **ohne echte RF-Hardware** und GUI-Overhead testen zu können.
-*   **Problem bei SDK-Integration:** Die automatische Integration des `esp-matter`-SDK via PlatformIO und `idf_component.yml` scheiterte an den Umgebungs-Einschränkungen (kein Git-Repository).
-*   **Lösung (API-Wrapper):** Als Workaround wurde eine **Wrapper/Stub-Schicht** (`matter_wrapper.h`) implementiert. Dies ermöglicht die Entwicklung der Bridge-Logik gegen eine simulierte Matter-API. Der Code ist damit "SDK-ready" und kompiliert, bis die vollständige Integration in einer geeigneten Build-Umgebung erfolgen kann.
+*   **Problem bei SDK-Integration:** Die automatische Integration des `esp-matter`-SDK via PlatformIO (`idf_component.yml`) scheiterte an den Einschränkungen der Build-Umgebung (kein Git-Repository, fehlende Python-Dependencies).
+*   **Lösung (API-Wrapper):** Als Workaround wurde die Bridge-Logik (`matter_bridge.c`) gegen eine **Wrapper/Stub-Schicht** (`matter_wrapper.h`) implementiert. Dies entkoppelt die Anwendungslogik vom SDK, ermöglicht eine kompilierbare und testbare Firmware und stellt sicher, dass der Code "SDK-ready" ist. Die vollständige Integration erfordert nur noch den Austausch des Wrappers gegen das echte SDK in einer geeigneten Build-Umgebung.
 
 ## 5. Nächste Schritte
 
