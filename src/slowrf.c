@@ -92,6 +92,12 @@ typedef struct {
 } sensor_dec_t;
 
 typedef struct {
+    uint32_t bit_buffer;
+    int bit_cnt;
+    int pulse_cnt;
+} rtl433_dec_t;
+
+typedef struct {
     uint8_t data[16];
     int nibble_cnt;
     int bit_cnt;
