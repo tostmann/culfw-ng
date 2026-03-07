@@ -3,13 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-
-typedef enum {
-    DEVICE_TYPE_TEMPERATURE,
-    DEVICE_TYPE_HUMIDITY,
-    DEVICE_TYPE_SWITCH,
-    DEVICE_TYPE_CONTACT
-} matter_device_type_t;
+#include "matter_interface.h"
 
 typedef struct {
     char id[16];                // Funk-ID (z.B. FS20 HC+AD)

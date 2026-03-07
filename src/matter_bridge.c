@@ -2,63 +2,57 @@
 #include <string.h>
 #include "esp_log.h"
 #include "matter_bridge.h"
-#include "matter_wrapper.h"
+#include "matter_interface.h"
 
 static const char *TAG = "MATTER_BRIDGE";
-#define MAX_ENDPOINTS 10
-static matter_endpoint_t endpoints[MAX_ENDPOINTS];
-static int endpoint_count = 0;
+#define MAX_ENDPOINTS 20
+
+typedef struct {
+    char rf_id[16];
+    uint16_t matter_ep_id;
+    matter_device_type_t type;
+} bridged_device_t;
+
+static bridged_device_t device_table[MAX_ENDPOINTS];
+static int device_count = 0;
 
 void matter_bridge_init() {
-    ESP_LOGI(TAG, "Initializing Matter Bridge...");
-    memset(endpoints, 0, sizeof(endpoints));
-    // Here we would call esp_matter::start(app_event_cb);
-    esp_matter_start(NULL);
-}
-
-// Internal function to create endpoint
-static uint16_t create_matter_endpoint(const char* id, matter_device_type_t type) {
-    uint16_t ep_id = 10 + endpoint_count; // Dummy EP ID generator
-
-    // Here we would use the ESP-Matter Endpoint API
-    if (type == DEVICE_TYPE_SWITCH) {
-        // esp_matter::endpoint::on_off_light::create(node, &config, ENDPOINT_FLAG_NONE, NULL);
-        ESP_LOGI(TAG, "Creating ON/OFF Light Endpoint: %d for ID: %s", ep_id, id);
-    } else if (type == DEVICE_TYPE_TEMPERATURE) {
-        // esp_matter::endpoint::temperature_sensor::create(node, &config, ENDPOINT_FLAG_NONE, NULL);
-        ESP_LOGI(TAG, "Creating Temperature Sensor Endpoint: %d for ID: %s", ep_id, id);
-    }
-
-    return ep_id;
+    ESP_LOGI(TAG, "Initializing Matter Bridge Logic...");
+    memset(device_table, 0, sizeof(device_table));
+    
+    // Initialize the underlying Matter stack (or simulation)
+    matter_interface_init();
 }
 
 void matter_bridge_report_event(const char* id, matter_device_type_t type, float value) {
-    // 1. Check if we already have this device
+    // 1. Lookup Device in our local table
     int idx = -1;
-    for (int i = 0; i < endpoint_count; i++) {
-        if (strcmp(endpoints[i].id, id) == 0) {
+    for (int i = 0; i < device_count; i++) {
+        if (strcmp(device_table[i].rf_id, id) == 0) {
             idx = i;
             break;
         }
     }
 
-    // 2. If not found, add it
-    if (idx == -1 && endpoint_count < MAX_ENDPOINTS) {
-        idx = endpoint_count++;
-        strncpy(endpoints[idx].id, id, 15);
-        endpoints[idx].type = type;
-        endpoints[idx].endpoint_id = create_matter_endpoint(id, type);
-        ESP_LOGI(TAG, "New Matter Device registered: %s (Type %d) on Endpoint %d", 
-                 id, type, endpoints[idx].endpoint_id);
+    // 2. If not found, register it
+    if (idx == -1) {
+        if (device_count >= MAX_ENDPOINTS) {
+            ESP_LOGW(TAG, "Device table full! Cannot add %s", id);
+            return;
+        }
+        
+        idx = device_count++;
+        strncpy(device_table[idx].rf_id, id, sizeof(device_table[idx].rf_id)-1);
+        device_table[idx].type = type;
+        
+        // Call the interface to create the actual Matter endpoint
+        device_table[idx].matter_ep_id = matter_interface_create_endpoint(id, type);
+        
+        ESP_LOGI(TAG, "Registered new device: %s -> EP %d", id, device_table[idx].matter_ep_id);
     }
 
-    // 3. Update Value (via Attribute API)
-    if (idx != -1) {
-        endpoints[idx].value = value;
-        ESP_LOGI(TAG, "Matter Report [%s]: %.2f (Endpoint %d)", 
-                 id, value, endpoints[idx].endpoint_id);
-        
-        // This is where we call esp_matter::attribute::update
-        // e.g. esp_matter_attribute_update(endpoints[idx].endpoint_id, CLUSTER_ON_OFF, ATTRIBUTE_ON_OFF, &val);
+    // 3. Update the value
+    if (idx != -1 && device_table[idx].matter_ep_id != 0xFFFF) {
+        matter_interface_update_attribute(device_table[idx].matter_ep_id, value);
     }
 }
