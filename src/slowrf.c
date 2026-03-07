@@ -316,6 +316,7 @@ void slowrf_task(void *pvParameters) {
                         char d[32];
                         snprintf(d, sizeof(d), "%08X", (unsigned int)rtl_dec.bit_buffer);
                         slowrf_output_packet("r", d, rssi);
+                        matter_bridge_report_event(d, DEVICE_TYPE_CONTACT_SENSOR, 1.0);
                     }
                 }
                 reset_fs20(&fs_dec);
