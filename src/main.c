@@ -53,6 +53,9 @@ void app_main(void) {
         config_loader_load_protocols();
     }
     
+    // Initialize WiFi
+    wifi_manager_init();
+
     // Initialize Matter Bridge Foundation
     matter_bridge_init();
 
