@@ -58,6 +58,15 @@ typedef struct {
 } fs20_dec_t;
 
 typedef struct {
+    uint8_t data[16];
+    int byte_cnt;
+    int bit_cnt;
+    uint32_t current_bits;
+    int pulse_state;
+    bool sync_found;
+} fht_dec_t;
+
+typedef struct {
     char s[17];
     int pos;
     int pulse_cnt;
