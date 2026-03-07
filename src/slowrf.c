@@ -51,7 +51,7 @@ typedef struct {
 static web_event_t web_events[MAX_WEB_EVENTS];
 static int web_event_idx = 0;
 
-static void add_web_event(const char* msg) {
+void slowrf_add_web_event(const char* msg) {
     strncpy(web_events[web_event_idx].msg, msg, 63);
     web_events[web_event_idx].msg[63] = 0;
     web_events[web_event_idx].timestamp = esp_timer_get_time() / 1000000;
