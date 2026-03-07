@@ -25,11 +25,11 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **RF-Modul:** CC1101 angebunden via SPI.
 *   **SPI-Kommunikation:** Die SPI-Geschwindigkeit wurde zur Erhöhung der Stabilität auf 500 kHz festgelegt. Für das Auslesen der Statusregister wird der `READ_BURST`-Modus (`0xC0`) verwendet.
 *   **Persistenz:** Wichtige Einstellungen (z.B. der Reporting-Modus `X21`, die RF-Frequenz) werden im **Non-Volatile Storage (NVS)** des ESP32 gespeichert und bei Neustart automatisch wiederhergestellt.
-*   **Software-Architektur: Gehärtetes FreeRTOS**
-    *   **Strikte Task-Trennung:**
-        *   `slowrf_task` (hohe Priorität, Core 0): Echtzeit-Verarbeitung der Funk-Signale. Isoliert von anderen Prozessen.
-        *   `culfw_parser_task` (niedrigere Priorität, Core 1): Verarbeitet serielle Befehle und System-Management.
-    *   **Thread-Sicherheit:** Alle Zugriffe auf den CC1101 sind durch einen **Mutex (Semaphore)** geschützt, um Konflikte mit zukünftigen WiFi/Matter-Stacks zu verhindern.
+*   **Software-Architektur: Gehärtetes Multi-Core FreeRTOS**
+    *   **Strikte Task-Trennung mit Core-Affinität:**
+        *   `slowrf_task` (hohe Priorität, **Core 0**): Exklusive Verarbeitung der Echtzeit-Funk-Signale (RX/TX). Das Pinning auf Core 0 minimiert Jitter und schützt die Signalverarbeitung vor Interferenzen durch WiFi/Matter-Stacks.
+        *   `culfw_parser_task` (niedrigere Priorität, **Core 1**): Verarbeitet serielle Befehle, System-Management und ist für zukünftige Applikationslogik (z.B. Matter-Bridge) vorgesehen.
+    *   **Thread-Sicherheit:** Alle Zugriffe auf den CC1101-Treiber sind durch einen **rekursiven Mutex (Semaphore)** geschützt. Dies verhindert Race Conditions und Datenkorruption, wenn mehrere Tasks (z.B. RF-Task und Parser-Task) auf den SPI-Bus zugreifen und erlaubt atomare, verschachtelte Operationen ohne Deadlocks.
     *   **Multi-Protokoll-Gateway:** Die Firmware agiert als "Staubsauger" für alle unterstützten OOK-Protokolle auf der aktiven Frequenz. Alle Decoder laufen parallel.
 *   **Zukünftige Architektur: On-Board Intelligence**
     *   **Dateisystem:** Integration eines **SPIFFS-Dateisystems** zur Speicherung einer flexiblen Protokoll-Datenbank (`protocols.json`).
@@ -80,6 +80,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **Hybride Intelligenz als Erfolgsfaktor:** Die Firmware wird bivalent ausgelegt. Sie vereint die Stabilität des etablierten CUL-Protokolls (`X21`-Modus) mit der Flexibilität des SIGNALduino-Rohdatenformats (`X25`-Modus). Dies ermöglicht dem Benutzer die Wahl des optimalen Modus für seine Anwendung.
 *   **Voraussetzung für Matter:** Die **On-Board-Dekodierung** (gesteuert durch eine JSON-Datenbank im Dateisystem) ist die zwingende Voraussetzung für eine spätere Matter-Bridge-Funktionalität. Nur wenn der Stick die Semantik der Daten versteht (z.B. "Temperatur: 21.5°C"), kann er diese als standardisierten Matter-Endpunkt bereitstellen.
 *   **Multi-Protokoll-Gateway-Architektur bestätigt:** Die parallele Ausführung aller Protokoll-Decoder ermöglicht den simultanen Empfang verschiedener Protokolle auf demselben Frequenzband.
+*   **RTOS-Härtung:** Die initiale Implementierung mit einem einfachen Mutex barg die Gefahr von Deadlocks bei verschachtelten Funktionsaufrufen im CC1101-Treiber. Die Umstellung auf einen **rekursiven Mutex** hat dieses Problem behoben und die Stabilität der Treiber-Interaktionen unter Last erhöht.
 
 ## 5. Nächste Schritte
 
