@@ -139,9 +139,19 @@ static void reset_os(os_dec_t *dec) {
     dec->pulse_state = 0;
 }
 
+static void reset_fht(fht_dec_t *dec) {
+    memset(dec->data, 0, sizeof(dec->data));
+    dec->byte_cnt = 0;
+    dec->bit_cnt = 0;
+    dec->current_bits = 0;
+    dec->pulse_state = 0;
+    dec->sync_found = false;
+}
+
 void slowrf_task(void *pvParameters) {
     pulse_t p_in;
     fs20_dec_t fs_dec;
+    fht_dec_t fht_dec;
     itv1_dec_t it1_dec;
     itv3_dec_t it3_dec;
     sensor_dec_t hms_dec;
@@ -149,6 +159,7 @@ void slowrf_task(void *pvParameters) {
     os_dec_t os_dec;
     
     reset_fs20(&fs_dec);
+    reset_fht(&fht_dec);
     reset_itv1(&it1_dec);
     reset_itv3(&it3_dec);
     reset_sensor(&hms_dec);
