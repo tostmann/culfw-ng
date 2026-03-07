@@ -247,6 +247,11 @@ void slowrf_task(void *pvParameters) {
                         len += snprintf(out + len, sizeof(out) - len, "%02X\r\n", rssi);
                         usb_serial_jtag_write_bytes(out, len, 0);
                     }
+                    if (rtl_dec.bit_cnt >= 24) {
+                        char out[64];
+                        int len = snprintf(out, sizeof(out), "r%08X%02X\r\n", (unsigned int)rtl_dec.bit_buffer, rssi);
+                        usb_serial_jtag_write_bytes(out, len, 0);
+                    }
                 }
                 reset_fs20(&fs_dec);
                 reset_fht(&fht_dec);
@@ -255,6 +260,7 @@ void slowrf_task(void *pvParameters) {
                 reset_sensor(&hms_dec);
                 reset_sensor(&s300_dec);
                 reset_os(&os_dec);
+                reset_rtl433(&rtl_dec);
                 
                 if (pulse > 8000 && pulse < 11000) {
                     it3_dec.sync_found = true;
