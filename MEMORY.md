@@ -25,10 +25,9 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **RF-Modul:** CC1101 angebunden via SPI.
 *   **SPI-Kommunikation:** Die SPI-Geschwindigkeit wurde zur Erhöhung der Stabilität auf 500 kHz festgelegt. Für das Auslesen der Statusregister wird der `READ_BURST`-Modus (`0xC0`) verwendet.
 *   **Persistenz:** Wichtige Einstellungen (z.B. der Betriebsmodus `X21`/`X25`, die RF-Frequenz) werden im **Non-Volatile Storage (NVS)** des ESP32 gespeichert und bei Neustart automatisch wiederhergestellt.
-*   **Software-Architektur: Gehärtetes Multi-Core FreeRTOS**
-    *   **Strikte Task-Trennung mit Core-Affinität:**
-        *   `slowrf_task` (hohe Priorität, **Core 0**): Exklusive Verarbeitung der Echtzeit-Funk-Signale (RX/TX). Das Pinning auf Core 0 minimiert Jitter und schützt die Signalverarbeitung vor Interferenzen durch WiFi/Matter-Stacks.
-        *   `culfw_parser_task` (niedrigere Priorität, **Core 1**): Verarbeitet serielle Befehle, System-Management und ist für zukünftige Applikationslogik (z.B. Matter-Bridge) vorgesehen.
+*   **Software-Architektur: Angepasste Single-Core FreeRTOS Architektur (RISC-V)**
+    *   **Task-Management auf Core 0:** Alle Tasks (`slowrf_task`, `culfw_parser_task`, Management-Tasks) laufen auf dem einzigen verfügbaren **Core 0**.
+    *   **Echtzeit-Absicherung durch Priorisierung:** Die `slowrf_task` besitzt eine hohe Priorität, um die Echtzeit-Verarbeitung von Funksignalen (RX/TX) vor weniger zeitkritischen Tasks (z.B. WiFi, Web-Server, Kommando-Parsing) zu schützen und Jitter zu minimieren.
     *   **Thread-Sicherheit:** Alle Zugriffe auf den CC1101-Treiber sind durch einen **rekursiven Mutex (Semaphore)** geschützt. Dies verhindert Race Conditions und Datenkorruption.
     *   **Multi-Protokoll-Gateway:** Die Firmware agiert als "Staubsauger" für alle unterstützten OOK-Protokolle auf der aktiven Frequenz. Alle Decoder laufen parallel.
 *   **Zukünftige Architektur: On-Board Intelligence & Matter**
@@ -51,7 +50,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
     *   **Rausch-Unterdrückung:** `GDO2` ist als **Carrier Sense** konfiguriert (`IOCFG2=0x0E`).
 *   **Signal-Aussendung (TX):**
     *   Der `GDO0_PIN` wird dynamisch als Output konfiguriert, um Sendesequenzen per Bit-Banging zu erzeugen.
-*   **Versionierung:** Automatisierte Build-Nummer und detaillierter, culfw-kompatibler Versions-String, der nun auch die Chip-ID enthält.
+*   **Versionierung:** Automatisierter Build-Nummer und detaillierter, culfw-kompatibler Versions-String, der nun Chip-ID und die **aktuelle IP-Adresse** enthält (`V`-Kommando).
 
 ## 3. Implementierungsstatus
 
@@ -70,7 +69,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Remote-Diagnose-Befehle (`R`, `W`, `X99`, `m`) implementiert.
 *   **[DONE]** Periodischer "CUL-TICK" als Heartbeat implementiert.
 *   **[DONE]** Laufzeit-Frequenzumschaltung (`f433`/`f868`) implementiert.
-*   **[DONE]** RTOS-Architektur gehärtet (Core-Pinning, Task-Priorisierung, rekursiver SPI-Mutex).
+*   **[DONE]** RTOS-Architektur gehärtet (Task-Priorisierung, rekursiver SPI-Mutex).
 *   **[DONE]** End-to-End Validierung aller implementierten Protokolle.
 *   **[DONE]** Benutzer-Dokumentation (`COMMANDS.md`) erstellt und aktualisiert.
 *   **[DONE]** Release Management: Finaler Code-Stand als **Release v1.0.1** auf GitHub getaggt.
@@ -88,18 +87,20 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Implementierung von Diagnose-Kommandos für Matter (`ML` zum Auflisten der Endpunkte).
 *   **[DONE]** SIGNALduino `MU;` Logik verfeinert: Rohdaten-Ausgabe wird unterdrückt, wenn ein Decoder (fest oder generisch) gematcht hat.
 *   **[DONE]** WiFi-Konnektivität implementiert (Verbindung zu "PalmBeach WiFi").
-*   **[DONE]** Device-Identität: Erweiterung des `V` (Version) Kommandos um die eindeutige Chip-ID (MAC).
 *   **[DONE]** Web-Interface: Implementierung eines einfachen HTTP-Servers zur Anzeige von Live-Funk-Events und Systemstatus.
 *   **[DONE]** Integration der RF-Decoder mit dem Web-Log für Live-Event-Anzeige.
 *   **[DONE]** Chip-Unique-ID (MAC) Auslesung als Basis für Kopierschutz implementiert.
+*   **[DONE]** **Behebung des Flash-Partition-Konflikts (Overlap-Fehler bei 0x10000).**
+*   **[DONE]** **Anpassung der RTOS-Architektur an Single-Core-Betrieb (ESP32-C6).**
+*   **[DONE]** **Device-Identität: Erweiterung des V (Version) Kommandos um die eindeutige Chip-ID (MAC) und die aktuelle IP-Adresse.**
 
 ## 4. Neue Erkenntnisse / Probleme
 
-*   **Flash-Partition-Konflikt:** Beim Upload der Firmware via `esptool` tritt ein **Overlap-Fehler bei Adresse `0x10000`** auf. Dies deutet auf einen Konflikt zwischen dem Bootloader-Offset und der in `partitions.csv` definierten App-Partition (`factory`) hin. Die Standardkonfiguration von PlatformIO für das `esp32-c6-devkitc-1` Board kollidiert mit der benutzerdefinierten Partitionstabelle, was einen erfolgreichen Flash-Vorgang verhindert.
+*   **Architektur-Korrektur: ESP32-C6 ist ein Single-Core Prozessor.** Die ursprüngliche Architektur basierte auf der fehlerhaften Annahme eines Dual-Core-Prozessors, wie er in anderen ESP32-Varianten üblich ist. Der ESP32-C6 verfügt jedoch nur über einen **einzigen RISC-V Kern (Core 0)**. Versuche, Tasks auf einem nicht-existenten Core 1 zu pinnen, führten zu einem `assert failed` Absturz beim Systemstart. Die gesamte RTOS-Architektur musste auf ein Single-Core-Modell umgestellt werden, bei dem die **Task-Priorisierung** das primäre Steuerungsinstrument zur Sicherstellung der Echtzeitfähigkeit ist.
 
 ## 5. Nächste Schritte
 
-*   **Behebung des Flash-Overlap-Fehlers:** Korrektur der `partitions.csv` oder der PlatformIO-Build-Konfiguration, um einen erfolgreichen Upload der Firmware zu ermöglichen. Dies hat höchste Priorität.
+*   **Funktionstest:** Verifizierung der IP-Adressen-Ausgabe über das `V`-Kommando und Test des Web-Interfaces auf beiden Hardware-Varianten (433/868 MHz).
 *   **Validierung:** Durchführung von Tests zur Verifizierung der `MU;`-Rohdaten-Timings im Vergleich zu einem originalen SIGNALduino.
 *   **Stabilitätstests:** Durchführung von Langzeittests im hybriden Matter-Gateway-Betrieb mit aktiver WiFi-Verbindung und Web-Interface.
 
