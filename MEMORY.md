@@ -81,6 +81,7 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 
 ## 4. Neue Erkenntnisse / Probleme
 
+*   **[INFO] Hardware-Fehlbestückung:** Ein als 868MHz gelabeltes Modul erwies sich als 433MHz-Modul. Kreuztests mit Referenz-Hardware haben bestätigt, dass das HF-Frontend (Balun/Filter) der CC1101-Module extrem selektiv ist. Ein Betrieb außerhalb des vorgesehenen Frequenzbandes ist selbst im Nahbereich (<1m) nicht möglich, da das Signal zu stark gedämpft und verzerrt wird. Dies führt zu sporadischem Empfang von verstümmelten Datenfragmenten, aber nicht zu einer validen Dekodierung, und ist ein nicht per Software lösbares Hardware-Problem.
 *   **[INFO]** Die culfw-Implementierung des FS20-Protokolls verwendet **gerade Parität (Even Parity)**, abweichend von manchen Spezifikationen. Dies ist für die Kompatibilität entscheidend.
 *   **[INFO]** Eine längere Präambel (z.B. 24 '0'-Bits statt 12) und eine hohe Wiederholrate (z.B. 10x) verbessern die FS20-Übertragungssicherheit signifikant.
 *   **[INFO]** Hardwareseitiges Carrier Sense (RSSI-Schwellwert) über den GDO2-Pin ist eine sehr effektive Methode, um den RX-Prozessor von der Verarbeitung von reinem Rauschen zu entlasten.
