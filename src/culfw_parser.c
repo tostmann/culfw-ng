@@ -45,6 +45,14 @@ static bool load_reporting_state() {
     return load_nvs_u8("reporting", 0) != 0;
 }
 
+static void save_mode_state(uint8_t mode) {
+    save_nvs_u8("mode", mode);
+}
+
+static uint8_t load_mode_state() {
+    return load_nvs_u8("mode", SLOWRF_MODE_CUL);
+}
+
 bool culfw_reporting_enabled() {
     return reporting_enabled;
 }
