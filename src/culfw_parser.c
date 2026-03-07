@@ -4,6 +4,7 @@
 #include "freertos/task.h"
 #include "culfw_parser.h"
 #include "esp_log.h"
+#include "esp_mac.h"
 #include "esp_random.h"
 #include "nvs_flash.h"
 #include "nvs.h"
