@@ -2,7 +2,7 @@
 
 ## 1. Projektziel
 
-Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CUL-Sticks. Die Firmware soll klassische SlowRF-Protokolle (wie FS20, Intertechno) über ein CC1101-Modul senden und empfangen. Langfristiges strategisches Ziel ist die Schaffung eines autonomen **SlowRF-to-Matter/Thread Gateways** mit On-Board-Dekodierung, das als kommerziell tragfähiges Standalone-Produkt fungiert und nicht von Host-Systemen wie FHEM abhängig ist.
+Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CUL-Sticks. Die Firmware soll klassische SlowRF-Protokolle (wie FS20, Intertechno) über ein CC1101-Modul senden und empfangen. Langfristiges strategisches Ziel ist die Schaffung eines autonomen **SlowRF-to-Matter/Thread Gateways** mit On-Board-Dekodierung, das als kommerziell tragfähiges und kopiergeschütztes Standalone-Produkt fungiert und nicht von Host-Systemen wie FHEM abhängig ist.
 
 ### 1.1 Unterstützte Protokolle
 
@@ -72,12 +72,15 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** End-to-End Validierung aller implementierten Protokolle.
 *   **[DONE]** Benutzer-Dokumentation (`COMMANDS.md`) erstellt.
 *   **[DONE]** Release Management: Finaler Code-Stand als **Release v1.0.1** auf GitHub getaggt.
-*   **[DONE]** Partitionsschema für Dateisystem (SPIFFS) erweitert.
+*   **[DONE]** Partitionsschema für Dateisystem (SPIFFS) und Matter-Unterstützung erweitert.
 *   **[DONE]** Build-System um Upload einer Filesystem-Partition (`data/`) erweitert.
 *   **[DONE]** Chip-Unique-ID (MAC) Auslesung als Basis für Kopierschutz implementiert.
+*   **[DONE]** Basis-Struktur für Matter-Bridge-Modul (`matter_bridge.c/h`) erstellt.
+*   **[DONE]** Diagnose-Kommando (`MT`) zur Simulation von Sensor-Events für Matter-Tests implementiert.
 *   **[IN PROGRESS]** Entwicklung einer generischen, tabellengesteuerten Decoding-Engine.
 *   **[TODO]** Implementierung des SPIFFS-Treibers und des JSON-Parsers in der Firmware.
 *   **[TODO]** Implementierung des bivalenten Betriebsmodus (CUL vs. SIGNALduino).
+*   **[TODO]** Integration des ESP-Matter-SDKs und Anbindung der Dynamic Endpoint Registry.
 
 ## 4. Neue Erkenntnisse / Probleme
 
@@ -94,8 +97,8 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
     *   **CUL-Modus (`X21`, Standard):** 100%ige Kompatibilität mit dem FHEM-Modul `00_CUL.pm` für maximale Stabilität.
     *   **SIGNALduino-Modus (`X25`):** Vollständige Emulation eines SIGNALduino. In diesem Modus gibt die Firmware alle empfangenen OOK-Signale im **SIGNALduino-Raw-Format (`MU;...`, `MS;...`)** aus. Dies schaltet die Kompatibilität zur riesigen Sensor-Datenbank des FHEM-SIGNALduino-Projekts frei.
 *   **On-Board Decoding Engine:** Implementierung der tabellengesteuerten Dekodierungslogik, die Protokolldefinitionen aus einer `protocols.json` im SPIFFS-Dateisystem liest. Dies macht die Firmware zukunftssicher und vom Host-System unabhängig.
-*   **FHEM-Integration & Validierung:** Umfassende Tests der Firmware in beiden Modi (`CUL` und `SIGNALduino`) mit einem FHEM-Host-System zur Sicherstellung der Langzeitstabilität und Kompatibilität. Dies wird durch die Sensor-Emulations-Fähigkeit erleichtert.
 *   **Roadmap-Planung: Matter/Thread-Bridge:** Nach erfolgreicher Implementierung des On-Board-Decoders, Beginn der Integration des ESP-Matter-SDK. Ziel ist es, dekodierte Sensordaten (z.B. Temperatur, Luftfeuchtigkeit, Kontaktstatus) direkt als standardisierte Matter-Endpunkte im Netzwerk bereitzustellen. Die initialen Tests und die Validierung der Implementierung erfolgen über das CLI-Tool `chip-tool`.
+*   **FHEM-Integration & Validierung:** Umfassende Tests der Firmware in beiden Modi (`CUL` und `SIGNALduino`) mit einem FHEM-Host-System zur Sicherstellung der Langzeitstabilität und Kompatibilität. Dies wird durch die Sensor-Emulations-Fähigkeit erleichtert.
 
 ## 6. Hardware-Konfiguration (Pinout)
 
