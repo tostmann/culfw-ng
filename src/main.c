@@ -7,6 +7,9 @@
 #include "esp_mac.h"
 #include "nvs_flash.h"
 #include "cc1101.h"
+#include "matter_bridge.h"
+#include "culfw_parser.h"
+#include "slowrf.h"
 #include "driver/usb_serial_jtag.h"
 
 static const char *TAG = "CUL32-C6";
@@ -43,6 +46,9 @@ void app_main(void) {
     }
     ESP_ERROR_CHECK(ret);
     
+    // Initialize Matter Bridge Foundation
+    matter_bridge_init();
+
     // Install USB Serial JTAG early
     if (!usb_serial_jtag_is_driver_installed()) {
         usb_serial_jtag_driver_config_t config = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();
@@ -67,9 +73,7 @@ void app_main(void) {
 
     xTaskCreatePinnedToCore(led_task, "led_task", 2048, NULL, 2, NULL, 1);
     
-    #include "culfw_parser.h"
-    #include "slowrf.h"
-    // slowrf_task is now created inside culfw_parser_task with priority 10 on Core 0
-    xTaskCreatePinnedToCore(culfw_parser_task, "culfw_parser_task", 4096, NULL, 5, NULL, 1);
+    // Initializing RF tasks
     slowrf_init();
+    xTaskCreatePinnedToCore(culfw_parser_task, "culfw_parser_task", 4096, NULL, 5, NULL, 1);
 }

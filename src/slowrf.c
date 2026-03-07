@@ -7,6 +7,7 @@
 #include "freertos/queue.h"
 #include "culfw_parser.h"
 #include "cc1101.h"
+#include "matter_bridge.h"
 #include <string.h>
 
 static const char *TAG = "SLOWRF";
