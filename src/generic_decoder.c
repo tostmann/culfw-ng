@@ -1,17 +1,19 @@
 #include "generic_decoder.h"
 #include "esp_log.h"
 #include "cJSON.h"
+#include "driver/usb_serial_jtag.h"
 #include <string.h>
+#include <stdio.h>
 
 static const char *TAG = "GEN_DEC";
 
 #define MAX_PROTOCOLS 10
-#define MAX_PULSES 8
+#define MAX_SEQ_LEN 16  // Max pulses per symbol (sync/bit)
 
 typedef struct {
-    uint16_t high;
-    uint16_t low;
-} pulse_pair_us_t;
+    uint16_t duration;
+    uint8_t level; // 1=High, 0=Low
+} pulse_def_t;
 
 typedef struct {
     char name[16];
@@ -21,14 +23,14 @@ typedef struct {
     uint16_t long_us;
     uint16_t tolerance_us;
     
-    pulse_pair_us_t bit0[MAX_PULSES];
+    pulse_def_t sync[MAX_SEQ_LEN];
+    uint8_t sync_len;
+    
+    pulse_def_t bit0[MAX_SEQ_LEN];
     uint8_t bit0_len;
     
-    pulse_pair_us_t bit1[MAX_PULSES];
+    pulse_def_t bit1[MAX_SEQ_LEN];
     uint8_t bit1_len;
-    
-    pulse_pair_us_t sync[MAX_PULSES];
-    uint8_t sync_len;
     
     uint16_t min_bits;
     uint16_t max_bits;
@@ -41,11 +43,14 @@ typedef enum {
 
 typedef struct {
     dec_state_e state;
-    uint8_t current_pulse_idx; // in current symbol (bit0/1/sync)
-    uint8_t sync_pulse_idx;
-    uint16_t bit_buffer_len;
-    uint64_t bit_buffer;
-    uint32_t last_sync_ts;
+    uint8_t seq_idx; // Index in current sequence (sync or bit)
+    uint16_t bit_cnt;
+    uint64_t bit_buffer; // Simple buffer for up to 64 bits
+    // For determining bit0 vs bit1, we need to track both possibilities
+    uint8_t bit0_match_idx;
+    uint8_t bit1_match_idx;
+    bool match_bit0;
+    bool match_bit1;
 } proto_state_t;
 
 static rf_proto_internal_t protocols[MAX_PROTOCOLS];
@@ -58,17 +63,26 @@ void generic_decoder_init() {
     ESP_LOGI(TAG, "Generic decoder initialized.");
 }
 
-static void parse_pulse_def(cJSON *def, pulse_pair_us_t *out, uint8_t *len, uint16_t base_us) {
+// Helper to flatten JSON pairs into sequence
+static void parse_pulse_def(cJSON *def, pulse_def_t *out, uint8_t *len, uint16_t base_us) {
     if (!cJSON_IsArray(def)) return;
     *len = 0;
     cJSON *pair;
     cJSON_ArrayForEach(pair, def) {
-        if (*len >= MAX_PULSES) break;
+        if (*len >= MAX_SEQ_LEN - 1) break;
         cJSON *h = cJSON_GetObjectItem(pair, "h");
         cJSON *l = cJSON_GetObjectItem(pair, "l");
-        if (h && l) {
-            out[*len].high = h->valueint * base_us;
-            out[*len].low = l->valueint * base_us;
+        
+        // Add High Pulse
+        if (h) {
+            out[*len].duration = h->valueint * base_us;
+            out[*len].level = 1;
+            (*len)++;
+        }
+        // Add Low Pulse
+        if (l) {
+            out[*len].duration = l->valueint * base_us;
+            out[*len].level = 0;
             (*len)++;
         }
     }
@@ -119,7 +133,7 @@ bool generic_decoder_load_from_json(const char* json_string) {
             p->max_bits = cJSON_GetObjectItem(len, "max")->valueint;
         }
 
-        ESP_LOGI(TAG, "Loaded: %s (Short: %d us)", p->name, p->short_us);
+        ESP_LOGI(TAG, "Loaded: %s (Short: %d us, SyncLen: %d)", p->name, p->short_us, p->sync_len);
         protocol_count++;
     }
 
@@ -128,22 +142,152 @@ bool generic_decoder_load_from_json(const char* json_string) {
 }
 
 static bool match_pulse(uint16_t duration, uint16_t target, uint16_t tol) {
-    if (duration > target - tol && duration < target + tol) return true;
-    return false;
+    // If target is 0, we skip check (should not happen in valid defs)
+    if (target == 0) return true; 
+    return (duration > target - tol && duration < target + tol);
 }
 
-// Simplified Logic: Just detect Sync for now
+static void reset_state(proto_state_t *s) {
+    s->state = STATE_WAIT_SYNC;
+    s->seq_idx = 0;
+    s->bit_cnt = 0;
+    s->bit_buffer = 0;
+    s->match_bit0 = true; 
+    s->match_bit1 = true;
+    s->bit0_match_idx = 0;
+    s->bit1_match_idx = 0;
+}
+
 void generic_decoder_process_pulse(uint16_t duration, uint8_t level) {
     for (int i=0; i<protocol_count; i++) {
         rf_proto_internal_t *p = &protocols[i];
-        // proto_state_t *s = &states[i];
+        proto_state_t *s = &states[i];
         
-        // Simple Sync Check (Level must match sync start)
-        // Sync is usually High then Low.
-        // We only check duration match on Short/Long for now to see if basics work
-        
-        if (match_pulse(duration, p->short_us, p->tolerance_us)) {
-            // ESP_LOGI(TAG, "Short Pulse match for %s", p->name);
+        // TODO: Frequency Check via global variable or passed param
+        // For now, assume correct frequency
+
+        if (s->state == STATE_WAIT_SYNC) {
+            // Check Sync Sequence
+            if (s->seq_idx < p->sync_len) {
+                pulse_def_t *target = &p->sync[s->seq_idx];
+                
+                // Level Match?
+                if (level == target->level) {
+                    // Duration Match?
+                    if (match_pulse(duration, target->duration, p->tolerance_us)) {
+                        s->seq_idx++;
+                        if (s->seq_idx >= p->sync_len) {
+                            // Sync Complete!
+                            s->state = STATE_READ_BITS;
+                            s->bit_cnt = 0;
+                            s->bit_buffer = 0;
+                            
+                            // Prepare for first bit
+                            s->bit0_match_idx = 0;
+                            s->bit1_match_idx = 0;
+                            s->match_bit0 = true;
+                            s->match_bit1 = true;
+                        }
+                    } else {
+                        // Duration Mismatch -> Reset
+                        // But wait: Maybe this pulse is the START of a new sync?
+                        // If index was > 0, we reset to 0.
+                        // If index was 0, it just didn't match.
+                        s->seq_idx = 0;
+                        
+                        // Retry matching first pulse of sync immediately?
+                        // Yes, if level matches first sync pulse.
+                        if (level == p->sync[0].level && match_pulse(duration, p->sync[0].duration, p->tolerance_us)) {
+                             s->seq_idx = 1; 
+                        }
+                    }
+                } else {
+                    // Wrong level -> Reset
+                    s->seq_idx = 0;
+                }
+            }
+        } else if (s->state == STATE_READ_BITS) {
+            // We are reading bits. A bit can be bit0 or bit1 sequence.
+            // We track both possibilities until one fails.
+            
+            bool possible0 = s->match_bit0;
+            bool possible1 = s->match_bit1;
+            
+            // Check Bit 0
+            if (possible0) {
+                if (s->bit0_match_idx < p->bit0_len) {
+                    pulse_def_t *tgt0 = &p->bit0[s->bit0_match_idx];
+                    if (level != tgt0->level || !match_pulse(duration, tgt0->duration, p->tolerance_us)) {
+                        s->match_bit0 = false;
+                    } else {
+                        s->bit0_match_idx++;
+                    }
+                } else {
+                    // Index overflow (should have been caught)
+                    s->match_bit0 = false; 
+                }
+            }
+            
+            // Check Bit 1
+            if (possible1) {
+                if (s->bit1_match_idx < p->bit1_len) {
+                    pulse_def_t *tgt1 = &p->bit1[s->bit1_match_idx];
+                    if (level != tgt1->level || !match_pulse(duration, tgt1->duration, p->tolerance_us)) {
+                        s->match_bit1 = false;
+                    } else {
+                        s->bit1_match_idx++;
+                    }
+                } else {
+                     s->match_bit1 = false;
+                }
+            }
+            
+            // Determine Outcome
+            if (!s->match_bit0 && !s->match_bit1) {
+                // Both failed -> decoding error -> reset
+                reset_state(s);
+            } else {
+                // Check if any bit sequence completed
+                bool bit0_complete = (s->match_bit0 && s->bit0_match_idx >= p->bit0_len);
+                bool bit1_complete = (s->match_bit1 && s->bit1_match_idx >= p->bit1_len);
+                
+                if (bit0_complete && bit1_complete) {
+                    // Ambiguous! (e.g. bit0 is prefix of bit1)
+                    // We need more pulses to decide.
+                    // Assuming no prefix codes for now.
+                    // Prefer Bit 1? Or Error?
+                    // For now: reset.
+                     reset_state(s);
+                } else if (bit0_complete) {
+                    // Found Bit 0
+                    s->bit_buffer = (s->bit_buffer << 1) | 0;
+                    s->bit_cnt++;
+                    
+                    // Reset bit matchers for next bit
+                    s->bit0_match_idx = 0; s->bit1_match_idx = 0;
+                    s->match_bit0 = true; s->match_bit1 = true;
+                    
+                } else if (bit1_complete) {
+                    // Found Bit 1
+                    s->bit_buffer = (s->bit_buffer << 1) | 1;
+                    s->bit_cnt++;
+                    
+                    // Reset bit matchers
+                    s->bit0_match_idx = 0; s->bit1_match_idx = 0;
+                    s->match_bit0 = true; s->match_bit1 = true;
+                }
+                
+                // Check Packet Complete
+                if (s->bit_cnt >= p->max_bits) {
+                    // Success!
+                    char msg[64];
+                    int len = snprintf(msg, sizeof(msg), "GEN:%s:%llX\r\n", p->name, s->bit_buffer);
+                    usb_serial_jtag_write_bytes(msg, len, 0);
+                    ESP_LOGI(TAG, "DECODED %s: %llX", p->name, s->bit_buffer);
+                    
+                    reset_state(s);
+                }
+            }
         }
     }
 }

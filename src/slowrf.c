@@ -21,7 +21,8 @@ typedef struct {
 static QueueHandle_t pulse_queue;
 static int64_t last_time = 0;
 static bool slowrf_debug = false;
-static bool slowrf_reporting = false;
+static bool slowrf_reporting = true; // Default ON
+static uint8_t slowrf_mode = SLOWRF_MODE_CUL;
 
 void slowrf_set_debug(bool enable) {
     slowrf_debug = enable;
@@ -29,6 +30,17 @@ void slowrf_set_debug(bool enable) {
 
 void slowrf_set_reporting(bool enable) {
     slowrf_reporting = enable;
+}
+
+void slowrf_set_mode(uint8_t mode) {
+    if (mode == SLOWRF_MODE_CUL || mode == SLOWRF_MODE_SIGNALDUINO) {
+        slowrf_mode = mode;
+        ESP_LOGI(TAG, "Switched to mode X%02X", mode);
+    }
+}
+
+uint8_t slowrf_get_mode() {
+    return slowrf_mode;
 }
 
 static void IRAM_ATTR gpio_isr_handler(void* arg) {
