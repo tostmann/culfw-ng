@@ -134,6 +134,21 @@ void cc1101_set_idle_mode() {
     cc1101_cmd_strobe(CC1101_SIDLE);
 }
 
+void cc1101_set_frequency(bool is_433) {
+    cc1101_is_433_flag = is_433;
+    cc1101_cmd_strobe(CC1101_SIDLE);
+    if (is_433) {
+        cc1101_write_reg(0x0D, 0x10); // FREQ2
+        cc1101_write_reg(0x0E, 0xB3); // FREQ1
+        cc1101_write_reg(0x0F, 0x3B); // FREQ0 (433.92 MHz)
+    } else {
+        cc1101_write_reg(0x0D, 0x21); // FREQ2
+        cc1101_write_reg(0x0E, 0x65); // FREQ1
+        cc1101_write_reg(0x0F, 0x6A); // FREQ0 (868.3 MHz)
+    }
+    cc1101_set_rx_mode();
+}
+
 uint8_t cc1101_read_rssi() {
     // RSSI is in 0x34 status register
     uint8_t rssi_raw = cc1101_read_reg(0x34 | CC1101_READ_BURST);
