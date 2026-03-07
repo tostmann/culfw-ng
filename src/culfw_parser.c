@@ -119,6 +119,12 @@ static void handle_command(char *cmd) {
             cc1101_set_frequency(false);
             len = snprintf(out, sizeof(out), "f868 OK\r\n");
         }
+    } else if (cmd[0] == 'M' && cmd[1] == 'T') { // MT <ID> <VAL> - Matter Test
+        char mid[17];
+        float mval = 0;
+        sscanf(cmd + 3, "%s %f", mid, &mval);
+        matter_bridge_report_event(mid, DEVICE_TYPE_TEMPERATURE, mval);
+        len = snprintf(out, sizeof(out), "MT OK: %s -> %.1f\r\n", mid, mval);
     } else if (cmd[0] == 'm') { // m<HEX> - send raw durations (dur = hex * 10us)
         cc1101_set_tx_mode();
         gpio_set_level(GPIO_LED, 0);
