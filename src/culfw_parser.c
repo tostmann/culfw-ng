@@ -147,6 +147,9 @@ static void handle_command(char *cmd) {
         } else {
              len = snprintf(out, sizeof(out), "MT ERR\r\n");
         }
+    } else if (cmd[0] == 'M' && cmd[1] == 'L') { // ML - Matter List
+        matter_bridge_list_endpoints();
+        len = snprintf(out, sizeof(out), "ML DONE\r\n");
     } else if (cmd[0] == 'm') { // m<HEX> - send raw durations (dur = hex * 10us)
         cc1101_set_tx_mode();
         gpio_set_level(GPIO_LED, 0);
