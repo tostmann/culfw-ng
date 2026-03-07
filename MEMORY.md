@@ -82,20 +82,19 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Entwicklung einer generischen, tabellengesteuerten Decoding-Engine (`generic_decoder.c` mit cJSON).
 *   **[DONE]** Implementierung des SPIFFS-Treibers (`config_loader.c`) zum Laden von `protocols.json`.
 *   **[DONE]** Integration des Generic Decoders in den `slowrf_task` (Parallelbetrieb mit festen Decodern).
-*   **[IN PROGRESS]** Implementierung der vollständigen Bit-Matching-Logik in `generic_decoder.c` (aktuell nur Sync-Check).
-*   **[TODO]** Implementierung des bivalenten Betriebsmodus (CUL vs. SIGNALduino).
+*   **[DONE]** Implementierung der vollständigen Bit-Matching-Logik in `generic_decoder.c` (Sync- und Bit-Reading State Machine).
+*   **[IN PROGRESS]** Implementierung des bivalenten Betriebsmodus (CUL vs. SIGNALduino). Die Umschaltung per Kommando (`X21`/`X25`) ist implementiert.
 
 ## 4. Neue Erkenntnisse / Probleme
 
 *   **Build-System gehärtet:** Ein hartnäckiges Build-Problem mit der `esp_hid`-Komponente, die eine nicht benötigte Bluetooth-Abhängigkeit (`nimble/ble.h`) erfordert, wurde final gelöst. Der Workaround besteht darin, eine **lokale Dummy-Komponente** (`components/esp_hid`) zu erstellen, die vom Build-System bevorzugt und anstelle der fehlerhaften Framework-Komponente verwendet wird. Dies stellt einen stabilen Build ohne Bluetooth sicher.
-*   **Decoder-Architektur validiert:** Der generische Decoder (`generic_decoder`) läuft nun erfolgreich parallel zu den festen, hard-codierten Decodern. Jeder empfangene Puls wird an alle Decoder zur Verarbeitung weitergeleitet.
+*   **Decoder-Architektur optimiert:** Während der Implementierung der Bit-Matching-Logik wurde die interne Datenstruktur des `generic_decoder` fundamental verbessert. Anstelle von komplexen "Pulse Pairs" wird nun eine **flache Liste von Puls-Definitionen** (Dauer und Level) verwendet. Dieses Refactoring hat die State-Machine-Logik erheblich vereinfacht und robuster gemacht.
 *   **Robuste Konfigurations-Engine:** Die SPIFFS-Ladelogik in `config_loader.c` ist mit einem **Fallback-Mechanismus** ausgestattet. Falls `protocols.json` nicht auf dem Dateisystem gefunden wird, wird ein hartcodierter Default-JSON-String geladen. Dies gewährleistet die grundlegende Funktionsfähigkeit der Firmware auch ohne ein geflashtes SPIFFS-Image.
 *   **JSON-Protokoll-Format:** Das Format für `protocols.json` wurde verfeinert. Es nutzt ein `timing`-Objekt mit Basis-Pulsbreiten und `definitions` für `bit0`, `bit1`, `sync`, die **Multiplikatoren** dieser Basis-Zeiten verwenden. Dieses Format ist flexibel und kompakt.
 
 ## 5. Nächste Schritte
 
-*   **Decoder-Logik:** Implementierung der State-Machine für das Bit-Reading im `generic_decoder`. Aktuell wird nur der Sync-Puls erkannt.
-*   **Bivalenter Modus:** Umschaltung zwischen `X21` (CUL) und `X25` (SIGNALduino) implementieren. Dies erfordert eine Anpassung des `culfw_parser` und der Ausgabe-Logik in `slowrf.c`.
+*   **Bivalenter Modus:** Implementierung der SIGNALduino-kompatiblen Ausgabe-Logik in `slowrf.c` und `generic_decoder.c`. Wenn der Modus `X25` aktiv ist, müssen dekodierte Pakete im `MU;...`- oder `MC;...`-Format ausgegeben werden.
 *   **Matter-Integration:** Weiterführung der Matter-Bridge-Logik basierend auf den dekodierten Events des generischen und der festen Decoder.
 
 ## 6. Hardware-Konfiguration (Pinout)
