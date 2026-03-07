@@ -56,6 +56,9 @@ void app_main(void) {
     
     // Initialize WiFi
     wifi_manager_init();
+    
+    // Initialize Web Server
+    web_server_init();
 
     // Initialize Matter Bridge Foundation
     matter_bridge_init();
