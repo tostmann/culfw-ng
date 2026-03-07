@@ -39,6 +39,8 @@ typedef struct {
     int matter_type; // 0=Switch, 1=Sensor
 } rf_proto_internal_t;
 
+static void generic_decoder_output_packet(rf_proto_internal_t *p, uint64_t data, uint8_t rssi);
+
 typedef enum {
     STATE_WAIT_SYNC,
     STATE_READ_BITS
