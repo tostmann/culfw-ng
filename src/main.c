@@ -28,6 +28,12 @@ void led_task(void *pvParameters) {
 void app_main(void) {
     ESP_LOGI(TAG, "Starting CUL32-C6 Firmware...");
 
+    // Print Chip Info for protection binding
+    uint8_t mac[6];
+    esp_read_mac(mac, ESP_MAC_WIFI_STA);
+    ESP_LOGI(TAG, "Device-UID (MAC): %02X:%02X:%02X:%02X:%02X:%02X", 
+             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
     // Initialize NVS
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
