@@ -422,16 +422,19 @@ void slowrf_task(void *pvParameters) {
                 hms_dec.last_pulse = pulse;
                 hms_dec.pulse_state = 1;
             } else if (hms_dec.pulse_state == 1) { // End of Low
-                if (pulse >= 200 && pulse <= 1200) { // Tolerant Low
+                if (pulse >= 200 && pulse <= 1200) {
                     int bit = -1;
                     if (hms_dec.last_pulse > 600 && hms_dec.last_pulse < 1200) bit = 1;
                     else if (hms_dec.last_pulse > 200 && hms_dec.last_pulse <= 600) bit = 0;
 
                     if (bit != -1) {
-                        hms_dec.current_nibble = (hms_dec.current_nibble << 1) | bit;
-                        if (++hms_dec.bit_cnt == 4) {
-                            if (hms_dec.nibble_cnt < 24) hms_dec.nibbles[hms_dec.nibble_cnt++] = hms_dec.current_nibble;
-                            hms_dec.current_nibble = 0; hms_dec.bit_cnt = 0;
+                        // Skip leading zeros (preamble)
+                        if (bit == 1 || hms_dec.nibble_cnt > 0 || hms_dec.current_nibble > 0) {
+                            hms_dec.current_nibble = (hms_dec.current_nibble << 1) | bit;
+                            if (++hms_dec.bit_cnt == 4) {
+                                if (hms_dec.nibble_cnt < 24) hms_dec.nibbles[hms_dec.nibble_cnt++] = hms_dec.current_nibble;
+                                hms_dec.current_nibble = 0; hms_dec.bit_cnt = 0;
+                            }
                         }
                     }
                 } else {
