@@ -69,6 +69,7 @@ void generic_decoder_init() {
 }
 
 static void generic_decoder_output_packet(rf_proto_internal_t *p, uint64_t data, uint8_t rssi) {
+    slowrf_mark_matched();
     uint8_t mode = slowrf_get_mode();
     char msg[128];
     int len = 0;
