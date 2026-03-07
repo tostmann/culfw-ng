@@ -450,15 +450,19 @@ void cc1101_send_oregon(const char* hex_data) {
 }
 
 esp_err_t cc1101_write_reg(uint8_t reg, uint8_t val) {
+    cc1101_lock();
     spi_transaction_t t = {
         .length = 16,
         .tx_data = {reg, val},
         .flags = SPI_TRANS_USE_TXDATA
     };
-    return spi_device_transmit(spi, &t);
+    esp_err_t ret = spi_device_transmit(spi, &t);
+    cc1101_unlock();
+    return ret;
 }
 
 esp_err_t cc1101_write_burst(uint8_t reg, const uint8_t *data, size_t len) {
+    cc1101_lock();
     uint8_t tx_data[65];
     tx_data[0] = reg | CC1101_WRITE_BURST;
     memcpy(tx_data + 1, data, len);
@@ -466,10 +470,13 @@ esp_err_t cc1101_write_burst(uint8_t reg, const uint8_t *data, size_t len) {
         .length = (len + 1) * 8,
         .tx_buffer = tx_data,
     };
-    return spi_device_transmit(spi, &t);
+    esp_err_t ret = spi_device_transmit(spi, &t);
+    cc1101_unlock();
+    return ret;
 }
 
 uint8_t cc1101_read_reg(uint8_t reg) {
+    cc1101_lock();
     uint8_t tx_data[2] = {reg | CC1101_READ_SINGLE, 0x00};
     uint8_t rx_data[2] = {0, 0};
     spi_transaction_t t = {
@@ -478,14 +485,18 @@ uint8_t cc1101_read_reg(uint8_t reg) {
         .rx_buffer = rx_data,
     };
     spi_device_transmit(spi, &t);
+    cc1101_unlock();
     return rx_data[1];
 }
 
 esp_err_t cc1101_cmd_strobe(uint8_t cmd) {
+    cc1101_lock();
     spi_transaction_t t = {
         .length = 8,
         .tx_data = {cmd},
         .flags = SPI_TRANS_USE_TXDATA
     };
-    return spi_device_transmit(spi, &t);
+    esp_err_t ret = spi_device_transmit(spi, &t);
+    cc1101_unlock();
+    return ret;
 }
