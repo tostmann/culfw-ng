@@ -186,7 +186,7 @@ void slowrf_task(void *pvParameters) {
                         // ... (OS omitted for brevity, but I will include it)
                         if (os_dec.nibble_cnt >= 16) {
                             char out[128];
-                            int len = snprintf(out, sizeof(out), "OS");
+                            int len = snprintf(out, sizeof(out), "P"); // OS V2/3 uses 'P' prefix in culfw
                             for (int i=0; i < os_dec.nibble_cnt; i++) {
                                 int idx = i / 2;
                                 uint8_t n = (i % 2 == 0) ? (os_dec.data[idx] & 0xF) : (os_dec.data[idx] >> 4);
