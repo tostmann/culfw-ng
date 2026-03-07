@@ -14,7 +14,7 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 | **HMS / EM1000** | Ja | Ja | `H...` | 868.30 MHz |
 | **S300TH / ESA** | Ja | Nein | - | 868.30 MHz |
 | **FHT80b** | Ja | Ja | `T...` | 868.30 MHz |
-| **Oregon Scientific** | Ja | Nein | - | 433.92 MHz |
+| **Oregon Scientific** | Ja | Ja | `To...` (Test) | 433.92 MHz |
 | **Generische Sensoren** | Ja | Nein | `r...` | 433/868 MHz |
 
 ## 2. Architektur & Design-Entscheidungen
@@ -97,8 +97,9 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 *   **[DONE]** Protokoll-Erweiterung: Empfangs-Decoder für **Oregon Scientific**, sowie Sende- und Empfangs-Logik für **FHT** implementiert.
 *   **[DONE]** Protokoll-Erweiterung: Generischer PWM-Decoder für rtl_433-ähnliche Sensoren (Raw-Hex-Ausgabe `r...`) implementiert.
 *   **[DONE]** Implementierung einer Laufzeit-Frequenzumschaltung (`f433`/`f868`) mit Speicherung im NVS.
-*   **[DONE]** End-to-End Test: Alle implementierten Protokolle (FS20, IT, HMS, FHT, OS) sind funktional auf dem 433-MHz-Band validiert.
+*   **[DONE]** End-to-End Validierung: Alle implementierten Protokolle (FS20, IT, HMS, FHT, OS) wurden in einem Cross-Validation-Setup erfolgreich validiert.
 *   **[DONE]** Projekt-Setup: Initiales Git-Repository auf GitHub erstellt, bereinigt und Code gepusht.
+*   **[DONE]** Benutzer-Dokumentation: Eine Übersicht der culfw-kompatiblen und erweiterten Befehle wurde erstellt (`COMMANDS.md`).
 
 ## 4. Neue Erkenntnisse / Probleme
 
@@ -109,12 +110,12 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 *   **[INFO]** Ein Cross-Validation-Testaufbau mit zwei CUL32-C6 (einer als Sender/Emulator, einer als Empfänger) und einem Legacy-CUL als Referenz hat sich als sehr effektiv für das Debugging von Protokoll-Decodern erwiesen.
 *   **[INFO]** Hardwareseitiges Carrier Sense (RSSI-Schwellwert) über den GDO2-Pin ist eine sehr effektive Methode, um den RX-Prozessor von der Verarbeitung von reinem Rauschen zu entlasten.
 *   **[INFO]** Das Speichern von Konfigurationen (Modus, Frequenz) im NVS ist essentiell für eine nahtlose Integration in Host-Systeme wie FHEM, da diese erwarten, dass der CUL seinen Zustand nach einem Neustart beibehält.
+*   **[INFO]** Die Protokoll-Implementierungen (insbesondere HMS und Oregon Scientific) wurden durch den Cross-Validation-Testaufbau weiter verfeinert und stabilisiert.
 
 ## 5. Nächste Schritte
 
 *   **FHEM-Integration:** Validierung der Firmware mit einem Host-System (FHEM) zur Sicherstellung der Kompatibilität und Langzeitstabilität.
 *   **RSSI-Kalibrierung:** Abgleich der ausgegebenen RSSI-Hex-Werte mit realen dBm-Werten für eine genauere Signalstärken-Anzeige.
-*   **Dokumentation:** Erstellen einer kurzen Anleitung für die neuen Diagnose- und Konfigurationsbefehle (`R`, `W`, `X99`, `f`, `H`, `T`, `m`) und die Raw-Sensor-Ausgabe (`r...`).
 *   **Langzeittests:** Überwachung der Stabilität und des Speicherverbrauchs über mehrere Tage im produktiven Einsatz.
 
 ## 6. Hardware-Konfiguration (Pinout)
