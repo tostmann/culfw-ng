@@ -79,25 +79,23 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Basis-Struktur für Matter-Bridge-Modul (`matter_bridge.c/h`) erstellt (Dynamic Endpoint Registry).
 *   **[DONE]** Diagnose-Kommando (`MT`) zur Simulation von Sensor-Events für Matter-Tests implementiert.
 *   **[DONE]** Anbindung der RF-Decoder in `slowrf.c` an die `matter_bridge` zur automatischen Event-Weiterleitung.
-*   **[DONE]** Basis-Implementierung der generischen, tabellengesteuerten Decoding-Engine (`generic_decoder.c` mit `cJSON`).
-*   **[IN PROGRESS]** SPIFFS-Treiber implementieren, um `protocols.json` beim Start zu laden.
-*   **[TODO]** Implementierung der Matching-Logik in `generic_decoder.c` zur Verarbeitung von Puls-Daten.
+*   **[DONE]** Entwicklung einer generischen, tabellengesteuerten Decoding-Engine (`generic_decoder.c` mit cJSON).
+*   **[DONE]** Implementierung des SPIFFS-Treibers (`config_loader.c`) zum Laden von `protocols.json`.
+*   **[DONE]** Integration des Generic Decoders in den `slowrf_task` (Parallelbetrieb mit festen Decodern).
+*   **[IN PROGRESS]** Implementierung der vollständigen Bit-Matching-Logik in `generic_decoder.c` (aktuell nur Sync-Check).
 *   **[TODO]** Implementierung des bivalenten Betriebsmodus (CUL vs. SIGNALduino).
 
 ## 4. Neue Erkenntnisse / Probleme
 
-*   **Voraussetzung für Matter:** Die **On-Board-Dekodierung** ist die zwingende Voraussetzung für eine Matter-Bridge-Funktionalität.
-*   **Build-Problem gelöst:** Das hartnäckige Problem mit `esp_hid` und fehlenden `nimble/ble.h` Headern wurde durch einen **Workaround** gelöst: Die `esp_hid` Komponente wurde im ESP-IDF-Framework-Verzeichnis temporär umbenannt (`esp_hid_bak`). Dies verhindert, dass der Build-Prozess die Komponente kompiliert, die ohne aktivierte Bluetooth-Unterstützung fehlschlägt. Der Build ist nun stabil.
-*   **Matter-Architektur validiert:** Die Architektur mit der Abstraktionsschicht `matter_interface.h` hat sich bewährt. Sie ermöglicht die Entwicklung der Bridge-Logik im Simulationsmodus, ohne die Abhängigkeit vom vollständigen Matter-SDK.
-*   **JSON-Engine:** `cJSON` wurde erfolgreich in das Projekt integriert und kompiliert. Die Basis für die konfigurierbare, tabellengesteuerte Protokoll-Engine ist gelegt.
+*   **Decoder-Architektur:** Der generische Decoder läuft nun parallel zu den festen Decodern. Er wird über `protocols.json` konfiguriert, was Flexibilität für neue Protokolle ohne Recompile bietet.
+*   **JSON-Parsing:** Das Parsing komplexer Bit-Strukturen (High/Low-Paare als Multiplikatoren) funktioniert.
+*   **Build-System:** Der Build ist stabil, nachdem `esp_hid` Abhängigkeiten maskiert wurden. Das SPIFFS-Image wird im Code per Fallback emuliert, falls kein Dateisystem geflasht wurde.
 
 ## 5. Nächste Schritte
 
-*   **Finalisierung Generic Decoder:** Die `generic_decoder.c` muss mit der Logik zum Abgleich der empfangenen Pulsfolgen mit den aus der JSON-Datei geladenen Protokoll-Strukturen implementiert werden.
-*   **SPIFFS Integration:** `protocols.json` muss beim Booten aus dem SPIFFS-Dateisystem geladen und die geparste Struktur an den generischen Decoder übergeben werden.
-*   **Hybride CUL/SIGNALduino-Firmware:** Entwicklung des bivalenten Betriebsmodus (`X21` vs. `X25`), um die Kompatibilität mit der riesigen Sensor-Datenbank des FHEM-SIGNALduino-Projekts freizuschalten.
-*   **FHEM-Integration & Validierung:** Umfassende Tests der Firmware in beiden Modi (`CUL` und `SIGNALduino`) mit einem FHEM-Host-System zur Sicherstellung der Langzeitstabilität und Kompatibilität.
-*   **Matter SDK Integration:** Sobald die generische Dekodierung stabil ist, kann das echte Matter SDK aktiviert werden (`CONFIG_ESP_MATTER_ENABLE`). Der Code ist durch die Interface-Schicht bereits darauf vorbereitet.
+*   **Decoder-Logik:** Implementierung der State-Machine für das Bit-Reading im `generic_decoder`. Aktuell wird nur der Sync-Puls erkannt.
+*   **Bivalenter Modus:** Umschaltung zwischen `X21` (CUL) und `X25` (SIGNALduino) implementieren. Dies erfordert eine Anpassung des `culfw_parser` und der Ausgabe-Logik in `slowrf.c`.
+*   **Matter-Integration:** Weiterführung der Matter-Bridge-Logik basierend auf den dekodierten Events.
 
 ## 6. Hardware-Konfiguration (Pinout)
 
