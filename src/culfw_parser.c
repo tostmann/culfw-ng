@@ -15,23 +15,31 @@
 static const char *TAG = "CULFW_PARSER";
 static bool reporting_enabled = false;
 
-static void save_reporting_state(bool state) {
+static void save_nvs_u8(const char* key, uint8_t val) {
     nvs_handle_t my_handle;
     if (nvs_open("storage", NVS_READWRITE, &my_handle) == ESP_OK) {
-        nvs_set_u8(my_handle, "reporting", state ? 1 : 0);
+        nvs_set_u8(my_handle, key, val);
         nvs_commit(my_handle);
         nvs_close(my_handle);
     }
 }
 
-static bool load_reporting_state() {
+static uint8_t load_nvs_u8(const char* key, uint8_t default_val) {
     nvs_handle_t my_handle;
-    uint8_t state = 0;
+    uint8_t val = default_val;
     if (nvs_open("storage", NVS_READONLY, &my_handle) == ESP_OK) {
-        nvs_get_u8(my_handle, "reporting", &state);
+        nvs_get_u8(my_handle, key, &val);
         nvs_close(my_handle);
     }
-    return state != 0;
+    return val;
+}
+
+static void save_reporting_state(bool state) {
+    save_nvs_u8("reporting", state ? 1 : 0);
+}
+
+static bool load_reporting_state() {
+    return load_nvs_u8("reporting", 0) != 0;
 }
 
 bool culfw_reporting_enabled() {
