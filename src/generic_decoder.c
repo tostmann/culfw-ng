@@ -66,6 +66,28 @@ void generic_decoder_init() {
     ESP_LOGI(TAG, "Generic decoder initialized.");
 }
 
+static void generic_decoder_output_packet(rf_proto_internal_t *p, uint64_t data, uint8_t rssi) {
+    uint8_t mode = slowrf_get_mode();
+    char msg[128];
+    int len = 0;
+
+    if (mode == SLOWRF_MODE_SIGNALDUINO) {
+        // MS;P0=short;P1=long;D=bits;CP=0;SP=sync;
+        len = snprintf(msg, sizeof(msg), "MS;P0=%d;P1=%d;D=%llX;RSS=%d;\r\n", 
+                       p->short_us, p->long_us, data, rssi);
+    } else {
+        // CUL mode - we use our generic prefix
+        len = snprintf(msg, sizeof(msg), "G%s%llX%02X\r\n", p->name, data, rssi);
+    }
+
+    if (len > 0) {
+        usb_serial_jtag_write_bytes(msg, len, 0);
+    }
+    
+    // Also notify Matter Bridge
+    matter_bridge_report_event(p->name, p->matter_type == 1 ? DEVICE_TYPE_TEMP_SENSOR : DEVICE_TYPE_SWITCH, (float)data);
+}
+
 // Helper to flatten JSON pairs into sequence
 static void parse_pulse_def(cJSON *def, pulse_def_t *out, uint8_t *len, uint16_t base_us) {
     if (!cJSON_IsArray(def)) return;
