@@ -140,6 +140,9 @@ static void handle_command(char *cmd) {
                 cc1101_set_rx_mode();
                 len = snprintf(out, sizeof(out), "TX OFF\r\n");
             }
+        } else if (cmd[1] == 'o') { // To<HEX> - Test Oregon
+            cc1101_send_oregon(cmd + 2);
+            len = snprintf(out, sizeof(out), "To OK\r\n");
         } else if (strlen(cmd) >= 11) {
             cc1101_send_fht(cmd + 1);
             len = snprintf(out, sizeof(out), "T OK\r\n");
