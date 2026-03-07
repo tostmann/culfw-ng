@@ -208,11 +208,10 @@ void culfw_parser_task(void *pvParameters) {
     };
     esp_vfs_spiffs_register(&conf);
 
-    // Create Tasks with strict priorities
-    // RF Engine: High priority (Core 0)
-    // Parser: Medium priority (Core 1)
-    
-    xTaskCreatePinnedToCore(slowrf_task, "slowrf_task", 4096, NULL, 10, NULL, 0);
+    // Set loaded mode
+    uint8_t mode = load_mode_state();
+    slowrf_set_mode(mode);
+    ESP_LOGI(TAG, "Loaded RF mode: X%02X", mode);
 
     if (!usb_serial_jtag_is_driver_installed()) {
         usb_serial_jtag_driver_config_t usb_serial_jtag_config = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();
