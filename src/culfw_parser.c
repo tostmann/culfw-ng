@@ -166,6 +166,12 @@ static void handle_command(char *cmd) {
     } else if (cmd[0] == 'G' && cmd[1] == 'L') { // GL - Generic List
         generic_decoder_list_protocols();
         len = snprintf(out, sizeof(out), "GL DONE\r\n");
+    } else if (cmd[0] == 'G' && cmd[1] == 'R') { // GR - Generic Reload
+        if (config_loader_load_protocols()) {
+            len = snprintf(out, sizeof(out), "GR OK\r\n");
+        } else {
+            len = snprintf(out, sizeof(out), "GR ERR\r\n");
+        }
     } else if (cmd[0] == 'm') { // m<HEX> - send raw durations (dur = hex * 10us)
         cc1101_set_tx_mode();
         gpio_set_level(GPIO_LED, 0);
