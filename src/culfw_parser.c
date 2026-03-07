@@ -116,6 +116,19 @@ static void handle_command(char *cmd) {
             cc1101_set_frequency(false);
             len = snprintf(out, sizeof(out), "f868 OK\r\n");
         }
+    } else if (cmd[0] == 'm') { // m<HEX> - send raw durations (dur = hex * 10us)
+        cc1101_set_tx_mode();
+        gpio_set_level(GPIO_LED, 0);
+        for (int i = 1; cmd[i] && cmd[i+1]; i += 2) {
+            char hex_str[3] = {cmd[i], cmd[i+1], 0};
+            int dur = strtol(hex_str, NULL, 16) * 10;
+            gpio_set_level(GPIO_GDO0, ((i-1)/2) % 2 == 0); // Toggle level
+            ets_delay_us(dur);
+        }
+        gpio_set_level(GPIO_GDO0, 0);
+        gpio_set_level(GPIO_LED, 1);
+        cc1101_set_rx_mode();
+        len = snprintf(out, sizeof(out), "m OK\r\n");
     } else if (cmd[0] == 'T') {
         if (cmd[1] == 'r') {
             len = snprintf(out, sizeof(out), "Tr START\r\n");
