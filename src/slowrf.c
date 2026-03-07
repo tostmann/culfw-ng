@@ -18,6 +18,18 @@ typedef struct {
     uint8_t level;
 } pulse_t;
 
+static void slowrf_output_packet(const char* prefix, const char* data, uint8_t rssi) {
+    char out[128];
+    int len = 0;
+    if (slowrf_mode == SLOWRF_MODE_SIGNALDUINO) {
+        // Simple mapping for SignalDuino
+        len = snprintf(out, sizeof(out), "MS;P0=0;D=%s;RSS=%d;\r\n", data, rssi);
+    } else {
+        len = snprintf(out, sizeof(out), "%s%s%02X\r\n", prefix, data, rssi);
+    }
+    usb_serial_jtag_write_bytes(out, len, 0);
+}
+
 static QueueHandle_t pulse_queue;
 static int64_t last_time = 0;
 static bool slowrf_debug = false;
