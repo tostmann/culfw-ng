@@ -29,26 +29,27 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
     *   **Strikte Task-Trennung mit Core-Affinität:**
         *   `slowrf_task` (hohe Priorität, **Core 0**): Exklusive Verarbeitung der Echtzeit-Funk-Signale (RX/TX). Das Pinning auf Core 0 minimiert Jitter und schützt die Signalverarbeitung vor Interferenzen durch WiFi/Matter-Stacks.
         *   `culfw_parser_task` (niedrigere Priorität, **Core 1**): Verarbeitet serielle Befehle, System-Management und ist für zukünftige Applikationslogik (z.B. Matter-Bridge) vorgesehen.
-    *   **Thread-Sicherheit:** Alle Zugriffe auf den CC1101-Treiber sind durch einen **rekursiven Mutex (Semaphore)** geschützt. Dies verhindert Race Conditions und Datenkorruption, wenn mehrere Tasks (z.B. RF-Task und Parser-Task) auf den SPI-Bus zugreifen und erlaubt atomare, verschachtelte Operationen ohne Deadlocks.
+    *   **Thread-Sicherheit:** Alle Zugriffe auf den CC1101-Treiber sind durch einen **rekursiven Mutex (Semaphore)** geschützt. Dies verhindert Race Conditions und Datenkorruption.
     *   **Multi-Protokoll-Gateway:** Die Firmware agiert als "Staubsauger" für alle unterstützten OOK-Protokolle auf der aktiven Frequenz. Alle Decoder laufen parallel.
 *   **Zukünftige Architektur: On-Board Intelligence & Matter**
     *   **Dateisystem:** Integration eines **SPIFFS-Dateisystems** zur Speicherung einer flexiblen Protokoll-Datenbank (`protocols.json`).
-    *   **Table-Driven Decoding Engine:** Anstelle von fest einkompilierten Decodern wird eine generische Engine die Pulsfolgen mit den in `protocols.json` definierten Mustern abgleichen. Dies ermöglicht das Hinzufügen neuer Sensoren ohne Firmware-Update und ist die **Voraussetzung für die Matter-Integration**.
-    *   **Matter-Architektur:** Der Stick wird als **Matter Aggregator (Bridge)** implementiert. Nur das Gateway wird einmalig gepaired. Erkannte SlowRF-Geräte werden als dynamische **Endpoints** (z.B. Temperatursensor, Schalter) im Matter-Netzwerk on-the-fly angelegt.
+    *   **Table-Driven Decoding Engine:** Anstelle von fest einkompilierten Decodern wird eine generische Engine die Pulsfolgen mit den in `protocols.json` definierten Mustern abgleichen.
+    *   **Matter-Architektur:** Der Stick wird als **Matter Aggregator (Bridge)** implementiert. Nur das Gateway wird einmalig gepaired. Erkannte SlowRF-Geräte werden als dynamische **Endpoints** (z.B. Temperatursensor, Schalter) im Matter-Netzwerk on-the-fly angelegt und über eine **"Dynamic Endpoint Registry"** (`matter_bridge.c`) verwaltet.
 *   **Bivalenter Betriebsmodus (Hybride Intelligenz):** Die Firmware wird umschaltbar gestaltet, um die Stärken von CUL und SIGNALduino zu vereinen.
-    *   **CUL-Modus (`X21`):** 100%ige Kompatibilität zum etablierten CUL-Protokoll für maximale Stabilität mit bestehenden Systemen (z.B. FHEM `00_CUL.pm`).
-    *   **SIGNALduino-Modus (`X25`):** Vollständige Emulation eines SIGNALduino. In diesem Modus gibt die Firmware Rohdaten (`MU;...`, `MS;...`) aus, um die riesige Sensor-Datenbank des FHEM-SIGNALduino-Projekts freizuschalten.
-*   **Intellectual Property (IP) / Kopierschutz:**
-    *   **Kommerzieller Schutz:** Die Bindung an den **Matter-Standard** erfordert ein offizielles **Device Attestation Certificate (DAC)**. Clones ohne dieses Zertifikat werden von Systemen wie Apple/Google Home als "nicht verifiziert" markiert, was sie für den Massenmarkt unbrauchbar macht.
-    *   **Technischer Schutz:** Nutzung der ESP32-C6 Hardware-Features wie **Flash Encryption** (verschlüsselt die Firmware an den individuellen Chip) und **Secure Boot** (erlaubt nur vom Hersteller signierte Firmware-Updates).
+    *   **CUL-Modus (`X21`):** 100%ige Kompatibilität zum etablierten CUL-Protokoll.
+    *   **SIGNALduino-Modus (`X25`):** Vollständige Emulation eines SIGNALduino mit Rohdaten-Ausgabe (`MU;...`, `MS;...`).
+*   **Intellectual Property (IP) / Kopierschutz (3-Säulen-Strategie):**
+    *   **1. Kommerzieller Schutz ("Matter-Schild"):** Die Bindung an den Matter-Standard erfordert ein offizielles **Device Attestation Certificate (DAC)**. Clones ohne dieses Zertifikat werden von Systemen wie Apple/Google Home als "nicht verifiziert" markiert.
+    *   **2. Technischer Schutz (Hardware-Verschlüsselung):** Nutzung der ESP32-C6 Hardware-Features wie **Flash Encryption** (bindet die Firmware an den individuellen Chip) und **Secure Boot V2** (erlaubt nur vom Hersteller signierte Firmware-Updates).
+    *   **3. Software-Bindung (IP-Schutz):** Kritische Logik, wie die zukünftige `protocols.json`-Decoding-Engine, kann an die **Chip-Unique-ID (MAC-Adresse)** gebunden werden, um eine einfache Software-Kopie zu verhindern.
 *   **Frequenzerkennung und -management:**
     *   **Hardware-Default:** Die Modulfrequenz (433/868 MHz) wird initial über einen GPIO-Pin (`GPIO_433MARKER`) erkannt.
-    *   **Software-Override:** Ein Benutzer kann die Frequenz zur Laufzeit per Kommando (`f433` oder `f868`) umschalten. Diese Einstellung wird **permanent im NVS gespeichert** und überschreibt die Hardware-Erkennung.
+    *   **Software-Override:** Ein Benutzer kann die Frequenz zur Laufzeit per Kommando (`f433` oder `f868`) umschalten. Diese Einstellung wird **permanent im NVS gespeichert**.
 *   **Signal-Erfassung (RX):**
-    *   Der CC1101 wird im **asynchronen seriellen Modus** (`PKTCTRL0 = 0x32`) betrieben, um ein rohes, demoduliertes ASK/OOK-Signal am `GDO0_PIN` bereitzustellen.
-    *   **Rausch-Unterdrückung:** `GDO2` ist als **Carrier Sense** konfiguriert (`IOCFG2=0x0E`). Interrupts werden nur bei ausreichendem Signalpegel verarbeitet.
+    *   Der CC1101 wird im **asynchronen seriellen Modus** (`PKTCTRL0 = 0x32`) betrieben.
+    *   **Rausch-Unterdrückung:** `GDO2` ist als **Carrier Sense** konfiguriert (`IOCFG2=0x0E`).
 *   **Signal-Aussendung (TX):**
-    *   Der `GDO0_PIN` wird dynamisch als Output konfiguriert, um Sendesequenzen per Bit-Banging mit präzisen Microsekunden-Delays (`ets_delay_us`) zu erzeugen.
+    *   Der `GDO0_PIN` wird dynamisch als Output konfiguriert, um Sendesequenzen per Bit-Banging zu erzeugen.
 *   **Versionierung:** Automatisierte Build-Nummer und detaillierter, culfw-kompatibler Versions-String.
 
 ## 3. Implementierungsstatus
@@ -72,32 +73,30 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** End-to-End Validierung aller implementierten Protokolle.
 *   **[DONE]** Benutzer-Dokumentation (`COMMANDS.md`) erstellt.
 *   **[DONE]** Release Management: Finaler Code-Stand als **Release v1.0.1** auf GitHub getaggt.
-*   **[DONE]** Partitionsschema für Dateisystem (SPIFFS) und Matter-Unterstützung erweitert.
 *   **[DONE]** Chip-Unique-ID (MAC) Auslesung als Basis für Kopierschutz implementiert.
-*   **[DONE]** Basis-Struktur für Matter-Bridge-Modul (`matter_bridge.c/h`) erstellt.
+*   **[DONE]** Partitionsschema für Dateisystem (SPIFFS) und Matter-Unterstützung erweitert (`partitions.csv` mit 3MB App-Partition).
+*   **[DONE]** Basis-Struktur für Matter-Bridge-Modul (`matter_bridge.c/h`) erstellt (Dynamic Endpoint Registry).
 *   **[DONE]** Diagnose-Kommando (`MT`) zur Simulation von Sensor-Events für Matter-Tests implementiert.
+*   **[DONE]** Anbindung der RF-Decoder in `slowrf.c` an die `matter_bridge` zur automatischen Event-Weiterleitung.
 *   **[IN PROGRESS]** Entwicklung einer generischen, tabellengesteuerten Decoding-Engine.
+*   **[IN PROGRESS]** Integration des ESP-Matter-SDKs (Infrastruktur vorbereitet, API-Wrapper für Kompilierung implementiert).
 *   **[TODO]** Implementierung des SPIFFS-Treibers und des JSON-Parsers in der Firmware.
 *   **[TODO]** Implementierung des bivalenten Betriebsmodus (CUL vs. SIGNALduino).
-*   **[TODO]** Integration des ESP-Matter-SDKs und Anbindung der Dynamic Endpoint Registry.
 
 ## 4. Neue Erkenntnisse / Probleme
 
-*   **Strategische Neuausrichtung:** Die reine CUL-Emulation ist nicht ausreichend. Die Überlegenheit der ESP32-C6-Plattform liegt in der Fähigkeit zur **On-Board-Dekodierung** und der Integration in moderne IoT-Ökosysteme (Matter/Thread). Der Stick muss zum autonomen, kommerziell schützbaren Gateway werden.
-*   **Hybride Intelligenz als Erfolgsfaktor:** Die Firmware wird bivalent ausgelegt. Sie vereint die Stabilität des etablierten CUL-Protokolls (`X21`-Modus) mit der Flexibilität des SIGNALduino-Rohdatenformats (`X25`-Modus). Dies ermöglicht dem Benutzer die Wahl des optimalen Modus für seine Anwendung.
-*   **Voraussetzung für Matter:** Die **On-Board-Dekodierung** (gesteuert durch eine JSON-Datenbank im Dateisystem) ist die zwingende Voraussetzung für eine spätere Matter-Bridge-Funktionalität. Nur wenn der Stick die Semantik der Daten versteht (z.B. "Temperatur: 21.5°C"), kann er diese als standardisierten Matter-Endpunkt bereitstellen.
-*   **RTOS-Härtung:** Die initiale Implementierung mit einem einfachen Mutex barg die Gefahr von Deadlocks bei verschachtelten Funktionsaufrufen im CC1101-Treiber. Die Umstellung auf einen **rekursiven Mutex** hat dieses Problem behoben und die Stabilität der Treiber-Interaktionen unter Last erhöht.
-*   **Test-Methodik bestätigt: Sensor-Emulation:** Die implementierte TX-Funktionalität erlaubt es, einen zweiten CULFW-NG Stick als vollwertigen Sensor/Aktor-Emulator zu verwenden. Dies ermöglicht umfassende End-to-End-Tests der gesamten Empfangs- und Dekodierungs-Pipeline ohne die Notwendigkeit physischer Test-Hardware.
-*   **Matter Test-Strategie definiert:** Die Validierung der zukünftigen Matter-Integration wird nicht primär über komplexe Systeme wie HASS erfolgen, sondern über das offizielle CLI-Entwicklerwerkzeug **`chip-tool`**. Dies ermöglicht schlanke, skriptbare Tests für das Commissioning und die Attribut-Interaktion direkt auf dem Entwicklungssystem (z.B. Raspberry Pi via Docker), ohne GUI-Overhead.
+*   **Voraussetzung für Matter:** Die **On-Board-Dekodierung** ist die zwingende Voraussetzung für eine Matter-Bridge-Funktionalität. Nur wenn der Stick die Semantik der Daten versteht (z.B. "Temperatur: 21.5°C"), kann er diese als standardisierten Matter-Endpunkt bereitstellen.
+*   **Kopierschutz-Strategie definiert:** Eine 3-Säulen-Strategie (Matter-Zertifikat, Hardware-Verschlüsselung, Software-Bindung) wurde als Kern des Produktschutzes festgelegt, um "nanoCUL"-Effekte zu verhindern.
+*   **Matter Test-Strategie definiert:** Die Validierung der Matter-Integration erfolgt primär über das CLI-Tool **`chip-tool`**. Ein neues Firmware-Kommando (`MT ...`) wurde implementiert, um Sensor-Events zu simulieren und die Bridge-Logik **ohne echte RF-Hardware** und GUI-Overhead testen zu können.
+*   **Problem bei SDK-Integration:** Die automatische Integration des `esp-matter`-SDK via PlatformIO und `idf_component.yml` scheiterte an den Umgebungs-Einschränkungen (kein Git-Repository).
+*   **Lösung (API-Wrapper):** Als Workaround wurde eine **Wrapper/Stub-Schicht** (`matter_wrapper.h`) implementiert. Dies ermöglicht die Entwicklung der Bridge-Logik gegen eine simulierte Matter-API. Der Code ist damit "SDK-ready" und kompiliert, bis die vollständige Integration in einer geeigneten Build-Umgebung erfolgen kann.
 
 ## 5. Nächste Schritte
 
-*   **Hybride CUL/SIGNALduino-Firmware (Strategische Priorität):** Entwicklung einer **bivalenten Firmware**, die per Kommando zwischen zwei Betriebsmodi umschalten kann, um maximale Kompatibilität und Flexibilität zu bieten.
-    *   **CUL-Modus (`X21`, Standard):** 100%ige Kompatibilität mit dem FHEM-Modul `00_CUL.pm` für maximale Stabilität.
-    *   **SIGNALduino-Modus (`X25`):** Vollständige Emulation eines SIGNALduino. In diesem Modus gibt die Firmware alle empfangenen OOK-Signale im **SIGNALduino-Raw-Format (`MU;...`, `MS;...`)** aus. Dies schaltet die Kompatibilität zur riesigen Sensor-Datenbank des FHEM-SIGNALduino-Projekts frei.
+*   **Roadmap-Planung: Matter/Thread-Bridge (Strategische Priorität):** Integration des vollständigen ESP-Matter-SDKs in einer geeigneten Build-Umgebung, um die implementierten API-Wrapper durch die echten SDK-Aufrufe zu ersetzen. Validierung des Commissioning und der dynamischen Endpunkte mit dem `chip-tool`.
+*   **Hybride CUL/SIGNALduino-Firmware:** Entwicklung des bivalenten Betriebsmodus (`X21` vs. `X25`), um die Kompatibilität mit der riesigen Sensor-Datenbank des FHEM-SIGNALduino-Projekts freizuschalten.
 *   **On-Board Decoding Engine:** Implementierung der tabellengesteuerten Dekodierungslogik, die Protokolldefinitionen aus einer `protocols.json` im SPIFFS-Dateisystem liest. Dies macht die Firmware zukunftssicher und vom Host-System unabhängig.
-*   **Roadmap-Planung: Matter/Thread-Bridge:** Nach erfolgreicher Implementierung des On-Board-Decoders, Beginn der Integration des ESP-Matter-SDK. Ziel ist es, dekodierte Sensordaten (z.B. Temperatur, Luftfeuchtigkeit, Kontaktstatus) direkt als standardisierte Matter-Endpunkte im Netzwerk bereitzustellen. Die initialen Tests und die Validierung der Implementierung erfolgen über das CLI-Tool `chip-tool`.
-*   **FHEM-Integration & Validierung:** Umfassende Tests der Firmware in beiden Modi (`CUL` und `SIGNALduino`) mit einem FHEM-Host-System zur Sicherstellung der Langzeitstabilität und Kompatibilität. Dies wird durch die Sensor-Emulations-Fähigkeit erleichtert.
+*   **FHEM-Integration & Validierung:** Umfassende Tests der Firmware in beiden Modi (`CUL` und `SIGNALduino`) mit einem FHEM-Host-System zur Sicherstellung der Langzeitstabilität und Kompatibilität.
 
 ## 6. Hardware-Konfiguration (Pinout)
 
