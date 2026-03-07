@@ -2,6 +2,8 @@
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
+#include "nvs_flash.h"
+#include "nvs.h"
 
 static const char *TAG = "CC1101";
 static spi_device_handle_t spi;
