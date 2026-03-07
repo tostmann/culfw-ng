@@ -112,11 +112,13 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 
 ## 5. Nächste Schritte
 
-*   **SIGNALduino-Emulation (Strategische Priorität):** Implementierung eines Hybrid-Modus (z.B. über Kommando `X25`), der unbekannte Signale im **SIGNALduino-Raw-Format (`MU;...`)** ausgibt. Ziel ist die volle Kompatibilität mit dem FHEM-Modul `SIGNALduino`, um dessen umfangreiche Sensor-Datenbank direkt zu nutzen und die Flexibilität des CUL32-C6 signifikant zu erhöhen.
-*   **FHEM-Integration:** Validierung der Firmware mit einem Host-System (FHEM) zur Sicherstellung der Kompatibilität und Langzeitstabilität – sowohl im CUL- als auch im neuen SIGNALduino-Modus.
-*   **RSSI-Kalibrierung:** Abgleich der ausgegebenen RSSI-Hex-Werte mit realen dBm-Werten für eine genauere Signalstärken-Anzeige.
-*   **Langzeittests:** Überwachung der Stabilität und des Speicherverbrauchs über mehrere Tage im produktiven Einsatz.
-*   **Roadmap-Planung:** Evaluierung der Integration in moderne IoT-Ökosysteme (z.B. als Matter/Thread-Bridge).
+*   **Hybride CUL/SIGNALduino-Firmware (Strategische Priorität):** Entwicklung einer **bivalenten Firmware**, die per Kommando zwischen zwei Betriebsmodi umschalten kann, um die Marktführerschaft gegenüber Konkurrenzprodukten wie dem SIGNALduino zurückzugewinnen.
+    *   **CUL-Modus (`X21`, Standard):** 100%ige Kompatibilität mit dem FHEM-Modul `00_CUL.pm` für maximale Stabilität in bestehenden Installationen (FS20, HMS, FHT etc.).
+    *   **SIGNALduino-Modus (`X25`):** Vollständige Emulation eines SIGNALduino. In diesem Modus gibt die Firmware alle empfangenen OOK-Signale im **SIGNALduino-Raw-Format (`MU;...`, `MS;...`)** aus.
+    *   **Ziel:** Der Benutzer kann den Stick in FHEM wahlweise als `CUL` oder als `SIGNALduino` definieren und so entweder auf bewährte Stabilität oder auf die immense Sensor-Datenbank des SIGNALduino-Projekts zugreifen. Dies vereint die Stärken beider Welten (CUL-Stabilität, SIGNALduino-Flexibilität) auf überlegener ESP32-C6 Hardware.
+*   **FHEM-Integration & Validierung:** Umfassende Tests der Firmware in beiden Modi mit einem FHEM-Host-System zur Sicherstellung der Langzeitstabilität und Kompatibilität.
+*   **Leistungsoptimierung:** Evaluierung, ob rechenintensive SIGNALduino-Decoder (z.B. Manchester) zur Entlastung des Hosts direkt auf dem ESP32-C6 implementiert werden können.
+*   **Roadmap-Planung:** Nach erfolgreicher FHEM-Integration, Evaluierung der Integration in moderne IoT-Ökosysteme (z.B. als Matter/Thread-Bridge für SlowRF-Geräte).
 
 ## 6. Hardware-Konfiguration (Pinout)
 
