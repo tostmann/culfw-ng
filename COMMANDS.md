@@ -47,6 +47,14 @@ Wenn `X21` aktiv ist, werden empfangene Pakete wie folgt ausgegeben:
 *   **Web-Interface:** ESP32-eigenes Web-Interface zur Konfiguration und Signal-Analyse.
 *   **Weitere Protokolle:** Implementierung von Hoermann, Somfy und anderen Sub-GHz Protokollen.
 
+## Matter & Thread Integration (Vorschau)
+
+| Befehl | Beschreibung | Beispiel |
+| :--- | :--- | :--- |
+| `MT` | Simuliert Matter-Events für Tests | `MT F123401` (Switch), `MT H1234T215` (Temp) |
+
+Hinweis: Die echte Matter-Funktionalität erfordert das `esp-matter` SDK. Derzeit läuft die Firmware im **"Matter-Ready Stub Mode"**, der die Logik simuliert, bis das SDK in der Build-Umgebung verfügbar ist.
+
 ## Hardware-Pins (ESP32-C6)
 
 *   **GDO0:** GPIO 2 (Interrupt/Data)
