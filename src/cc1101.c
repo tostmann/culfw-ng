@@ -26,7 +26,7 @@ bool cc1101_is_433() {
 }
 
 esp_err_t cc1101_init() {
-    if (!spi_mutex) spi_mutex = xSemaphoreCreateMutex();
+    if (!spi_mutex) spi_mutex = xSemaphoreCreateRecursiveMutex();
     
     spi_bus_config_t buscfg = {
         .miso_io_num = GPIO_MISO,
