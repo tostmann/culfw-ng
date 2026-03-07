@@ -86,8 +86,8 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Implementierung des bivalenten Betriebsmodus (CUL vs. SIGNALduino). Umschaltung via `X21`/`X25`, NVS-Persistenz und adaptive Output-Formate (`MS;`, `MU;`) sind aktiv.
 *   **[DONE]** Erweiterung der Matter-Bridge um automatische Registrierung und Reporting für alle unterstützten Protokolle (FS20, IT, HMS, S300TH, Oregon, Generic).
 *   **[DONE]** Implementierung von Diagnose-Kommandos für Matter (`ML` zum Auflisten der Endpunkte).
-*   **[DONE]** WiFi-Konnektivität implementiert (Verbindung zu "PalmBeach WiFi").
 *   **[DONE]** SIGNALduino `MU;` Logik verfeinert: Rohdaten-Ausgabe wird unterdrückt, wenn ein Decoder (fest oder generisch) gematcht hat.
+*   **[DONE]** WiFi-Konnektivität implementiert (Verbindung zu "PalmBeach WiFi").
 
 ## 4. Neue Erkenntnisse / Probleme
 
@@ -96,13 +96,14 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **Robuste Konfigurations-Engine:** Die SPIFFS-Ladelogik in `config_loader.c` ist mit einem **Fallback-Mechanismus** ausgestattet. Falls `protocols.json` fehlt, wird ein hartcodierter Default-JSON-String geladen, was die Grundfunktion sicherstellt.
 *   **JSON-Protokoll-Format verfeinert:** Das Format für `protocols.json` nutzt nun ein zentrales `timing`-Objekt, dessen Werte über **Multiplikatoren** in den `definitions` wiederverwendet werden. Dies ist flexibel, kompakt und reduziert Redundanz.
 *   **Vollautonome Matter-Bridge:** Die Integration ist abgeschlossen. Alle Decoder (fest und generisch) melden erkannte Geräte und deren Zustände automatisch an das `matter_bridge`-Modul. Dieses registriert neue Geräte on-the-fly als Matter-Endpoints und aktualisiert deren Status, wodurch der Stick als autonomes Gateway fungiert.
-*   **SIGNALduino-Emulation implementiert:** Ein **Puls-Akkumulator (`mu_buffer`)** sammelt Pulse zwischen langen Synchronisations-Pausen. Falls kein spezifischer Decoder ein Paket erkennt, werden die Rohdaten im `MU;...`-Format (Message Unknown) ausgegeben. Dekodierte Pakete werden im `MS;...`-Format gesendet.
+*   **SIGNALduino-Emulation verfeinert:** Ein Puls-Akkumulator (`mu_buffer`) erfasst Roh-Pulse. Wird ein Paket von einem Decoder (fest oder generisch) erkannt, wird eine `MS;...`-Nachricht gesendet und die Rohdaten-Ausgabe unterdrückt. Nur wenn kein Decoder matcht, werden die gesammelten Pulse als `MU;...`-Nachricht ausgegeben.
 
 ## 5. Nächste Schritte
 
-*   **Validierung:** Durchführung von Tests zur Verifizierung der `MU;`-Rohdaten-Timings im Vergleich zu einem originalen SIGNALduino, um die Kompatibilität mit Host-Systemen sicherzustellen.
-*   **Datenbank-Erweiterung:** Ergänzung der `protocols.json` um weitere, komplexere OOK-Protokolle, um die Flexibilität der generischen Decoding-Engine zu demonstrieren.
-*   **Stabilitätstests:** Durchführung von Langzeittests im hybriden Matter-Gateway-Betrieb, um die Zuverlässigkeit des RTOS, der Speicherverwaltung und der parallelen Signalverarbeitung unter Last zu prüfen.
+*   **Web-Interface:** Implementierung eines einfachen HTTP-Servers zur Anzeige von Live-Funk-Events und des Matter-Endpoint-Status.
+*   **Device-Identität:** Erweiterung des `V` (Version) Kommandos um die eindeutige Chip-ID, um die Identifikation des Sticks in Host-Systemen zu erleichtern.
+*   **Validierung:** Durchführung von Tests zur Verifizierung der `MU;`-Rohdaten-Timings im Vergleich zu einem originalen SIGNALduino.
+*   **Stabilitätstests:** Durchführung von Langzeittests im hybriden Matter-Gateway-Betrieb mit aktiver WiFi-Verbindung.
 
 ## 6. Hardware-Konfiguration (Pinout)
 
