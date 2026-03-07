@@ -4,6 +4,7 @@
 #include "freertos/task.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
+#include "esp_mac.h"
 #include "nvs_flash.h"
 #include "cc1101.h"
 #include "driver/usb_serial_jtag.h"
