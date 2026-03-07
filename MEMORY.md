@@ -81,6 +81,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **Voraussetzung für Matter:** Die **On-Board-Dekodierung** (gesteuert durch eine JSON-Datenbank im Dateisystem) ist die zwingende Voraussetzung für eine spätere Matter-Bridge-Funktionalität. Nur wenn der Stick die Semantik der Daten versteht (z.B. "Temperatur: 21.5°C"), kann er diese als standardisierten Matter-Endpunkt bereitstellen.
 *   **Multi-Protokoll-Gateway-Architektur bestätigt:** Die parallele Ausführung aller Protokoll-Decoder ermöglicht den simultanen Empfang verschiedener Protokolle auf demselben Frequenzband.
 *   **RTOS-Härtung:** Die initiale Implementierung mit einem einfachen Mutex barg die Gefahr von Deadlocks bei verschachtelten Funktionsaufrufen im CC1101-Treiber. Die Umstellung auf einen **rekursiven Mutex** hat dieses Problem behoben und die Stabilität der Treiber-Interaktionen unter Last erhöht.
+*   **Test-Methodik bestätigt: Sensor-Emulation** - Die implementierte TX-Funktionalität erlaubt es, einen zweiten CULFW-NG Stick als vollwertigen Sensor/Aktor-Emulator zu verwenden. Dies ermöglicht umfassende End-to-End-Tests der gesamten Empfangs- und Dekodierungs-Pipeline ohne die Notwendigkeit physischer Test-Hardware.
 
 ## 5. Nächste Schritte
 
