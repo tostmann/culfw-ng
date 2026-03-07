@@ -64,9 +64,10 @@ static proto_state_t states[MAX_PROTOCOLS];
 static int protocol_count = 0;
 
 void generic_decoder_init() {
-    protocol_count = 0;
+    // We do NOT reset protocol_count here, as protocols might be loaded before the task starts.
+    // Instead, we only reset the states.
     memset(states, 0, sizeof(states));
-    ESP_LOGI(TAG, "Generic decoder initialized.");
+    ESP_LOGI(TAG, "Generic decoder state initialized.");
 }
 
 static void generic_decoder_output_packet(rf_proto_internal_t *p, uint64_t data, uint8_t rssi) {
