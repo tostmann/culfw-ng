@@ -12,6 +12,7 @@
 #include "slowrf.h"
 #include "driver/usb_serial_jtag.h"
 #include "config_loader.h"
+#include "wifi_manager.h"
 
 static const char *TAG = "CUL32-C6";
 
