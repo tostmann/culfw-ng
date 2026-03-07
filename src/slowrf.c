@@ -316,31 +316,29 @@ void slowrf_task(void *pvParameters) {
                 }
             }
 
-            // --- HMS / S300TH (868 MHz) ---
-            if (!cc1101_is_433()) {
-                if (!s300_dec.sync_found && pulse > 950 && pulse < 1350) { reset_sensor(&s300_dec); s300_dec.sync_found = true; }
-                else if (s300_dec.sync_found) {
-                    if (s300_dec.pulse_state == 0) { s300_dec.last_pulse = pulse; s300_dec.pulse_state = 1; }
-                    else {
-                        int bit = -1;
-                        if (s300_dec.last_pulse < 600 && pulse > 600) bit = 0;
-                        else if (s300_dec.last_pulse < 600 && pulse < 600) bit = 1;
-                        if (bit != -1) {
-                            s300_dec.current_nibble |= (bit << s300_dec.bit_cnt);
-                            if (++s300_dec.bit_cnt == 4) { if (s300_dec.nibble_cnt < 24) s300_dec.nibbles[s300_dec.nibble_cnt++] = s300_dec.current_nibble; s300_dec.current_nibble = 0; s300_dec.bit_cnt = 0; }
-                        } else { if (s300_dec.nibble_cnt < 9) reset_sensor(&s300_dec); else s300_dec.sync_found = false; }
-                        s300_dec.pulse_state = 0;
-                    }
-                }
-                if (hms_dec.pulse_state == 0) { if (pulse >= 300 && pulse <= 900) { hms_dec.last_pulse = pulse; hms_dec.pulse_state = 1; } else if (hms_dec.nibble_cnt > 0) reset_sensor(&hms_dec); }
+            // --- HMS / S300TH ---
+            if (!s300_dec.sync_found && pulse > 950 && pulse < 1350) { reset_sensor(&s300_dec); s300_dec.sync_found = true; }
+            else if (s300_dec.sync_found) {
+                if (s300_dec.pulse_state == 0) { s300_dec.last_pulse = pulse; s300_dec.pulse_state = 1; }
                 else {
-                    if (pulse >= 300 && pulse <= 600) {
-                        int bit = (hms_dec.last_pulse > 600) ? 1 : 0;
-                        hms_dec.current_nibble = (hms_dec.current_nibble << 1) | bit;
-                        if (++hms_dec.bit_cnt == 4) { if (hms_dec.nibble_cnt < 24) hms_dec.nibbles[hms_dec.nibble_cnt++] = hms_dec.current_nibble; hms_dec.current_nibble = 0; hms_dec.bit_cnt = 0; }
-                        hms_dec.pulse_state = 0;
-                    } else { if (hms_dec.nibble_cnt > 0) reset_sensor(&hms_dec); else hms_dec.pulse_state = 0; }
+                    int bit = -1;
+                    if (s300_dec.last_pulse < 600 && pulse > 600) bit = 0;
+                    else if (s300_dec.last_pulse < 600 && pulse < 600) bit = 1;
+                    if (bit != -1) {
+                        s300_dec.current_nibble |= (bit << s300_dec.bit_cnt);
+                        if (++s300_dec.bit_cnt == 4) { if (s300_dec.nibble_cnt < 24) s300_dec.nibbles[s300_dec.nibble_cnt++] = s300_dec.current_nibble; s300_dec.current_nibble = 0; s300_dec.bit_cnt = 0; }
+                    } else { if (s300_dec.nibble_cnt < 9) reset_sensor(&s300_dec); else s300_dec.sync_found = false; }
+                    s300_dec.pulse_state = 0;
                 }
+            }
+            if (hms_dec.pulse_state == 0) { if (pulse >= 300 && pulse <= 900) { hms_dec.last_pulse = pulse; hms_dec.pulse_state = 1; } else if (hms_dec.nibble_cnt > 0) reset_sensor(&hms_dec); }
+            else {
+                if (pulse >= 300 && pulse <= 600) {
+                    int bit = (hms_dec.last_pulse > 600) ? 1 : 0;
+                    hms_dec.current_nibble = (hms_dec.current_nibble << 1) | bit;
+                    if (++hms_dec.bit_cnt == 4) { if (hms_dec.nibble_cnt < 24) hms_dec.nibbles[hms_dec.nibble_cnt++] = hms_dec.current_nibble; hms_dec.current_nibble = 0; hms_dec.bit_cnt = 0; }
+                    hms_dec.pulse_state = 0;
+                } else { if (hms_dec.nibble_cnt > 0) reset_sensor(&hms_dec); else hms_dec.pulse_state = 0; }
             }
         }
     }
