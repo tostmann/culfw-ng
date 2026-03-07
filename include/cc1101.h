@@ -19,6 +19,7 @@ void cc1101_send_it_v1(const char* data);
 void cc1101_send_it_v3(const char* data);
 void cc1101_send_hms(const char* hex_data);
 void cc1101_send_fht(const char* hex_data);
+void cc1101_send_oregon(const char* hex_data);
 void cc1101_send_raw_slowrf(const char* hex_data);
 bool cc1101_is_433();
 
