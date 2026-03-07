@@ -179,6 +179,14 @@ void culfw_parser_task(void *pvParameters) {
     slowrf_set_reporting(reporting_enabled);
     ESP_LOGI(TAG, "Loaded reporting state: %d", reporting_enabled);
 
+    esp_vfs_spiffs_conf_t conf = {
+      .base_path = "/spiffs",
+      .partition_label = NULL,
+      .max_files = 5,
+      .format_if_mount_failed = true
+    };
+    esp_vfs_spiffs_register(&conf);
+
     if (!usb_serial_jtag_is_driver_installed()) {
         usb_serial_jtag_driver_config_t usb_serial_jtag_config = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();
         usb_serial_jtag_driver_install(&usb_serial_jtag_config);
