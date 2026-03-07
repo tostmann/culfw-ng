@@ -96,17 +96,20 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Funktionstest: Erfolgreiche Verifizierung der IP-Ausgabe (V-Kommando) und des Web-Interfaces auf 433/868 MHz Hardware.
 *   **[DONE]** Implementierung von Diagnose-Kommandos für Generic Decoder (`GL` zum Auflisten, `GR` zum Neuladen).
 *   **[DONE]** Validierung der Generic Decoder State Machine mit injizierten Test-Signalen (Nexa).
+*   **[DONE]** Validierung des JSON-Parsers und der Protokoll-Lade-Logik aus SPIFFS.
+*   **[DONE]** Anbindung des Generic Decoders an die SIGNALduino MU-Unterdrückungslogik.
 
 ## 4. Neue Erkenntnisse / Probleme
 
 *   **Architektur-Korrektur (Single-Core):** Der ESP32-C6 ist ein **Single-Core Prozessor (RISC-V)**. Die RTOS-Architektur wurde auf ein Single-Core-Modell mit **Task-Priorisierung** als primäres Steuerungsinstrument umgestellt, um die Echtzeitfähigkeit zu gewährleisten.
 *   **Architektur-Verfeinerung (Initialisierung):** Die Initialisierungs-Sequenz wurde angepasst. `config_loader_load_protocols()` wird nun in `app_main` ausgeführt, *bevor* die `slowrf_task` startet. Die `generic_decoder_init()`-Funktion innerhalb des Tasks wurde modifiziert, sodass sie nur noch die Decoder-*Zustände* zurücksetzt, aber nicht die bereits geladenen Protokoll-Definitionen, um eine Race Condition zu vermeiden.
+*   **Architektur-Verfeinerung (JSON-Format):** Das `protocols.json`-Format wurde optimiert. Anstatt starrer Timing-Werte wie `sync_low` werden nun Multiplikatoren der Basis-Pulsbreite (`short`) verwendet (z.B. `"sync": [{"h": 1, "l": 10}]`). Dies erhöht die Lesbarkeit und Flexibilität der Protokolldefinitionen.
 
 ## 5. Nächste Schritte
 
 *   **Validierung:** Testen des Generic Decoders mit **realen Funksignalen** von Fernbedienungen (Nexa, IT) und Optimierung der Timing-Parameter in `protocols.json`.
 *   **Stabilitätstests:** Durchführung von Langzeittests im hybriden Matter-Gateway-Betrieb mit aktiver WiFi-Verbindung und Web-Interface.
-*   **SIGNALduino Kompatibilität:** Verfeinerung der Ausgabe-Formate (`MU;`/`MS;`) im Generic Decoder, um eine hohe Kompatibilität zu erreichen.
+*   **SIGNALduino Kompatibilität:** Verfeinerung der `MS;`-Ausgabeformate des Generic Decoders, um eine hohe Kompatibilität mit bestehenden Host-Systemen zu erreichen.
 *   **Protokoll-DB Erweiterung:** Hinzufügen weiterer OOK-Protokolle (z.B. Somfy RTS, Ambient Weather) zur `protocols.json`.
 
 ## 6. Hardware-Konfiguration (Pinout)
