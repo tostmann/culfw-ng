@@ -1,6 +1,7 @@
 #include "generic_decoder.h"
 #include "slowrf.h"
 #include "cc1101.h"
+#include "matter_bridge.h"
 #include "esp_log.h"
 #include "cJSON.h"
 #include "driver/usb_serial_jtag.h"
