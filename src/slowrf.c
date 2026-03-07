@@ -154,6 +154,12 @@ static void reset_fht(fht_dec_t *dec) {
     dec->sync_found = false;
 }
 
+static void reset_rtl433(rtl433_dec_t *dec) {
+    dec->bit_buffer = 0;
+    dec->bit_cnt = 0;
+    dec->pulse_cnt = 0;
+}
+
 void slowrf_task(void *pvParameters) {
     pulse_t p_in;
     fs20_dec_t fs_dec;
@@ -163,6 +169,7 @@ void slowrf_task(void *pvParameters) {
     sensor_dec_t hms_dec;
     sensor_dec_t s300_dec;
     os_dec_t os_dec;
+    rtl433_dec_t rtl_dec;
     
     reset_fs20(&fs_dec);
     reset_fht(&fht_dec);
@@ -171,6 +178,7 @@ void slowrf_task(void *pvParameters) {
     reset_sensor(&hms_dec);
     reset_sensor(&s300_dec);
     reset_os(&os_dec);
+    reset_rtl433(&rtl_dec);
 
     bool it3_last_sync = false;
 
