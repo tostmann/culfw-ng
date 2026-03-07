@@ -23,3 +23,8 @@ bool generic_decoder_load_from_json(const char* json_string);
  * @param level Logic level (1=High, 0=Low)
  */
 void generic_decoder_process_pulse(uint16_t duration, uint8_t level);
+
+/**
+ * @brief List all loaded generic protocols
+ */
+void generic_decoder_list_protocols();
