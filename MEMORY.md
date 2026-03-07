@@ -77,15 +77,15 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 *   **[DONE]** Protokoll-Erweiterung: Empfangs-Decoder für **HMS** und **S300TH** (868MHz) implementiert.
 *   **[DONE]** Protokoll-Erweiterung: Sende-Encoder für HMS (`H...`-Kommando) implementiert.
 *   **[DONE]** Protokoll-Erweiterung: Sende-Encoder und Empfangs-Decoder für **Intertechno V1 & V3** (433MHz) implementiert.
+*   **[DONE]** Protokoll-Erweiterung: Implementierung des Empfangs-Decoders für **Oregon Scientific**.
 *   **[DONE]** Implementierung einer Laufzeit-Frequenzumschaltung (`f433`/`f868`) mit Speicherung im NVS.
 *   **[DONE]** End-to-End Test: HMS und S300TH Empfang gegen Referenz-CUL validiert.
 *   **[DONE]** End-to-End Test: Intertechno V1/V3 (433MHz) und FS20 (868MHz) RX/TX sind gegen einen Referenz-CUL validiert, inklusive strikter Kanaltrennung.
 *   **[DONE]** Projekt-Setup: Initiales Git-Repository auf GitHub erstellt, bereinigt und Code gepusht.
-*   **[DONE]** Protokoll-Erweiterung: Implementierung des Empfangs-Decoders für **Oregon Scientific**.
 
 ## 4. Neue Erkenntnisse / Probleme
 
-*   **[INFO] Hardware-Fehlbestückung final bestätigt:** Ein Modul mit dem Label "E07-900MM10S" (868/915 MHz) wurde durch Tests eindeutig als 433-MHz-Variante identifiziert. Trotz korrektem Label ist das physikalische RF-Frontend (Balun/Filter) für 433 MHz bestückt. Mit der Laufzeit-Frequenzumschaltung (`f433`-Kommando und Speicherung im NVS) kann dieses Modul nun dauerhaft und korrekt als 433MHz-Stick betrieben werden. Das Problem ist damit per Software vollständig gelöst.
+*   **[GELÖST] Hardware-Fehlbestückung (Chargenproblem) bestätigt:** Umfangreiche Tests (inkl. Vergleich mit weiteren Modulen der gleichen Charge) haben zweifelsfrei bestätigt, dass die verwendeten `E07-900MM10S` Module trotz ihres 868-MHz-Labels physikalisch für 433 MHz bestückt sind. Die Signalstärke-Differenz zwischen den Bändern beträgt >70 dB, was einen Software-Fehler ausschließt. Mit der neuen Laufzeit-Frequenzumschaltung (`f433`-Kommando) und der persistenten Speicherung der Einstellung im NVS können diese Module nun dauerhaft und korrekt als 433-MHz-Sticks betrieben werden. Das Problem ist damit per Software vollständig gelöst.
 *   **[INFO]** Die culfw-Implementierung des FS20-Protokolls verwendet **gerade Parität (Even Parity)**, abweichend von manchen Spezifikationen. Dies ist für die Kompatibilität entscheidend.
 *   **[INFO]** Eine längere Präambel (z.B. 24 '0'-Bits statt 12) und eine hohe Wiederholrate (z.B. 10x) verbessern die FS20-Übertragungssicherheit signifikant.
 *   **[INFO]** Hardwareseitiges Carrier Sense (RSSI-Schwellwert) über den GDO2-Pin ist eine sehr effektive Methode, um den RX-Prozessor von der Verarbeitung von reinem Rauschen zu entlasten.
