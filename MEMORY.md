@@ -32,12 +32,12 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
     *   **Multi-Protokoll-Gateway:** Die Firmware agiert als "Staubsauger" für alle unterstützten OOK-Protokolle auf der aktiven Frequenz. Alle Decoder laufen parallel.
 *   **Zukünftige Architektur: On-Board Intelligence & Matter**
     *   **Dateisystem:** Integration eines **SPIFFS-Dateisystems** zur Speicherung einer flexiblen Protokoll-Datenbank (`protocols.json`). Ein Fallback-Mechanismus lädt einen hartcodierten Default, falls die Datei fehlt.
-    *   **Table-Driven Decoding Engine:** Anstelle von fest einkompilierten Decodern wird eine generische Engine die Pulsfolgen mit den in `protocols.json` definierten Mustern abgleichen. Das JSON-Format nutzt ein `timing`-Objekt mit Multiplikatoren für eine kompakte und flexible Definition.
+    *   **Table-Driven Decoding Engine:** Anstelle von fest einkompilierten Decodern wird eine generische Engine die Pulsfolgen mit den in `protocols.json` definierten Mustern abgleichen. Das JSON-Format nutzt ein `timing`-Objekt mit Multiplikatoren für eine kompakte und flexible Definition. Die Protokolldatenbank kann zur Laufzeit über das `GR`-Kommando (Generic Reload) neu geladen werden.
     *   **Matter-Architektur:** Der Stick wird als **Matter Aggregator (Bridge)** implementiert. Nur das Gateway wird einmalig gepaired. Erkannte SlowRF-Geräte werden als dynamische **Endpoints** (z.B. Temperatursensor, Schalter) im Matter-Netzwerk on-the-fly angelegt und über eine **"Dynamic Endpoint Registry"** (`matter_bridge.c`) verwaltet. Die Anwendungslogik ist gegen eine **API-Interface-Schicht** (`matter_interface.h`) entwickelt, um die Kompilierbarkeit ohne das vollständige SDK zu gewährleisten (Simulations-Modus).
 *   **Bivalenter Betriebsmodus (Hybride Intelligenz):** Die Firmware ist umschaltbar gestaltet, um die Stärken von CUL und SIGNALduino zu vereinen.
     *   **CUL-Modus (`X21`):** 100%ige Kompatibilität zum etablierten CUL-Protokoll.
     *   **SIGNALduino-Modus (`X25`):** Vollständige Emulation eines SIGNALduino mit Rohdaten-Ausgabe (`MU;...` für unbekannte, `MS;...` für bekannte Protokolle). Die Ausgabe erfolgt über eine zentrale `slowrf_output_packet`-Funktion. Die `MU`-Ausgabe wird unterdrückt, wenn ein Decoder (fest oder generisch) das Signal erfolgreich verarbeitet hat.
-*   **WiFi & Web-Interface:** Ein integrierter HTTP-Server (Port 80) bietet nach der WLAN-Verbindung eine Weboberfläche zur Diagnose. Diese zeigt System-Stammdaten und ein Live-Log der letzten empfangenen Funk-Events an. Alle Decoder leiten ihre Ergebnisse parallel an die serielle Schnittstelle und das Web-Log.
+*   **WiFi & Web-Interface:** Ein integrierter HTTP-Server (Port 80) bietet nach der WLAN-Verbindung eine Weboberfläche zur Diagnose. Diese zeigt System-Stammdaten und ein Live-Log der letzten empfangenen Funk-Events an, wobei die neuesten Ereignisse oben stehen (Reverse-Chronological Order). Alle Decoder leiten ihre Ergebnisse parallel an die serielle Schnittstelle und das Web-Log.
 *   **Intellectual Property (IP) / Kopierschutz (3-Säulen-Strategie):**
     *   **1. Kommerzieller Schutz ("Matter-Schild"):** Die Bindung an den Matter-Standard erfordert ein offizielles **Device Attestation Certificate (DAC)**. Clones ohne dieses Zertifikat werden von Systemen wie Apple/Google Home als "nicht verifiziert" markiert.
     *   **2. Technischer Schutz (Hardware-Verschlüsselung):** Nutzung der ESP32-C6 Hardware-Features wie **Flash Encryption** (bindet die Firmware an den individuellen Chip) und **Secure Boot V2** (erlaubt nur vom Hersteller signierte Firmware-Updates).
@@ -87,13 +87,14 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Implementierung von Diagnose-Kommandos für Matter (`ML` zum Auflisten der Endpunkte).
 *   **[DONE]** SIGNALduino `MU;` Logik verfeinert: Rohdaten-Ausgabe wird unterdrückt, wenn ein Decoder (fest oder generisch) gematcht hat.
 *   **[DONE]** WiFi-Konnektivität implementiert (Verbindung zu "PalmBeach WiFi").
-*   **[DONE]** Web-Interface: Implementierung eines einfachen HTTP-Servers zur Anzeige von Live-Funk-Events und Systemstatus.
+*   **[DONE]** Web-Interface: Implementierung eines einfachen HTTP-Servers zur Anzeige von Live-Funk-Events und Systemstatus (mit Reverse-Chronological Log).
 *   **[DONE]** Integration der RF-Decoder mit dem Web-Log für Live-Event-Anzeige.
 *   **[DONE]** Chip-Unique-ID (MAC) Auslesung als Basis für Kopierschutz implementiert.
-*   **[DONE]** **Behebung des Flash-Partition-Konflikts (Overlap-Fehler bei 0x10000).**
-*   **[DONE]** **Anpassung der RTOS-Architektur an Single-Core-Betrieb (ESP32-C6).**
-*   **[DONE]** **Device-Identität: Erweiterung des V (Version) Kommandos um die eindeutige Chip-ID (MAC) und die aktuelle IP-Adresse.**
-*   **[DONE]** **Funktionstest: Erfolgreiche Verifizierung der IP-Ausgabe (V-Kommando) und des Web-Interfaces auf 433/868 MHz Hardware.**
+*   **[DONE]** Behebung des Flash-Partition-Konflikts (Overlap-Fehler bei 0x10000).
+*   **[DONE]** Anpassung der RTOS-Architektur an Single-Core-Betrieb (ESP32-C6).
+*   **[DONE]** Device-Identität: Erweiterung des V (Version) Kommandos um die eindeutige Chip-ID (MAC) und die aktuelle IP-Adresse.
+*   **[DONE]** Funktionstest: Erfolgreiche Verifizierung der IP-Ausgabe (V-Kommando) und des Web-Interfaces auf 433/868 MHz Hardware.
+*   **[DONE]** Implementierung von Diagnose-Kommandos für Generic Decoder (`GL` zum Auflisten, `GR` zum Neuladen).
 
 ## 4. Neue Erkenntnisse / Probleme
 
@@ -101,8 +102,9 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **Validierung:** Durchführung von Tests zur Verifizierung der `MU;`-Rohdaten-Timings im Vergleich zu einem originalen SIGNALduino.
+*   **Validierung:** Testen des Generic Decoders mit realen Funksignalen (Nexa, IT) und Optimierung der Timing-Parameter in `protocols.json`.
 *   **Stabilitätstests:** Durchführung von Langzeittests im hybriden Matter-Gateway-Betrieb mit aktiver WiFi-Verbindung und Web-Interface.
+*   **SIGNALduino Kompatibilität:** Verfeinerung der Ausgabe-Formate (`MU;`/`MS;`) im Generic Decoder.
 
 ## 6. Hardware-Konfiguration (Pinout)
 

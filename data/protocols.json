@@ -1,7 +1,7 @@
 {
   "protocols": [
     {
-      "name": "Nexa_Test",
+      "name": "Nexa",
       "freq": 433,
       "timing": {
         "short": 250,
@@ -17,6 +17,24 @@
       "len": {
         "min": 32,
         "max": 32
+      }
+    },
+    {
+      "name": "Intertechno_V1",
+      "freq": 433,
+      "timing": {
+        "short": 350,
+        "long": 1050,
+        "tolerance": 150
+      },
+      "definitions": {
+        "bit0": [ {"h": 1, "l": 3}, {"h": 1, "l": 3} ],
+        "bit1": [ {"h": 3, "l": 1}, {"h": 3, "l": 1} ],
+        "sync": [ {"h": 1, "l": 31} ]
+      },
+      "len": {
+        "min": 12,
+        "max": 12
       }
     }
   ]
