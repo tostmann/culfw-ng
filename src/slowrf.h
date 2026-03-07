@@ -14,5 +14,6 @@ void slowrf_set_reporting(bool enable);
 void slowrf_set_debug(bool enable);
 void slowrf_set_mode(uint8_t mode);
 uint8_t slowrf_get_mode();
+void slowrf_mark_matched();
 
 #endif
