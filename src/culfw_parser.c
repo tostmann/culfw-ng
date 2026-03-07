@@ -100,6 +100,14 @@ static void handle_command(char *cmd) {
             cc1101_send_hms(cmd + 1);
             len = snprintf(out, sizeof(out), "H OK\r\n");
         }
+    } else if (cmd[0] == 'f') {
+        if (strcmp(cmd + 1, "433") == 0) {
+            cc1101_set_frequency(true);
+            len = snprintf(out, sizeof(out), "f433 OK\r\n");
+        } else if (strcmp(cmd + 1, "868") == 0) {
+            cc1101_set_frequency(false);
+            len = snprintf(out, sizeof(out), "f868 OK\r\n");
+        }
     } else if (cmd[0] == 'T') {
         if (cmd[1] == 'r') {
             len = snprintf(out, sizeof(out), "Tr START\r\n");
