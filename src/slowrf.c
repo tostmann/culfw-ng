@@ -38,6 +38,32 @@ static void slowrf_output_packet(const char* prefix, const char* data, uint8_t r
     usb_serial_jtag_write_bytes(out, len, 0);
 }
 
+#define MAX_WEB_EVENTS 10
+typedef struct {
+    char msg[64];
+    int64_t timestamp;
+} web_event_t;
+static web_event_t web_events[MAX_WEB_EVENTS];
+static int web_event_idx = 0;
+
+static void add_web_event(const char* msg) {
+    strncpy(web_events[web_event_idx].msg, msg, 63);
+    web_events[web_event_idx].msg[63] = 0;
+    web_events[web_event_idx].timestamp = esp_timer_get_time() / 1000000;
+    web_event_idx = (web_event_idx + 1) % MAX_WEB_EVENTS;
+}
+
+int slowrf_get_web_events(char* buf, int max_len) {
+    int len = 0;
+    for (int i = 0; i < MAX_WEB_EVENTS; i++) {
+        int idx = (web_event_idx + i) % MAX_WEB_EVENTS;
+        if (web_events[idx].msg[0] != 0) {
+            len += snprintf(buf + len, max_len - len, "[%llds] %s<br>", web_events[idx].timestamp, web_events[idx].msg);
+        }
+    }
+    return len;
+}
+
 #define MU_BUFFER_SIZE 256
 static int16_t mu_buffer[MU_BUFFER_SIZE];
 static uint16_t mu_idx = 0;
