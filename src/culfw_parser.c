@@ -50,7 +50,7 @@ static void handle_command(char *cmd) {
     char out[128];
     int len = 0;
     if (cmd[0] == 'V') {
-        bool is_433 = (gpio_get_level(GPIO_433MARKER) == 0);
+        bool is_433 = cc1101_is_433();
         len = snprintf(out, sizeof(out), "V %s culfw-NG Build: %d (%s %s) CUL32-C6 (F-Band: %sMHz)\r\n", 
                        FW_VERSION, BUILD_NUMBER, __DATE__, __TIME__, is_433 ? "433" : "868");
     } else if (cmd[0] == 'X') {
