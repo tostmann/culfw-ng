@@ -138,6 +138,14 @@ void cc1101_set_idle_mode() {
 
 void cc1101_set_frequency(bool is_433) {
     cc1101_is_433_flag = is_433;
+    
+    nvs_handle_t my_handle;
+    if (nvs_open("storage", NVS_READWRITE, &my_handle) == ESP_OK) {
+        nvs_set_u8(my_handle, "freq", is_433 ? 43 : 86);
+        nvs_commit(my_handle);
+        nvs_close(my_handle);
+    }
+
     cc1101_cmd_strobe(CC1101_SIDLE);
     if (is_433) {
         cc1101_write_reg(0x0D, 0x10); // FREQ2
