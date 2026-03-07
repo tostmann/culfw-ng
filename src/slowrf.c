@@ -223,35 +223,44 @@ void slowrf_task(void *pvParameters) {
                 continue;
             }
 
-            // --- OREGON SCIENTIFIC ---
-            if (pulse > 200 && pulse < 1400) {
+            // --- OREGON SCIENTIFIC (V2/V3) ---
+            if (pulse > 200 && pulse < 1300) {
                 if (!os_dec.sync_found) {
-                    if (pulse < 700) {
-                        if (++os_dec.pulse_state > 16) { // Preamble (1s/0s)
+                    // Preamble: many short pulses (approx 500us)
+                    if (pulse > 350 && pulse < 650) {
+                        if (++os_dec.pulse_state > 12) {
                             os_dec.sync_found = true;
                             os_dec.nibble_cnt = 0; os_dec.bit_cnt = 0; os_dec.pulse_state = 0;
                         }
                     } else os_dec.pulse_state = 0;
                 } else {
+                    // Manchester Decoding for OS
+                    // T ~ 500us. Short = T, Long = 2T.
                     int bit = -1;
-                    if (pulse < 700) { // Short pulse
-                        if (os_dec.pulse_state == 1) { 
-                            bit = (level == 1) ? 0 : 1; // Manchester: Mid-bit transition
-                            os_dec.pulse_state = 0; 
-                        } else os_dec.pulse_state = 1;
-                    } else { // Long pulse (missing mid-bit)
-                        bit = (level == 1) ? 0 : 1;
-                        os_dec.pulse_state = 1;
+                    if (pulse < 750) { // Short pulse (T)
+                        if (os_dec.pulse_state == 1) {
+                            bit = (level == 0) ? 1 : 0; // OS uses inverted Manchester or specific edge
+                            os_dec.pulse_state = 0;
+                        } else {
+                            os_dec.pulse_state = 1;
+                        }
+                    } else if (pulse < 1250) { // Long pulse (2T)
+                        bit = (level == 0) ? 1 : 0;
+                        os_dec.pulse_state = 1; // Reset to 1 because 2T contains a mid-bit transition
                     }
-                    
+
                     if (bit != -1) {
                         if (os_dec.nibble_cnt < 20) {
-                            int idx = os_dec.nibble_cnt / 2;
-                            if (os_dec.nibble_cnt % 2 == 0) os_dec.data[idx] = (os_dec.data[idx] & 0xF0) | (bit << os_dec.bit_cnt);
-                            else os_dec.data[idx] = (os_dec.data[idx] & 0x0F) | (bit << (os_dec.bit_cnt + 4));
+                            // OS sends LSB first in nibbles
+                            if (bit) os_dec.data[os_dec.nibble_cnt/2] |= (1 << (os_dec.bit_cnt + (os_dec.nibble_cnt % 2 ? 4 : 0)));
+                            else     os_dec.data[os_dec.nibble_cnt/2] &= ~(1 << (os_dec.bit_cnt + (os_dec.nibble_cnt % 2 ? 4 : 0)));
                             
                             if (++os_dec.bit_cnt == 4) {
                                 os_dec.bit_cnt = 0;
+                                // Check for OS Sync Nibble 0xA (LSB: 0101)
+                                if (os_dec.nibble_cnt == 0 && (os_dec.data[0] & 0xF) != 0xA) {
+                                    os_dec.sync_found = false; // False sync
+                                }
                                 os_dec.nibble_cnt++;
                             }
                         }
