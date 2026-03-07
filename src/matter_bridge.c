@@ -56,6 +56,10 @@ void matter_bridge_report_event(const char* id, matter_device_type_t type, float
     // 3. Update the value
     if (idx != -1 && device_table[idx].matter_ep_id != 0xFFFF) {
         matter_interface_update_attribute(device_table[idx].matter_ep_id, value);
+        
+        char web_msg[64];
+        snprintf(web_msg, sizeof(web_msg), "Matter %s -> %.1f", id, value);
+        slowrf_add_web_event(web_msg);
     }
 }
 
