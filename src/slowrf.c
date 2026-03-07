@@ -230,30 +230,35 @@ void slowrf_task(void *pvParameters) {
 
             // --- OREGON SCIENTIFIC (433 MHz) ---
             if (cc1101_is_433()) {
-                if (pulse > 350 && pulse < 1350) {
+                if (pulse > 200 && pulse < 1400) {
                     if (!os_dec.sync_found) {
-                        if (pulse < 650) {
-                            if (++os_dec.pulse_state > 24) {
+                        if (pulse < 700) {
+                            if (++os_dec.pulse_state > 16) { // Preamble (1s/0s)
                                 os_dec.sync_found = true;
                                 os_dec.nibble_cnt = 0; os_dec.bit_cnt = 0; os_dec.pulse_state = 0;
                             }
                         } else os_dec.pulse_state = 0;
                     } else {
                         int bit = -1;
-                        if (pulse < 650) {
-                            if (os_dec.pulse_state == 1) { bit = (level == 0) ? 1 : 0; os_dec.pulse_state = 0; }
-                            else os_dec.pulse_state = 1;
-                        } else { bit = (level == 0) ? 1 : 0; os_dec.pulse_state = 1; }
+                        if (pulse < 700) { // Short pulse
+                            if (os_dec.pulse_state == 1) { 
+                                bit = (level == 1) ? 0 : 1; // Manchester: Mid-bit transition
+                                os_dec.pulse_state = 0; 
+                            } else os_dec.pulse_state = 1;
+                        } else { // Long pulse (missing mid-bit)
+                            bit = (level == 1) ? 0 : 1;
+                            os_dec.pulse_state = 1;
+                        }
                         
                         if (bit != -1) {
-                            if (os_dec.nibble_cnt < 32) {
+                            if (os_dec.nibble_cnt < 20) {
                                 int idx = os_dec.nibble_cnt / 2;
                                 if (os_dec.nibble_cnt % 2 == 0) os_dec.data[idx] = (os_dec.data[idx] & 0xF0) | (bit << os_dec.bit_cnt);
                                 else os_dec.data[idx] = (os_dec.data[idx] & 0x0F) | (bit << (os_dec.bit_cnt + 4));
+                                
                                 if (++os_dec.bit_cnt == 4) {
-                                    if (os_dec.nibble_cnt == 0 && (os_dec.data[0] & 0xF) != 0xA) { // OS Sync nibble 0xA
-                                        reset_os(&os_dec);
-                                    } else { os_dec.bit_cnt = 0; os_dec.nibble_cnt++; }
+                                    os_dec.bit_cnt = 0;
+                                    os_dec.nibble_cnt++;
                                 }
                             }
                         }
