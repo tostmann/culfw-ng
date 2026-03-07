@@ -201,6 +201,7 @@ static void reset_state(proto_state_t *s) {
 }
 
 void generic_decoder_process_pulse(uint16_t duration, uint8_t level) {
+    // ESP_LOGD(TAG, "P:%d L:%d", duration, level);
     for (int i=0; i<protocol_count; i++) {
         rf_proto_internal_t *p = &protocols[i];
         proto_state_t *s = &states[i];
