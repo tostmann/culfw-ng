@@ -274,7 +274,6 @@ void slowrf_task(void *pvParameters) {
             // --- OREGON SCIENTIFIC (V2/V3) ---
             if (pulse > 200 && pulse < 1300) {
                 if (!os_dec.sync_found) {
-                    // Preamble: many short pulses (approx 500us)
                     if (pulse > 350 && pulse < 650) {
                         if (++os_dec.pulse_state > 12) {
                             os_dec.sync_found = true;
@@ -282,33 +281,24 @@ void slowrf_task(void *pvParameters) {
                         }
                     } else os_dec.pulse_state = 0;
                 } else {
-                    // Manchester Decoding for OS
-                    // T ~ 500us. Short = T, Long = 2T.
                     int bit = -1;
-                    if (pulse < 750) { // Short pulse (T)
+                    if (pulse < 750) { // Short (T)
                         if (os_dec.pulse_state == 1) {
-                            bit = (level == 0) ? 1 : 0; // OS uses inverted Manchester or specific edge
+                            bit = (level == 1) ? 1 : 0; 
                             os_dec.pulse_state = 0;
-                        } else {
-                            os_dec.pulse_state = 1;
-                        }
-                    } else if (pulse < 1250) { // Long pulse (2T)
-                        bit = (level == 0) ? 1 : 0;
-                        os_dec.pulse_state = 1; // Reset to 1 because 2T contains a mid-bit transition
+                        } else os_dec.pulse_state = 1;
+                    } else if (pulse < 1250) { // Long (2T)
+                        bit = (level == 1) ? 1 : 0;
+                        os_dec.pulse_state = 1;
                     }
 
                     if (bit != -1) {
                         if (os_dec.nibble_cnt < 20) {
-                            // OS sends LSB first in nibbles
                             if (bit) os_dec.data[os_dec.nibble_cnt/2] |= (1 << (os_dec.bit_cnt + (os_dec.nibble_cnt % 2 ? 4 : 0)));
                             else     os_dec.data[os_dec.nibble_cnt/2] &= ~(1 << (os_dec.bit_cnt + (os_dec.nibble_cnt % 2 ? 4 : 0)));
-                            
                             if (++os_dec.bit_cnt == 4) {
                                 os_dec.bit_cnt = 0;
-                                // Check for OS Sync Nibble 0xA (LSB: 0101)
-                                if (os_dec.nibble_cnt == 0 && (os_dec.data[0] & 0xF) != 0xA) {
-                                    os_dec.sync_found = false; // False sync
-                                }
+                                if (os_dec.nibble_cnt == 0 && (os_dec.data[0] & 0xF) != 0xA) os_dec.sync_found = false;
                                 os_dec.nibble_cnt++;
                             }
                         }
