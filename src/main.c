@@ -85,9 +85,9 @@ void app_main(void) {
         ESP_LOGE(TAG, "CC1101 initialization failed!");
     }
 
-    xTaskCreatePinnedToCore(led_task, "led_task", 2048, NULL, 2, NULL, 1);
+    xTaskCreatePinnedToCore(led_task, "led_task", 2048, NULL, 2, NULL, 0);
     
     // Initializing RF tasks
     slowrf_init();
-    xTaskCreatePinnedToCore(culfw_parser_task, "culfw_parser_task", 4096, NULL, 5, NULL, 1);
+    xTaskCreatePinnedToCore(culfw_parser_task, "culfw_parser_task", 4096, NULL, 5, NULL, 0);
 }
