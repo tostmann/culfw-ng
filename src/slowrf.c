@@ -18,6 +18,12 @@ typedef struct {
     uint8_t level;
 } pulse_t;
 
+static QueueHandle_t pulse_queue;
+static int64_t last_time = 0;
+static bool slowrf_debug = false;
+static bool slowrf_reporting = true; // Default ON
+static uint8_t slowrf_mode = SLOWRF_MODE_CUL;
+
 static void slowrf_output_packet(const char* prefix, const char* data, uint8_t rssi) {
     char out[128];
     int len = 0;
@@ -29,12 +35,6 @@ static void slowrf_output_packet(const char* prefix, const char* data, uint8_t r
     }
     usb_serial_jtag_write_bytes(out, len, 0);
 }
-
-static QueueHandle_t pulse_queue;
-static int64_t last_time = 0;
-static bool slowrf_debug = false;
-static bool slowrf_reporting = true; // Default ON
-static uint8_t slowrf_mode = SLOWRF_MODE_CUL;
 
 #define MU_BUFFER_SIZE 256
 static int16_t mu_buffer[MU_BUFFER_SIZE];
