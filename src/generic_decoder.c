@@ -221,6 +221,7 @@ void generic_decoder_process_pulse(uint16_t duration, uint8_t level) {
                         s->seq_idx++;
                         if (s->seq_idx >= p->sync_len) {
                             // Sync Complete!
+                            ESP_LOGI(TAG, "Sync complete for %s", p->name);
                             s->state = STATE_READ_BITS;
                             s->bit_cnt = 0;
                             s->bit_buffer = 0;
