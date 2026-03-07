@@ -2,7 +2,7 @@
 
 ## 1. Projektziel
 
-Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CUL-Sticks. Die Firmware soll klassische SlowRF-Protokolle (wie FS20, Intertechno) über ein CC1101-Modul senden und empfangen. Langfristiges strategisches Ziel ist die Schaffung eines autonomen **SlowRF-to-Matter/Thread Gateways**.
+Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CUL-Sticks. Die Firmware soll klassische SlowRF-Protokolle (wie FS20, Intertechno) über ein CC1101-Modul senden und empfangen. Langfristiges strategisches Ziel ist die Schaffung eines autonomen **SlowRF-to-Matter/Thread Gateways** mit On-Board-Dekodierung.
 
 ### 1.1 Unterstützte Protokolle
 
@@ -23,14 +23,20 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **Board:** `esp32-c6-devkitc-1`
 *   **Kommunikation:** Nativer USB-JTAG/CDC Treiber (`usb_serial_jtag`) für eine nicht-blockierende serielle Schnittstelle.
 *   **RF-Modul:** CC1101 angebunden via SPI.
-*   **SPI-Kommunikation:** Die SPI-Geschwindigkeit wurde zur Erhöhung der Stabilität auf 500 kHz festgelegt. Für das Auslesen der Statusregister (z.B. `PARTNUM`, `VERSION`) wird der `READ_BURST`-Modus (`0xC0`) verwendet.
+*   **SPI-Kommunikation:** Die SPI-Geschwindigkeit wurde zur Erhöhung der Stabilität auf 500 kHz festgelegt. Für das Auslesen der Statusregister wird der `READ_BURST`-Modus (`0xC0`) verwendet.
 *   **Persistenz:** Wichtige Einstellungen (z.B. der Reporting-Modus `X21`, die RF-Frequenz) werden im **Non-Volatile Storage (NVS)** des ESP32 gespeichert und bei Neustart automatisch wiederhergestellt.
-*   **Software-Architektur:** FreeRTOS-Task-basiert.
-    *   `culfw_parser_task`: Verarbeitet eingehende serielle Befehle.
-    *   `slowrf_task`: Implementiert **parallele** Zustandsmaschinen/Decoder, um aus den vom CC1101 empfangenen Pulsfolgen gültige Datenpakete zu dekodieren. Der Stick agiert als **Multi-Protokoll-Gateway** für die jeweils aktive Frequenz.
+*   **Software-Architektur: Gehärtetes FreeRTOS**
+    *   **Strikte Task-Trennung:**
+        *   `slowrf_task` (hohe Priorität, Core 0): Echtzeit-Verarbeitung der Funk-Signale. Isoliert von anderen Prozessen.
+        *   `culfw_parser_task` (niedrigere Priorität, Core 1): Verarbeitet serielle Befehle und System-Management.
+    *   **Thread-Sicherheit:** Alle Zugriffe auf den CC1101 sind durch einen **Mutex (Semaphore)** geschützt, um Konflikte mit zukünftigen WiFi/Matter-Stacks zu verhindern.
+    *   **Multi-Protokoll-Gateway:** Die Firmware agiert als "Staubsauger" für alle unterstützten OOK-Protokolle auf der aktiven Frequenz. Alle Decoder laufen parallel.
 *   **Zukünftige Architektur: On-Board Intelligence**
-    *   **Dateisystem:** Integration eines **SPIFFS-Dateisystems** zur Speicherung einer flexiblen Protokoll-Datenbank.
-    *   **Table-Driven Decoding Engine:** Anstelle von fest einkompilierten Decodern wird eine generische Engine die Pulsfolgen mit den in `protocols.json` definierten Mustern abgleichen. Dies ermöglicht das Hinzufügen neuer Sensoren ohne Firmware-Update.
+    *   **Dateisystem:** Integration eines **SPIFFS-Dateisystems** zur Speicherung einer flexiblen Protokoll-Datenbank (`protocols.json`).
+    *   **Table-Driven Decoding Engine:** Anstelle von fest einkompilierten Decodern wird eine generische Engine die Pulsfolgen mit den in `protocols.json` definierten Mustern abgleichen. Dies ermöglicht das Hinzufügen neuer Sensoren ohne Firmware-Update und ist die **Voraussetzung für die Matter-Integration**.
+*   **Bivalenter Betriebsmodus (Hybride Intelligenz):** Die Firmware wird umschaltbar gestaltet, um die Stärken von CUL und SIGNALduino zu vereinen.
+    *   **CUL-Modus (`X21`):** 100%ige Kompatibilität zum etablierten CUL-Protokoll für maximale Stabilität mit bestehenden Systemen (z.B. FHEM `00_CUL.pm`).
+    *   **SIGNALduino-Modus (`X25`):** Vollständige Emulation eines SIGNALduino. In diesem Modus gibt die Firmware Rohdaten (`MU;...`, `MS;...`) aus, um die riesige Sensor-Datenbank des FHEM-SIGNALduino-Projekts freizuschalten.
 *   **Frequenzerkennung und -management:**
     *   **Hardware-Default:** Die Modulfrequenz (433/868 MHz) wird initial über einen GPIO-Pin (`GPIO_433MARKER`) erkannt.
     *   **Software-Override:** Ein Benutzer kann die Frequenz zur Laufzeit per Kommando (`f433` oder `f868`) umschalten. Diese Einstellung wird **permanent im NVS gespeichert** und überschreibt die Hardware-Erkennung.
@@ -63,20 +69,21 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Release Management: Finaler Code-Stand als **Release v1.0.1** auf GitHub getaggt.
 *   **[DONE]** Partitionsschema für Dateisystem (SPIFFS) erweitert.
 *   **[DONE]** Build-System um Upload einer Filesystem-Partition (`data/`) erweitert.
+*   **[DONE]** RTOS-Architektur gehärtet (Core-Pinning, Task-Priorisierung, SPI-Mutex).
 *   **[IN PROGRESS]** Entwicklung einer generischen, tabellengesteuerten Decoding-Engine.
 *   **[TODO]** Implementierung des SPIFFS-Treibers und des JSON-Parsers in der Firmware.
 *   **[TODO]** Implementierung des bivalenten Betriebsmodus (CUL vs. SIGNALduino).
 
 ## 4. Neue Erkenntnisse / Probleme
 
-*   **Strategische Neuausrichtung:** Die reine CUL-Emulation ist nicht ausreichend, um mit flexibleren Systemen wie dem SIGNALduino zu konkurrieren. Die Überlegenheit der ESP32-C6-Plattform liegt in der Fähigkeit zur **On-Board-Dekodierung** und der Integration in moderne IoT-Ökosysteme (Matter/Thread).
-*   **Hybride Intelligenz als Erfolgsfaktor:** Die Firmware wird bivalent ausgelegt. Sie vereint die Stabilität des etablierten CUL-Protokolls mit der Flexibilität des SIGNALduino-Rohdatenformats. Dies ermöglicht dem Benutzer die Wahl des optimalen Modus für seine Anwendung.
-*   **Zukunftssicherheit durch On-Board-Dekodierung:** Durch die Verlagerung der Dekodierungslogik auf den ESP32 (gesteuert durch eine JSON-Datenbank im Dateisystem) wird der Stick zu einem autonomen Gateway. Neue Sensoren können ohne Firmware-Update durch Aktualisierung der Datenbank hinzugefügt werden. Dies ist die zwingende Voraussetzung für eine spätere **Matter-Bridge-Funktionalität**.
-*   **Multi-Protokoll-Gateway-Architektur bestätigt:** Die parallele Ausführung aller Protokoll-Decoder ermöglicht den simultanen Empfang verschiedener Protokolle auf demselben Frequenzband. Für den Empfang muss der Benutzer lediglich die korrekte Frequenz (`f433`/`f868`) wählen.
+*   **Strategische Neuausrichtung:** Die reine CUL-Emulation ist nicht ausreichend. Die Überlegenheit der ESP32-C6-Plattform liegt in der Fähigkeit zur **On-Board-Dekodierung** und der Integration in moderne IoT-Ökosysteme (Matter/Thread). Der Stick muss zum autonomen Gateway werden.
+*   **Hybride Intelligenz als Erfolgsfaktor:** Die Firmware wird bivalent ausgelegt. Sie vereint die Stabilität des etablierten CUL-Protokolls (`X21`-Modus) mit der Flexibilität des SIGNALduino-Rohdatenformats (`X25`-Modus). Dies ermöglicht dem Benutzer die Wahl des optimalen Modus für seine Anwendung.
+*   **Voraussetzung für Matter:** Die **On-Board-Dekodierung** (gesteuert durch eine JSON-Datenbank im Dateisystem) ist die zwingende Voraussetzung für eine spätere Matter-Bridge-Funktionalität. Nur wenn der Stick die Semantik der Daten versteht (z.B. "Temperatur: 21.5°C"), kann er diese als standardisierten Matter-Endpunkt bereitstellen.
+*   **Multi-Protokoll-Gateway-Architektur bestätigt:** Die parallele Ausführung aller Protokoll-Decoder ermöglicht den simultanen Empfang verschiedener Protokolle auf demselben Frequenzband.
 
 ## 5. Nächste Schritte
 
-*   **Hybride CUL/SIGNALduino-Firmware (Strategische Priorität):** Entwicklung einer **bivalenten Firmware**, die per Kommando zwischen zwei Betriebsmodi umschalten kann, um die Marktführerschaft zurückzugewinnen.
+*   **Hybride CUL/SIGNALduino-Firmware (Strategische Priorität):** Entwicklung einer **bivalenten Firmware**, die per Kommando zwischen zwei Betriebsmodi umschalten kann, um maximale Kompatibilität und Flexibilität zu bieten.
     *   **CUL-Modus (`X21`, Standard):** 100%ige Kompatibilität mit dem FHEM-Modul `00_CUL.pm` für maximale Stabilität.
     *   **SIGNALduino-Modus (`X25`):** Vollständige Emulation eines SIGNALduino. In diesem Modus gibt die Firmware alle empfangenen OOK-Signale im **SIGNALduino-Raw-Format (`MU;...`, `MS;...`)** aus. Dies schaltet die Kompatibilität zur riesigen Sensor-Datenbank des FHEM-SIGNALduino-Projekts frei.
 *   **On-Board Decoding Engine:** Implementierung der tabellengesteuerten Dekodierungslogik, die Protokolldefinitionen aus einer `protocols.json` im SPIFFS-Dateisystem liest. Dies macht die Firmware zukunftssicher und vom Host-System unabhängig.
