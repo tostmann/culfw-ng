@@ -36,6 +36,28 @@ static bool slowrf_debug = false;
 static bool slowrf_reporting = true; // Default ON
 static uint8_t slowrf_mode = SLOWRF_MODE_CUL;
 
+#define MU_BUFFER_SIZE 256
+static int16_t mu_buffer[MU_BUFFER_SIZE];
+static uint16_t mu_idx = 0;
+
+static void flush_mu_buffer() {
+    if (mu_idx == 0) return;
+    if (slowrf_mode != SLOWRF_MODE_SIGNALDUINO || !slowrf_reporting) {
+        mu_idx = 0;
+        return;
+    }
+    
+    char out[1024]; // Large enough for pulses
+    int len = snprintf(out, sizeof(out), "MU;L=%d;D=", mu_idx);
+    for (int i = 0; i < mu_idx; i++) {
+        len += snprintf(out + len, sizeof(out) - len, "%d,", mu_buffer[i]);
+        if (len > sizeof(out) - 20) break; // Avoid overflow
+    }
+    len += snprintf(out + len, sizeof(out) - len, ";RSS=%d;\r\n", cc1101_read_rssi());
+    usb_serial_jtag_write_bytes(out, len, 0);
+    mu_idx = 0;
+}
+
 void slowrf_set_debug(bool enable) {
     slowrf_debug = enable;
 }
