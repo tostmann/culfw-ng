@@ -95,16 +95,19 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Device-Identität: Erweiterung des V (Version) Kommandos um die eindeutige Chip-ID (MAC) und die aktuelle IP-Adresse.
 *   **[DONE]** Funktionstest: Erfolgreiche Verifizierung der IP-Ausgabe (V-Kommando) und des Web-Interfaces auf 433/868 MHz Hardware.
 *   **[DONE]** Implementierung von Diagnose-Kommandos für Generic Decoder (`GL` zum Auflisten, `GR` zum Neuladen).
+*   **[DONE]** Validierung der Generic Decoder State Machine mit injizierten Test-Signalen (Nexa).
 
 ## 4. Neue Erkenntnisse / Probleme
 
-*   **Architektur-Korrektur: ESP32-C6 ist ein Single-Core Prozessor.** Die ursprüngliche Architektur basierte auf der fehlerhaften Annahme eines Dual-Core-Prozessors, wie er in anderen ESP32-Varianten üblich ist. Der ESP32-C6 verfügt jedoch nur über einen **einzigen RISC-V Kern (Core 0)**. Versuche, Tasks auf einem nicht-existenten Core 1 zu pinnen, führten zu einem `assert failed` Absturz beim Systemstart. Die gesamte RTOS-Architektur musste auf ein Single-Core-Modell umgestellt werden, bei dem die **Task-Priorisierung** das primäre Steuerungsinstrument zur Sicherstellung der Echtzeitfähigkeit ist.
+*   **Architektur-Korrektur (Single-Core):** Der ESP32-C6 ist ein **Single-Core Prozessor (RISC-V)**. Die RTOS-Architektur wurde auf ein Single-Core-Modell mit **Task-Priorisierung** als primäres Steuerungsinstrument umgestellt, um die Echtzeitfähigkeit zu gewährleisten.
+*   **Architektur-Verfeinerung (Initialisierung):** Die Initialisierungs-Sequenz wurde angepasst. `config_loader_load_protocols()` wird nun in `app_main` ausgeführt, *bevor* die `slowrf_task` startet. Die `generic_decoder_init()`-Funktion innerhalb des Tasks wurde modifiziert, sodass sie nur noch die Decoder-*Zustände* zurücksetzt, aber nicht die bereits geladenen Protokoll-Definitionen, um eine Race Condition zu vermeiden.
 
 ## 5. Nächste Schritte
 
-*   **Validierung:** Testen des Generic Decoders mit realen Funksignalen (Nexa, IT) und Optimierung der Timing-Parameter in `protocols.json`.
+*   **Validierung:** Testen des Generic Decoders mit **realen Funksignalen** von Fernbedienungen (Nexa, IT) und Optimierung der Timing-Parameter in `protocols.json`.
 *   **Stabilitätstests:** Durchführung von Langzeittests im hybriden Matter-Gateway-Betrieb mit aktiver WiFi-Verbindung und Web-Interface.
-*   **SIGNALduino Kompatibilität:** Verfeinerung der Ausgabe-Formate (`MU;`/`MS;`) im Generic Decoder.
+*   **SIGNALduino Kompatibilität:** Verfeinerung der Ausgabe-Formate (`MU;`/`MS;`) im Generic Decoder, um eine hohe Kompatibilität zu erreichen.
+*   **Protokoll-DB Erweiterung:** Hinzufügen weiterer OOK-Protokolle (z.B. Somfy RTS, Ambient Weather) zur `protocols.json`.
 
 ## 6. Hardware-Konfiguration (Pinout)
 
