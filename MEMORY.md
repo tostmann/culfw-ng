@@ -2,7 +2,7 @@
 
 ## 1. Projektziel
 
-Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CUL-Sticks. Die Firmware soll klassische SlowRF-Protokolle (wie FS20, Intertechno) über ein CC1101-Modul senden und empfangen. Langfristiges strategisches Ziel ist die Schaffung eines autonomen **SlowRF-to-Matter/Thread Gateways** mit On-Board-Dekodierung.
+Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CUL-Sticks. Die Firmware soll klassische SlowRF-Protokolle (wie FS20, Intertechno) über ein CC1101-Modul senden und empfangen. Langfristiges strategisches Ziel ist die Schaffung eines autonomen **SlowRF-to-Matter/Thread Gateways** mit On-Board-Dekodierung, das als kommerziell tragfähiges Standalone-Produkt fungiert und nicht von Host-Systemen wie FHEM abhängig ist.
 
 ### 1.1 Unterstützte Protokolle
 
@@ -31,12 +31,16 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
         *   `culfw_parser_task` (niedrigere Priorität, **Core 1**): Verarbeitet serielle Befehle, System-Management und ist für zukünftige Applikationslogik (z.B. Matter-Bridge) vorgesehen.
     *   **Thread-Sicherheit:** Alle Zugriffe auf den CC1101-Treiber sind durch einen **rekursiven Mutex (Semaphore)** geschützt. Dies verhindert Race Conditions und Datenkorruption, wenn mehrere Tasks (z.B. RF-Task und Parser-Task) auf den SPI-Bus zugreifen und erlaubt atomare, verschachtelte Operationen ohne Deadlocks.
     *   **Multi-Protokoll-Gateway:** Die Firmware agiert als "Staubsauger" für alle unterstützten OOK-Protokolle auf der aktiven Frequenz. Alle Decoder laufen parallel.
-*   **Zukünftige Architektur: On-Board Intelligence**
+*   **Zukünftige Architektur: On-Board Intelligence & Matter**
     *   **Dateisystem:** Integration eines **SPIFFS-Dateisystems** zur Speicherung einer flexiblen Protokoll-Datenbank (`protocols.json`).
     *   **Table-Driven Decoding Engine:** Anstelle von fest einkompilierten Decodern wird eine generische Engine die Pulsfolgen mit den in `protocols.json` definierten Mustern abgleichen. Dies ermöglicht das Hinzufügen neuer Sensoren ohne Firmware-Update und ist die **Voraussetzung für die Matter-Integration**.
+    *   **Matter-Architektur:** Der Stick wird als **Matter Aggregator (Bridge)** implementiert. Nur das Gateway wird einmalig gepaired. Erkannte SlowRF-Geräte werden als dynamische **Endpoints** (z.B. Temperatursensor, Schalter) im Matter-Netzwerk on-the-fly angelegt.
 *   **Bivalenter Betriebsmodus (Hybride Intelligenz):** Die Firmware wird umschaltbar gestaltet, um die Stärken von CUL und SIGNALduino zu vereinen.
     *   **CUL-Modus (`X21`):** 100%ige Kompatibilität zum etablierten CUL-Protokoll für maximale Stabilität mit bestehenden Systemen (z.B. FHEM `00_CUL.pm`).
     *   **SIGNALduino-Modus (`X25`):** Vollständige Emulation eines SIGNALduino. In diesem Modus gibt die Firmware Rohdaten (`MU;...`, `MS;...`) aus, um die riesige Sensor-Datenbank des FHEM-SIGNALduino-Projekts freizuschalten.
+*   **Intellectual Property (IP) / Kopierschutz:**
+    *   **Kommerzieller Schutz:** Die Bindung an den **Matter-Standard** erfordert ein offizielles **Device Attestation Certificate (DAC)**. Clones ohne dieses Zertifikat werden von Systemen wie Apple/Google Home als "nicht verifiziert" markiert, was sie für den Massenmarkt unbrauchbar macht.
+    *   **Technischer Schutz:** Nutzung der ESP32-C6 Hardware-Features wie **Flash Encryption** (verschlüsselt die Firmware an den individuellen Chip) und **Secure Boot** (erlaubt nur vom Hersteller signierte Firmware-Updates).
 *   **Frequenzerkennung und -management:**
     *   **Hardware-Default:** Die Modulfrequenz (433/868 MHz) wird initial über einen GPIO-Pin (`GPIO_433MARKER`) erkannt.
     *   **Software-Override:** Ein Benutzer kann die Frequenz zur Laufzeit per Kommando (`f433` oder `f868`) umschalten. Diese Einstellung wird **permanent im NVS gespeichert** und überschreibt die Hardware-Erkennung.
@@ -64,22 +68,22 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Remote-Diagnose-Befehle (`R`, `W`, `X99`, `m`) implementiert.
 *   **[DONE]** Periodischer "CUL-TICK" als Heartbeat implementiert.
 *   **[DONE]** Laufzeit-Frequenzumschaltung (`f433`/`f868`) implementiert.
-*   **[DONE]** RTOS-Architektur gehärtet (Core-Pinning, Task-Priorisierung, SPI-Mutex).
+*   **[DONE]** RTOS-Architektur gehärtet (Core-Pinning, Task-Priorisierung, rekursiver SPI-Mutex).
 *   **[DONE]** End-to-End Validierung aller implementierten Protokolle.
 *   **[DONE]** Benutzer-Dokumentation (`COMMANDS.md`) erstellt.
 *   **[DONE]** Release Management: Finaler Code-Stand als **Release v1.0.1** auf GitHub getaggt.
 *   **[DONE]** Partitionsschema für Dateisystem (SPIFFS) erweitert.
 *   **[DONE]** Build-System um Upload einer Filesystem-Partition (`data/`) erweitert.
+*   **[DONE]** Chip-Unique-ID (MAC) Auslesung als Basis für Kopierschutz implementiert.
 *   **[IN PROGRESS]** Entwicklung einer generischen, tabellengesteuerten Decoding-Engine.
 *   **[TODO]** Implementierung des SPIFFS-Treibers und des JSON-Parsers in der Firmware.
 *   **[TODO]** Implementierung des bivalenten Betriebsmodus (CUL vs. SIGNALduino).
 
 ## 4. Neue Erkenntnisse / Probleme
 
-*   **Strategische Neuausrichtung:** Die reine CUL-Emulation ist nicht ausreichend. Die Überlegenheit der ESP32-C6-Plattform liegt in der Fähigkeit zur **On-Board-Dekodierung** und der Integration in moderne IoT-Ökosysteme (Matter/Thread). Der Stick muss zum autonomen Gateway werden.
+*   **Strategische Neuausrichtung:** Die reine CUL-Emulation ist nicht ausreichend. Die Überlegenheit der ESP32-C6-Plattform liegt in der Fähigkeit zur **On-Board-Dekodierung** und der Integration in moderne IoT-Ökosysteme (Matter/Thread). Der Stick muss zum autonomen, kommerziell schützbaren Gateway werden.
 *   **Hybride Intelligenz als Erfolgsfaktor:** Die Firmware wird bivalent ausgelegt. Sie vereint die Stabilität des etablierten CUL-Protokolls (`X21`-Modus) mit der Flexibilität des SIGNALduino-Rohdatenformats (`X25`-Modus). Dies ermöglicht dem Benutzer die Wahl des optimalen Modus für seine Anwendung.
 *   **Voraussetzung für Matter:** Die **On-Board-Dekodierung** (gesteuert durch eine JSON-Datenbank im Dateisystem) ist die zwingende Voraussetzung für eine spätere Matter-Bridge-Funktionalität. Nur wenn der Stick die Semantik der Daten versteht (z.B. "Temperatur: 21.5°C"), kann er diese als standardisierten Matter-Endpunkt bereitstellen.
-*   **Multi-Protokoll-Gateway-Architektur bestätigt:** Die parallele Ausführung aller Protokoll-Decoder ermöglicht den simultanen Empfang verschiedener Protokolle auf demselben Frequenzband.
 *   **RTOS-Härtung:** Die initiale Implementierung mit einem einfachen Mutex barg die Gefahr von Deadlocks bei verschachtelten Funktionsaufrufen im CC1101-Treiber. Die Umstellung auf einen **rekursiven Mutex** hat dieses Problem behoben und die Stabilität der Treiber-Interaktionen unter Last erhöht.
 *   **Test-Methodik bestätigt: Sensor-Emulation:** Die implementierte TX-Funktionalität erlaubt es, einen zweiten CULFW-NG Stick als vollwertigen Sensor/Aktor-Emulator zu verwenden. Dies ermöglicht umfassende End-to-End-Tests der gesamten Empfangs- und Dekodierungs-Pipeline ohne die Notwendigkeit physischer Test-Hardware.
 *   **Matter Test-Strategie definiert:** Die Validierung der zukünftigen Matter-Integration wird nicht primär über komplexe Systeme wie HASS erfolgen, sondern über das offizielle CLI-Entwicklerwerkzeug **`chip-tool`**. Dies ermöglicht schlanke, skriptbare Tests für das Commissioning und die Attribut-Interaktion direkt auf dem Entwicklungssystem (z.B. Raspberry Pi via Docker), ohne GUI-Overhead.
