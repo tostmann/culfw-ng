@@ -35,9 +35,9 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
     *   **Dateisystem:** Integration eines **SPIFFS-Dateisystems** zur Speicherung einer flexiblen Protokoll-Datenbank (`protocols.json`).
     *   **Table-Driven Decoding Engine:** Anstelle von fest einkompilierten Decodern wird eine generische Engine die Pulsfolgen mit den in `protocols.json` definierten Mustern abgleichen.
     *   **Matter-Architektur:** Der Stick wird als **Matter Aggregator (Bridge)** implementiert. Nur das Gateway wird einmalig gepaired. Erkannte SlowRF-Geräte werden als dynamische **Endpoints** (z.B. Temperatursensor, Schalter) im Matter-Netzwerk on-the-fly angelegt und über eine **"Dynamic Endpoint Registry"** (`matter_bridge.c`) verwaltet. Die Anwendungslogik ist gegen eine **API-Interface-Schicht** (`matter_interface.h`) entwickelt, um die Kompilierbarkeit ohne das vollständige SDK zu gewährleisten (Simulations-Modus).
-*   **Bivalenter Betriebsmodus (Hybride Intelligenz):** Die Firmware wird umschaltbar gestaltet, um die Stärken von CUL und SIGNALduino zu vereinen.
+*   **Bivalenter Betriebsmodus (Hybride Intelligenz):** Die Firmware ist umschaltbar gestaltet, um die Stärken von CUL und SIGNALduino zu vereinen.
     *   **CUL-Modus (`X21`):** 100%ige Kompatibilität zum etablierten CUL-Protokoll.
-    *   **SIGNALduino-Modus (`X25`):** Vollständige Emulation eines SIGNALduino mit Rohdaten-Ausgabe (`MU;...`, `MS;...`).
+    *   **SIGNALduino-Modus (`X25`):** Vollständige Emulation eines SIGNALduino mit Rohdaten-Ausgabe (`MU;...` für unbekannte, `MS;...` für bekannte Protokolle). Die Ausgabe erfolgt über eine zentrale `slowrf_output_packet`-Funktion.
 *   **Intellectual Property (IP) / Kopierschutz (3-Säulen-Strategie):**
     *   **1. Kommerzieller Schutz ("Matter-Schild"):** Die Bindung an den Matter-Standard erfordert ein offizielles **Device Attestation Certificate (DAC)**. Clones ohne dieses Zertifikat werden von Systemen wie Apple/Google Home als "nicht verifiziert" markiert.
     *   **2. Technischer Schutz (Hardware-Verschlüsselung):** Nutzung der ESP32-C6 Hardware-Features wie **Flash Encryption** (bindet die Firmware an den individuellen Chip) und **Secure Boot V2** (erlaubt nur vom Hersteller signierte Firmware-Updates).
@@ -89,15 +89,18 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 4. Neue Erkenntnisse / Probleme
 
-*   **Build-System gehärtet:** Ein hartnäckiges Build-Problem mit der `esp_hid`-Komponente, die eine nicht benötigte Bluetooth-Abhängigkeit (`nimble/ble.h`) erfordert, wurde final gelöst. Der Workaround besteht darin, eine **lokale Dummy-Komponente** (`components/esp_hid`) zu erstellen, die vom Build-System bevorzugt und anstelle der fehlerhaften Framework-Komponente verwendet wird. Dies stellt einen stabilen Build ohne Bluetooth sicher.
-*   **Decoder-Architektur optimiert:** Während der Implementierung der Bit-Matching-Logik wurde die interne Datenstruktur des `generic_decoder` fundamental verbessert. Anstelle von komplexen "Pulse Pairs" wird nun eine **flache Liste von Puls-Definitionen** (Dauer und Level) verwendet. Dieses Refactoring hat die State-Machine-Logik erheblich vereinfacht und robuster gemacht.
-*   **Robuste Konfigurations-Engine:** Die SPIFFS-Ladelogik in `config_loader.c` ist mit einem **Fallback-Mechanismus** ausgestattet. Falls `protocols.json` nicht auf dem Dateisystem gefunden wird, wird ein hartcodierter Default-JSON-String geladen. Dies gewährleistet die grundlegende Funktionsfähigkeit der Firmware auch ohne ein geflashtes SPIFFS-Image.
-*   **JSON-Protokoll-Format verfeinert:** Das Format für `protocols.json` wurde optimiert. Es nutzt nun ein zentrales `timing`-Objekt mit Basis-Pulsbreiten. Die `definitions` für `bit0`, `bit1` und `sync` verwenden **Multiplikatoren** dieser Basis-Zeiten. Dieses Schema ist flexibel, kompakt und reduziert Redundanz.
+*   **Build-System gehärtet:** Ein hartnäckiges Build-Problem mit der `esp_hid`-Komponente (Bluetooth-Abhängigkeit) wurde durch eine lokale Dummy-Komponente gelöst. Ein weiteres Problem durch **doppelte Header-Dateien** (`src/slowrf.h` vs. `include/slowrf.h`) wurde durch eine saubere Trennung und Refactoring der Includes behoben, was den Build-Prozess weiter stabilisiert.
+*   **Decoder-Architektur optimiert:** Die interne Datenstruktur des `generic_decoder` wurde von "Pulse Pairs" auf eine **flache Liste von Puls-Definitionen** umgestellt. Dies hat die State-Machine-Logik erheblich vereinfacht.
+*   **Robuste Konfigurations-Engine:** Die SPIFFS-Ladelogik in `config_loader.c` ist mit einem **Fallback-Mechanismus** ausgestattet. Falls `protocols.json` fehlt, wird ein hartcodierter Default-JSON-String geladen, was die Grundfunktion sicherstellt.
+*   **JSON-Protokoll-Format verfeinert:** Das Format für `protocols.json` nutzt nun ein zentrales `timing`-Objekt, dessen Werte über **Multiplikatoren** in den `definitions` wiederverwendet werden. Dies ist flexibel, kompakt und reduziert Redundanz.
+*   **Vollautonome Matter-Bridge:** Die Integration ist abgeschlossen. Alle Decoder (fest und generisch) melden erkannte Geräte und deren Zustände automatisch an das `matter_bridge`-Modul. Dieses registriert neue Geräte on-the-fly als Matter-Endpoints und aktualisiert deren Status, wodurch der Stick als autonomes Gateway fungiert.
+*   **SIGNALduino-Emulation implementiert:** Ein **Puls-Akkumulator (`mu_buffer`)** sammelt Pulse zwischen langen Synchronisations-Pausen. Falls kein spezifischer Decoder ein Paket erkennt, werden die Rohdaten im `MU;...`-Format (Message Unknown) ausgegeben. Dekodierte Pakete werden im `MS;...`-Format gesendet.
 
 ## 5. Nächste Schritte
 
-*   **Bivalenter Modus:** Implementierung der SIGNALduino-kompatiblen Ausgabe-Logik in `slowrf.c` und `generic_decoder.c`. Wenn der Modus `X25` aktiv ist, müssen dekodierte Pakete im `MU;...`- oder `MC;...`-Format ausgegeben werden.
-*   **Matter-Integration:** Weiterführung der Matter-Bridge-Logik basierend auf den dekodierten Events des generischen und der festen Decoder.
+*   **Validierung:** Durchführung von Tests zur Verifizierung der `MU;`-Rohdaten-Timings im Vergleich zu einem originalen SIGNALduino, um die Kompatibilität mit Host-Systemen sicherzustellen.
+*   **Datenbank-Erweiterung:** Ergänzung der `protocols.json` um weitere, komplexere OOK-Protokolle, um die Flexibilität der generischen Decoding-Engine zu demonstrieren.
+*   **Stabilitätstests:** Durchführung von Langzeittests im hybriden Matter-Gateway-Betrieb, um die Zuverlässigkeit des RTOS, der Speicherverwaltung und der parallelen Signalverarbeitung unter Last zu prüfen.
 
 ## 6. Hardware-Konfiguration (Pinout)
 
