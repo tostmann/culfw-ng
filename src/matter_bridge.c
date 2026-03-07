@@ -56,3 +56,12 @@ void matter_bridge_report_event(const char* id, matter_device_type_t type, float
         matter_interface_update_attribute(device_table[idx].matter_ep_id, value);
     }
 }
+
+void matter_bridge_list_endpoints() {
+    char out[128];
+    for (int i = 0; i < device_count; i++) {
+        int len = snprintf(out, sizeof(out), "EP %d: ID=%s Type=%d\r\n", 
+                           device_table[i].matter_ep_id, device_table[i].rf_id, device_table[i].type);
+        usb_serial_jtag_write_bytes(out, len, 0);
+    }
+}
