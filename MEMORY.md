@@ -12,7 +12,7 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 | **Intertechno (V1)** | Ja | Ja | `is...` | 433.92 MHz |
 | **Intertechno (V3)** | Ja | Ja | `is...` (32bit) | 433.92 MHz |
 | **HMS / EM1000** | Ja | Ja | `H...` | 868.30 MHz |
-| **S300TH / ESA** | Ja | Nein | `S...` | 868.30 MHz |
+| **S300TH / ESA** | Ja | Nein | `K...` | 868.30 MHz |
 | **FHT80b** | Ja | Ja | `T...` | 868.30 MHz |
 | **Oregon Scientific** | Ja | Ja | `To...` (Test) | 433.92 MHz |
 | **Generische Sensoren** | Ja | Nein | `r...` | 433/868 MHz |
@@ -112,8 +112,8 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 
 ## 5. Nächste Schritte
 
-*   **FHEM-Integration:** Validierung der Firmware mit einem Host-System (FHEM) zur Sicherstellung der Kompatibilität und Langzeitstabilität.
-*   **SIGNALduino-Kompatibilität:** Prüfung der Kompatibilität mit dem FHEM **SIGNALduino**-Modul. Dies würde die Unterstützung hunderter zusätzlicher Sensoren ermöglichen. Ggf. Implementierung eines kompatiblen Raw-Message-Formats (z.B. `MU;...`).
+*   **SIGNALduino-Emulation (Strategische Priorität):** Implementierung eines Hybrid-Modus (z.B. über Kommando `X25`), der unbekannte Signale im **SIGNALduino-Raw-Format (`MU;...`)** ausgibt. Ziel ist die volle Kompatibilität mit dem FHEM-Modul `SIGNALduino`, um dessen umfangreiche Sensor-Datenbank direkt zu nutzen und die Flexibilität des CUL32-C6 signifikant zu erhöhen.
+*   **FHEM-Integration:** Validierung der Firmware mit einem Host-System (FHEM) zur Sicherstellung der Kompatibilität und Langzeitstabilität – sowohl im CUL- als auch im neuen SIGNALduino-Modus.
 *   **RSSI-Kalibrierung:** Abgleich der ausgegebenen RSSI-Hex-Werte mit realen dBm-Werten für eine genauere Signalstärken-Anzeige.
 *   **Langzeittests:** Überwachung der Stabilität und des Speicherverbrauchs über mehrere Tage im produktiven Einsatz.
 *   **Roadmap-Planung:** Evaluierung der Integration in moderne IoT-Ökosysteme (z.B. als Matter/Thread-Bridge).
