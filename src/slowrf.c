@@ -81,6 +81,10 @@ uint8_t slowrf_get_mode() {
     return slowrf_mode;
 }
 
+void slowrf_mark_matched() {
+    protocol_matched = true;
+}
+
 static void IRAM_ATTR gpio_isr_handler(void* arg) {
     int64_t current_time = esp_timer_get_time();
     int diff = (int)(current_time - last_time);
