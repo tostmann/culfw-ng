@@ -423,6 +423,24 @@ void slowrf_task(void *pvParameters) {
                     hms_dec.pulse_state = 0;
                 } else { if (hms_dec.nibble_cnt > 0) reset_sensor(&hms_dec); else hms_dec.pulse_state = 0; }
             }
+
+            // --- Generic RTL_433 Sensor Style (OOK PWM) ---
+            // Typical: Long High + Short Low = 1, Short High + Long Low = 0
+            static uint16_t rtl_last_high = 0;
+            if (level == 0) { // We just finished a HIGH pulse
+                rtl_last_high = pulse;
+            } else { // We just finished a LOW pulse
+                if (rtl_last_high > 100 && pulse > 100) {
+                    int bit = -1;
+                    if (rtl_last_high > 600 && pulse < 600) bit = 1;
+                    else if (rtl_last_high < 600 && pulse > 600) bit = 0;
+                    
+                    if (bit != -1) {
+                        rtl_dec.bit_buffer = (rtl_dec.bit_buffer << 1) | bit;
+                        if (rtl_dec.bit_cnt < 32) rtl_dec.bit_cnt++;
+                    }
+                }
+            }
         }
     }
 }
