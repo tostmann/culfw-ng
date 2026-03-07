@@ -353,6 +353,32 @@ void slowrf_task(void *pvParameters) {
                 }
             }
 
+            // --- FHT DECODING ---
+            int fht_bit = -1;
+            if (pulse > 350 && pulse < 850) {
+                if (level == 0) { // FHT bits are characterized by the space after the pulse
+                    if (pulse > 550) fht_bit = 0; // approx 600us
+                    else fht_bit = 1;            // approx 400us
+                }
+            }
+
+            if (fht_bit != -1) {
+                if (!fht_dec.sync_found) {
+                    fht_dec.current_bits = (fht_dec.current_bits << 1) | fht_bit;
+                    if ((fht_dec.current_bits & 0xFFF) == 0x0C) { // FHT sync pattern
+                        fht_dec.sync_found = true;
+                        fht_dec.bit_cnt = 0; fht_dec.byte_cnt = 0; fht_dec.current_bits = 0;
+                    }
+                } else {
+                    fht_dec.current_bits = (fht_dec.current_bits << 1) | fht_bit;
+                    if (++fht_dec.bit_cnt == 9) {
+                        fht_dec.data[fht_dec.byte_cnt++] = (uint8_t)(fht_dec.current_bits >> 1);
+                        fht_dec.bit_cnt = 0; fht_dec.current_bits = 0;
+                        if (fht_dec.byte_cnt >= 16) fht_dec.sync_found = false;
+                    }
+                }
+            }
+
             // --- HMS / S300TH ---
             if (!s300_dec.sync_found && pulse > 950 && pulse < 1350) { reset_sensor(&s300_dec); s300_dec.sync_found = true; }
             else if (s300_dec.sync_found) {
