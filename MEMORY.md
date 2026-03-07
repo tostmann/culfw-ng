@@ -93,6 +93,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** **Behebung des Flash-Partition-Konflikts (Overlap-Fehler bei 0x10000).**
 *   **[DONE]** **Anpassung der RTOS-Architektur an Single-Core-Betrieb (ESP32-C6).**
 *   **[DONE]** **Device-Identität: Erweiterung des V (Version) Kommandos um die eindeutige Chip-ID (MAC) und die aktuelle IP-Adresse.**
+*   **[DONE]** **Funktionstest: Erfolgreiche Verifizierung der IP-Ausgabe (V-Kommando) und des Web-Interfaces auf 433/868 MHz Hardware.**
 
 ## 4. Neue Erkenntnisse / Probleme
 
@@ -100,7 +101,6 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **Funktionstest:** Verifizierung der IP-Adressen-Ausgabe über das `V`-Kommando und Test des Web-Interfaces auf beiden Hardware-Varianten (433/868 MHz).
 *   **Validierung:** Durchführung von Tests zur Verifizierung der `MU;`-Rohdaten-Timings im Vergleich zu einem originalen SIGNALduino.
 *   **Stabilitätstests:** Durchführung von Langzeittests im hybriden Matter-Gateway-Betrieb mit aktiver WiFi-Verbindung und Web-Interface.
 
