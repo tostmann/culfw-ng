@@ -233,68 +233,48 @@ void slowrf_task(void *pvParameters) {
                 if (slowrf_reporting) {
                     uint8_t rssi = cc1101_read_rssi();
 
-                    if (slowrf_mode == SLOWRF_MODE_CUL) {
-                        if (fs_dec.byte_cnt >= 4) {
-                            char out[64];
-                            char id[16];
-                            snprintf(id, sizeof(id), "F%02X%02X%02X", fs_dec.data[0], fs_dec.data[1], fs_dec.data[2]);
-                            int len = snprintf(out, sizeof(out), "F");
-                            for (int i = 0; i < fs_dec.byte_cnt; i++) len += snprintf(out + len, sizeof(out) - len, "%02X", fs_dec.data[i]);
-                            len += snprintf(out + len, sizeof(out) - len, "%02X\r\n", rssi);
-                            usb_serial_jtag_write_bytes(out, len, 0);
-                            matter_bridge_report_event(id, DEVICE_TYPE_SWITCH, (fs_dec.data[3] & 0x1) ? 1.0 : 0.0);
+                    if (fs_dec.byte_cnt >= 4) {
+                        char d[32]; char id[16];
+                        snprintf(id, sizeof(id), "F%02X%02X%02X", fs_dec.data[0], fs_dec.data[1], fs_dec.data[2]);
+                        int dlen = 0;
+                        for (int i = 0; i < fs_dec.byte_cnt; i++) dlen += snprintf(d + dlen, sizeof(d) - dlen, "%02X", fs_dec.data[i]);
+                        slowrf_output_packet("F", d, rssi);
+                        matter_bridge_report_event(id, DEVICE_TYPE_SWITCH, (fs_dec.data[3] & 0x1) ? 1.0 : 0.0);
+                    }
+                    if (it1_dec.pos == 12 && !it3_last_sync) {
+                        slowrf_output_packet("is", it1_dec.s, rssi);
+                    }
+                    if (it3_dec.bit_pos == 32) {
+                        slowrf_output_packet("is", it3_dec.s, rssi);
+                    }
+                    if (os_dec.nibble_cnt >= 16) {
+                        char d[64]; int dlen = 0;
+                        for (int i=0; i < os_dec.nibble_cnt; i++) {
+                            int idx = i / 2;
+                            uint8_t n = (i % 2 == 0) ? (os_dec.data[idx] & 0xF) : (os_dec.data[idx] >> 4);
+                            dlen += snprintf(d + dlen, sizeof(d) - dlen, "%X", n);
                         }
-                        if (it1_dec.pos == 12 && !it3_last_sync) {
-                            char out[64];
-                            int len = snprintf(out, sizeof(out), "is%s%02X\r\n", it1_dec.s, rssi);
-                            usb_serial_jtag_write_bytes(out, len, 0);
-                        }
-                        if (it3_dec.bit_pos == 32) {
-                            char out[128];
-                            int len = snprintf(out, sizeof(out), "is%s%02X\r\n", it3_dec.s, rssi);
-                            usb_serial_jtag_write_bytes(out, len, 0);
-                        }
-                        if (os_dec.nibble_cnt >= 16) {
-                            char out[128];
-                            int len = snprintf(out, sizeof(out), "P");
-                            for (int i=0; i < os_dec.nibble_cnt; i++) {
-                                int idx = i / 2;
-                                uint8_t n = (i % 2 == 0) ? (os_dec.data[idx] & 0xF) : (os_dec.data[idx] >> 4);
-                                len += snprintf(out + len, sizeof(out) - len, "%X", n);
-                            }
-                            len += snprintf(out + len, sizeof(out) - len, "%02X\r\n", rssi);
-                            usb_serial_jtag_write_bytes(out, len, 0);
-                        }
-                        if (hms_dec.nibble_cnt >= 19) {
-                            char out[64];
-                            int len = snprintf(out, sizeof(out), "H");
-                            for(int i=0; i<hms_dec.nibble_cnt; i++) len += snprintf(out+len, sizeof(out)-len, "%X", hms_dec.nibbles[i]);
-                            len += snprintf(out+len, sizeof(out)-len, "%02X\r\n", rssi);
-                            usb_serial_jtag_write_bytes(out, len, 0);
-                        }
-                        if (s300_dec.nibble_cnt >= 9) {
-                            char out[64];
-                            int len = snprintf(out, sizeof(out), "K");
-                            for(int i=0; i<s300_dec.nibble_cnt; i++) len += snprintf(out+len, sizeof(out)-len, "%X", s300_dec.nibbles[i]);
-                            len += snprintf(out+len, sizeof(out)-len, "%02X\r\n", rssi);
-                            usb_serial_jtag_write_bytes(out, len, 0);
-                        }
-                        if (fht_dec.byte_cnt >= 5) {
-                            char out[64];
-                            int len = snprintf(out, sizeof(out), "T");
-                            for (int i = 0; i < fht_dec.byte_cnt; i++) len += snprintf(out + len, sizeof(out) - len, "%02X", fht_dec.data[i]);
-                            len += snprintf(out + len, sizeof(out) - len, "%02X\r\n", rssi);
-                            usb_serial_jtag_write_bytes(out, len, 0);
-                        }
-                        if (rtl_dec.bit_cnt >= 24) {
-                            char out[64];
-                            int len = snprintf(out, sizeof(out), "r%08X%02X\r\n", (unsigned int)rtl_dec.bit_buffer, rssi);
-                            usb_serial_jtag_write_bytes(out, len, 0);
-                        }
-                    } else if (slowrf_mode == SLOWRF_MODE_SIGNALDUINO) {
-                        // TODO: Implement MU; output for SignalDuino if needed.
-                        // For now, if SignalDuino mode is active, we rely on the generic_decoder 
-                        // or we can print raw pulses. We do a simple alive ping.
+                        slowrf_output_packet("P", d, rssi);
+                    }
+                    if (hms_dec.nibble_cnt >= 19) {
+                        char d[32]; int dlen = 0;
+                        for(int i=0; i<hms_dec.nibble_cnt; i++) dlen += snprintf(d+dlen, sizeof(d)-dlen, "%X", hms_dec.nibbles[i]);
+                        slowrf_output_packet("H", d, rssi);
+                    }
+                    if (s300_dec.nibble_cnt >= 9) {
+                        char d[32]; int dlen = 0;
+                        for(int i=0; i<s300_dec.nibble_cnt; i++) dlen += snprintf(d+dlen, sizeof(d)-dlen, "%X", s300_dec.nibbles[i]);
+                        slowrf_output_packet("K", d, rssi);
+                    }
+                    if (fht_dec.byte_cnt >= 5) {
+                        char d[32]; int dlen = 0;
+                        for (int i = 0; i < fht_dec.byte_cnt; i++) dlen += snprintf(d + dlen, sizeof(d) - dlen, "%02X", fht_dec.data[i]);
+                        slowrf_output_packet("T", d, rssi);
+                    }
+                    if (rtl_dec.bit_cnt >= 24) {
+                        char d[32];
+                        snprintf(d, sizeof(d), "%08X", (unsigned int)rtl_dec.bit_buffer);
+                        slowrf_output_packet("r", d, rssi);
                     }
                 }
                 reset_fs20(&fs_dec);
