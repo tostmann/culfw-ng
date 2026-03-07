@@ -201,10 +201,13 @@ void slowrf_task(void *pvParameters) {
 
                     if (fs_dec.byte_cnt >= 4) {
                         char out[64];
+                        char id[16];
+                        snprintf(id, sizeof(id), "F%02X%02X%02X", fs_dec.data[0], fs_dec.data[1], fs_dec.data[2]);
                         int len = snprintf(out, sizeof(out), "F");
                         for (int i = 0; i < fs_dec.byte_cnt; i++) len += snprintf(out + len, sizeof(out) - len, "%02X", fs_dec.data[i]);
                         len += snprintf(out + len, sizeof(out) - len, "%02X\r\n", rssi);
                         usb_serial_jtag_write_bytes(out, len, 0);
+                        matter_bridge_report_event(id, DEVICE_TYPE_SWITCH, (fs_dec.data[3] & 0x1) ? 1.0 : 0.0);
                     }
                     if (it1_dec.pos == 12 && !it3_last_sync) {
                         char out[64];
