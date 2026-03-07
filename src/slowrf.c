@@ -58,7 +58,7 @@ typedef struct {
 } fs20_dec_t;
 
 typedef struct {
-    char s[13];
+    char s[17];
     int pos;
     int pulse_cnt;
     uint16_t pulse_buf[4];
