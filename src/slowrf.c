@@ -36,8 +36,8 @@ static void IRAM_ATTR gpio_isr_handler(void* arg) {
     
     int level = gpio_get_level(GPIO_GDO0);
 
-    // Carrier Sense check (disabled for testing)
-    // if (gpio_get_level(GPIO_GDO2) == 0) return;
+    // Carrier Sense check (High when RSSI > Threshold)
+    if (gpio_get_level(GPIO_GDO2) == 0) return;
 
     if (diff > 100 && diff < 20000) {
         pulse_t p = { .duration = (uint16_t)diff, .level = (uint8_t)level };
