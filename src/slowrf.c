@@ -244,6 +244,12 @@ void slowrf_task(void *pvParameters) {
 
             uint8_t level = p_in.level;
 
+            // Update MU buffer
+            if (mu_idx < MU_BUFFER_SIZE) {
+                // SignalDuino uses positive for high, negative for low
+                mu_buffer[mu_idx++] = (pulse_level ? (int16_t)pulse : -(int16_t)pulse);
+            }
+
             if (slowrf_debug) {
                 char d[32];
                 int dlen = snprintf(d, sizeof(d), "P:%u L:%u\r\n", pulse, level);
@@ -252,6 +258,7 @@ void slowrf_task(void *pvParameters) {
 
             // --- SYNC / END DETECTION ---
             if (pulse > SLOWRF_SYNC_MIN) {
+                flush_mu_buffer();
                 if (slowrf_reporting) {
                     uint8_t rssi = cc1101_read_rssi();
 
