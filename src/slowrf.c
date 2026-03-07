@@ -23,8 +23,10 @@ static int64_t last_time = 0;
 static bool slowrf_debug = false;
 static bool slowrf_reporting = true; // Default ON
 static uint8_t slowrf_mode = SLOWRF_MODE_CUL;
+static bool protocol_matched = false;
 
 static void slowrf_output_packet(const char* prefix, const char* data, uint8_t rssi) {
+    protocol_matched = true;
     char out[128];
     int len = 0;
     if (slowrf_mode == SLOWRF_MODE_SIGNALDUINO) {
