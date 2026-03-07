@@ -329,3 +329,12 @@ void generic_decoder_process_pulse(uint16_t duration, uint8_t level) {
         }
     }
 }
+
+void generic_decoder_list_protocols() {
+    char out[128];
+    for (int i = 0; i < protocol_count; i++) {
+        int len = snprintf(out, sizeof(out), "GP %d: Name=%s Freq=%d Bits=%d-%d\r\n", 
+                           i, protocols[i].name, protocols[i].freq, protocols[i].min_bits, protocols[i].max_bits);
+        usb_serial_jtag_write_bytes(out, len, 0);
+    }
+}
