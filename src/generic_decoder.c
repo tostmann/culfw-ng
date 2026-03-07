@@ -290,9 +290,24 @@ void generic_decoder_process_pulse(uint16_t duration, uint8_t level) {
                 // Check Packet Complete
                 if (s->bit_cnt >= p->max_bits) {
                     // Success!
-                    char msg[64];
-                    int len = snprintf(msg, sizeof(msg), "GEN:%s:%llX\r\n", p->name, s->bit_buffer);
-                    usb_serial_jtag_write_bytes(msg, len, 0);
+                    uint8_t mode = slowrf_get_mode();
+                    uint8_t rssi = cc1101_read_rssi();
+                    char msg[128];
+                    int len = 0;
+
+                    if (mode == SLOWRF_MODE_SIGNALDUINO) {
+                        // MS;P0=short;P1=long;D=bits;CP=0;SP=sync;
+                        // Simplification: just send the HEX as data
+                        len = snprintf(msg, sizeof(msg), "MS;P0=%d;P1=%d;D=%llX;RSS=%d;\r\n", 
+                                       p->short_us, p->long_us, s->bit_buffer, rssi);
+                    } else {
+                        // CUL mode - we use our generic prefix
+                        len = snprintf(msg, sizeof(msg), "G%s%llX%02X\r\n", p->name, s->bit_buffer, rssi);
+                    }
+
+                    if (len > 0) {
+                        usb_serial_jtag_write_bytes(msg, len, 0);
+                    }
                     ESP_LOGI(TAG, "DECODED %s: %llX", p->name, s->bit_buffer);
                     
                     reset_state(s);
