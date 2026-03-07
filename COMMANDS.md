@@ -41,6 +41,12 @@ Wenn `X21` aktiv ist, werden empfangene Pakete wie folgt ausgegeben:
 *   **FHT:** `T<HEX><RSSI>`
 *   **Generic:** `r<HEX><RSSI>` (Für unbekannte PWM/OOK Sensoren)
 
+## Roadmap & Ausblick
+
+*   **Thread/Matter Gateway:** Geplante Erweiterung zur Nutzung der empfangenen SlowRF-Daten in einem modernen Smart-Home-Standard (Matter) über Thread.
+*   **Web-Interface:** ESP32-eigenes Web-Interface zur Konfiguration und Signal-Analyse.
+*   **Weitere Protokolle:** Implementierung von Hoermann, Somfy und anderen Sub-GHz Protokollen.
+
 ## Hardware-Pins (ESP32-C6)
 
 *   **GDO0:** GPIO 2 (Interrupt/Data)
