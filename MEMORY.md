@@ -24,7 +24,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **Kommunikation:** Nativer USB-JTAG/CDC Treiber (`usb_serial_jtag`) für eine nicht-blockierende serielle Schnittstelle.
 *   **RF-Modul:** CC1101 angebunden via SPI.
 *   **SPI-Kommunikation:** Die SPI-Geschwindigkeit wurde zur Erhöhung der Stabilität auf 500 kHz festgelegt. Für das Auslesen der Statusregister wird der `READ_BURST`-Modus (`0xC0`) verwendet.
-*   **Persistenz:** Wichtige Einstellungen (z.B. der Reporting-Modus `X21`, die RF-Frequenz) werden im **Non-Volatile Storage (NVS)** des ESP32 gespeichert und bei Neustart automatisch wiederhergestellt.
+*   **Persistenz:** Wichtige Einstellungen (z.B. der Betriebsmodus `X21`/`X25`, die RF-Frequenz) werden im **Non-Volatile Storage (NVS)** des ESP32 gespeichert und bei Neustart automatisch wiederhergestellt.
 *   **Software-Architektur: Gehärtetes Multi-Core FreeRTOS**
     *   **Strikte Task-Trennung mit Core-Affinität:**
         *   `slowrf_task` (hohe Priorität, **Core 0**): Exklusive Verarbeitung der Echtzeit-Funk-Signale (RX/TX). Das Pinning auf Core 0 minimiert Jitter und schützt die Signalverarbeitung vor Interferenzen durch WiFi/Matter-Stacks.
@@ -83,14 +83,14 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Implementierung des SPIFFS-Treibers (`config_loader.c`) zum Laden von `protocols.json`.
 *   **[DONE]** Integration des Generic Decoders in den `slowrf_task` (Parallelbetrieb mit festen Decodern).
 *   **[DONE]** Implementierung der vollständigen Bit-Matching-Logik in `generic_decoder.c` (Sync- und Bit-Reading State Machine).
-*   **[IN PROGRESS]** Implementierung des bivalenten Betriebsmodus (CUL vs. SIGNALduino). Die Umschaltung per Kommando (`X21`/`X25`) ist implementiert.
+*   **[IN PROGRESS]** Implementierung des bivalenten Betriebsmodus (CUL vs. SIGNALduino). Die Umschaltung per Kommando (`X21`/`X25`) und die Persistierung im NVS sind implementiert.
 
 ## 4. Neue Erkenntnisse / Probleme
 
 *   **Build-System gehärtet:** Ein hartnäckiges Build-Problem mit der `esp_hid`-Komponente, die eine nicht benötigte Bluetooth-Abhängigkeit (`nimble/ble.h`) erfordert, wurde final gelöst. Der Workaround besteht darin, eine **lokale Dummy-Komponente** (`components/esp_hid`) zu erstellen, die vom Build-System bevorzugt und anstelle der fehlerhaften Framework-Komponente verwendet wird. Dies stellt einen stabilen Build ohne Bluetooth sicher.
 *   **Decoder-Architektur optimiert:** Während der Implementierung der Bit-Matching-Logik wurde die interne Datenstruktur des `generic_decoder` fundamental verbessert. Anstelle von komplexen "Pulse Pairs" wird nun eine **flache Liste von Puls-Definitionen** (Dauer und Level) verwendet. Dieses Refactoring hat die State-Machine-Logik erheblich vereinfacht und robuster gemacht.
 *   **Robuste Konfigurations-Engine:** Die SPIFFS-Ladelogik in `config_loader.c` ist mit einem **Fallback-Mechanismus** ausgestattet. Falls `protocols.json` nicht auf dem Dateisystem gefunden wird, wird ein hartcodierter Default-JSON-String geladen. Dies gewährleistet die grundlegende Funktionsfähigkeit der Firmware auch ohne ein geflashtes SPIFFS-Image.
-*   **JSON-Protokoll-Format:** Das Format für `protocols.json` wurde verfeinert. Es nutzt ein `timing`-Objekt mit Basis-Pulsbreiten und `definitions` für `bit0`, `bit1`, `sync`, die **Multiplikatoren** dieser Basis-Zeiten verwenden. Dieses Format ist flexibel und kompakt.
+*   **JSON-Protokoll-Format verfeinert:** Das Format für `protocols.json` wurde optimiert. Es nutzt nun ein zentrales `timing`-Objekt mit Basis-Pulsbreiten. Die `definitions` für `bit0`, `bit1` und `sync` verwenden **Multiplikatoren** dieser Basis-Zeiten. Dieses Schema ist flexibel, kompakt und reduziert Redundanz.
 
 ## 5. Nächste Schritte
 
