@@ -146,6 +146,8 @@ void slowrf_task(void *pvParameters) {
     reset_sensor(&s300_dec);
     reset_os(&os_dec);
 
+    bool it3_last_sync = false;
+
     while (1) {
         if (xQueueReceive(pulse_queue, &p_in, portMAX_DELAY)) {
             uint16_t pulse = p_in.duration;
@@ -171,7 +173,7 @@ void slowrf_task(void *pvParameters) {
                         usb_serial_jtag_write_bytes(out, len, 0);
                     }
                     if (is_433) {
-                        if (it1_dec.pos == 12) {
+                        if (it1_dec.pos == 12 && !it3_last_sync) {
                             char out[64];
                             int len = snprintf(out, sizeof(out), "is%s%02X\r\n", it1_dec.s, rssi);
                             usb_serial_jtag_write_bytes(out, len, 0);
@@ -181,6 +183,7 @@ void slowrf_task(void *pvParameters) {
                             int len = snprintf(out, sizeof(out), "is%s%02X\r\n", it3_dec.s, rssi);
                             usb_serial_jtag_write_bytes(out, len, 0);
                         }
+                        // ... (OS omitted for brevity, but I will include it)
                         if (os_dec.nibble_cnt >= 16) {
                             char out[128];
                             int len = snprintf(out, sizeof(out), "OS");
@@ -215,7 +218,13 @@ void slowrf_task(void *pvParameters) {
                 reset_sensor(&hms_dec);
                 reset_sensor(&s300_dec);
                 reset_os(&os_dec);
-                if (pulse > 8000 && pulse < 11000) it3_dec.sync_found = true;
+                
+                if (pulse > 8000 && pulse < 11000) {
+                    it3_dec.sync_found = true;
+                    it3_last_sync = true;
+                } else {
+                    it3_last_sync = false;
+                }
                 continue;
             }
 
