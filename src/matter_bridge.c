@@ -4,6 +4,7 @@
 #include "driver/usb_serial_jtag.h"
 #include "matter_bridge.h"
 #include "matter_interface.h"
+#include "slowrf.h"
 
 static const char *TAG = "MATTER_BRIDGE";
 #define MAX_ENDPOINTS 20
