@@ -6,9 +6,10 @@ Diese Firmware ist culfw-kompatibel und erweitert um ESP32-spezifische Funktione
 
 | Befehl | Beschreibung | Beispiel |
 | :--- | :--- | :--- |
-| `V` | Ausgabe der Version, Hardware und Frequenz | `V 1.0.1 CUL32-C6 (433MHz)` |
+| `V` | Ausgabe der Version, Hardware, ID und Frequenz | `V 1.0.1 culfw-NG Build: 123 (...) CUL32-C6 ID:58E6C5... (F-Band: 433MHz)` |
 | `C` | CC1101 Diagnose (Part, Version, Marcstate) | `C35 = 0D, Part = 00, Ver = 14` |
 | `X21` | Aktiviert Reporting (FS20, IT, HMS, etc.) | `X21` |
+| `X25` | SIGNALduino-Emulationsmodus (MU;/MS;) | `X25` |
 | `X00` | Deaktiviert Reporting | `X00` |
 | `X99` | Debug-Modus: Ausgabe roher Puls-Timings (µs) | `X99` |
 | `f433` | Schaltet auf 433.92 MHz um (Permanent im NVS) | `f433` |
@@ -41,17 +42,20 @@ Wenn `X21` aktiv ist, werden empfangene Pakete wie folgt ausgegeben:
 *   **FHT:** `T<HEX><RSSI>`
 *   **Generic:** `r<HEX><RSSI>` (Für unbekannte PWM/OOK Sensoren)
 
-## Roadmap & Ausblick
+## Web-Interface & WiFi
 
-*   **Thread/Matter Gateway:** Geplante Erweiterung zur Nutzung der empfangenen SlowRF-Daten in einem modernen Smart-Home-Standard (Matter) über Thread.
-*   **Web-Interface:** ESP32-eigenes Web-Interface zur Konfiguration und Signal-Analyse.
-*   **Weitere Protokolle:** Implementierung von Hoermann, Somfy und anderen Sub-GHz Protokollen.
+Der Stick verbindet sich automatisch mit dem WLAN (**SSID: PalmBeach WiFi**).
+Über die zugewiesene IP-Adresse kann ein einfaches Web-Interface aufgerufen werden:
+
+*   **URL:** `http://<ip-adresse>/`
+*   **Inhalt:** Aktueller Status, Frequenz, Modus und die letzten 10 empfangenen Funk-Events.
 
 ## Matter & Thread Integration (Vorschau)
 
 | Befehl | Beschreibung | Beispiel |
 | :--- | :--- | :--- |
 | `MT` | Simuliert Matter-Events für Tests | `MT F123401` (Switch), `MT H1234T215` (Temp) |
+| `ML` | Listet registrierte Matter-Endpunkte auf | `ML` |
 
 Hinweis: Die echte Matter-Funktionalität erfordert das `esp-matter` SDK. Derzeit läuft die Firmware im **"Matter-Ready Stub Mode"**, der die Logik simuliert, bis das SDK in der Build-Umgebung verfügbar ist.
 

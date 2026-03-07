@@ -71,7 +71,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Laufzeit-Frequenzumschaltung (`f433`/`f868`) implementiert.
 *   **[DONE]** RTOS-Architektur gehärtet (Core-Pinning, Task-Priorisierung, rekursiver SPI-Mutex).
 *   **[DONE]** End-to-End Validierung aller implementierten Protokolle.
-*   **[DONE]** Benutzer-Dokumentation (`COMMANDS.md`) erstellt.
+*   **[DONE]** Benutzer-Dokumentation (`COMMANDS.md`) erstellt und aktualisiert.
 *   **[DONE]** Release Management: Finaler Code-Stand als **Release v1.0.1** auf GitHub getaggt.
 *   **[DONE]** Chip-Unique-ID (MAC) Auslesung als Basis für Kopierschutz implementiert.
 *   **[DONE]** Partitionsschema für Dateisystem (SPIFFS) und Matter-Unterstützung erweitert (`partitions.csv` mit 3MB App-Partition).
@@ -99,11 +99,11 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **JSON-Protokoll-Format verfeinert:** Das Format für `protocols.json` nutzt nun ein zentrales `timing`-Objekt, dessen Werte über **Multiplikatoren** in den `definitions` wiederverwendet werden. Dies ist flexibel, kompakt und reduziert Redundanz.
 *   **Vollautonome Matter-Bridge:** Die Integration ist abgeschlossen. Alle Decoder (fest und generisch) melden erkannte Geräte und deren Zustände automatisch an das `matter_bridge`-Modul. Dieses registriert neue Geräte on-the-fly als Matter-Endpoints und aktualisiert deren Status, wodurch der Stick als autonomes Gateway fungiert.
 *   **SIGNALduino-Emulation verfeinert:** Ein Puls-Akkumulator (`mu_buffer`) erfasst Roh-Pulse. Wird ein Paket von einem Decoder (fest oder generisch) erkannt, wird eine `MS;...`-Nachricht gesendet und die Rohdaten-Ausgabe unterdrückt. Nur wenn kein Decoder matcht, werden die gesammelten Pulse als `MU;...`-Nachricht ausgegeben.
+*   **Integriertes Web-Interface:** Ein HTTP-Server auf Port 80 bietet eine einfache Weboberfläche, die nach der WLAN-Verbindung erreichbar ist. Sie zeigt System-Stammdaten (Frequenz, Modus) und ein Live-Log der letzten 10 empfangenen Funk-Events an. Alle Decoder leiten ihre Ergebnisse nun parallel an die serielle Schnittstelle und das Web-Log weiter.
+*   **Eindeutige Geräte-Identität:** Das `V`-Kommando wurde um die MAC-Adresse des Chips erweitert. Dies erleichtert die eindeutige Zuordnung des Sticks in Host-Systemen und schafft eine Basis für zukünftige IP-Schutzmaßnahmen, die an die Hardware-ID gebunden sind.
 
 ## 5. Nächste Schritte
 
-*   **Web-Interface:** Implementierung eines einfachen HTTP-Servers zur Anzeige von Live-Funk-Events und des Matter-Endpoint-Status.
-*   **Device-Identität:** Erweiterung des `V` (Version) Kommandos um die eindeutige Chip-ID, um die Identifikation des Sticks in Host-Systemen zu erleichtern.
 *   **Validierung:** Durchführung von Tests zur Verifizierung der `MU;`-Rohdaten-Timings im Vergleich zu einem originalen SIGNALduino.
 *   **Stabilitätstests:** Durchführung von Langzeittests im hybriden Matter-Gateway-Betrieb mit aktiver WiFi-Verbindung.
 
