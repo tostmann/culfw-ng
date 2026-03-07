@@ -176,7 +176,7 @@ static void handle_command(char *cmd) {
     } else if (cmd[0] == 'm' && cmd[1] == 'i') { // mi<HEX> - inject raw durations for testing (RX path)
         char hex[3];
         hex[2] = 0;
-        uint8_t level = 1;
+        uint8_t level = 0; // First pulse should result in pulse_level 1 (HIGH)
         for (int i = 2; i < strlen(cmd) - 1; i += 2) {
             hex[0] = cmd[i];
             hex[1] = cmd[i+1];
