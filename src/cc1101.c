@@ -14,11 +14,11 @@ static bool cc1101_is_433_flag = false;
 static SemaphoreHandle_t spi_mutex = NULL;
 
 void cc1101_lock() {
-    if (spi_mutex) xSemaphoreTake(spi_mutex, portMAX_DELAY);
+    if (spi_mutex) xSemaphoreTakeRecursive(spi_mutex, portMAX_DELAY);
 }
 
 void cc1101_unlock() {
-    if (spi_mutex) xSemaphoreGive(spi_mutex);
+    if (spi_mutex) xSemaphoreGiveRecursive(spi_mutex);
 }
 
 bool cc1101_is_433() {
