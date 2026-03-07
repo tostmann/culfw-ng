@@ -12,7 +12,7 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 | **Intertechno (V1)** | Ja | Ja | `is...` | 433.92 MHz |
 | **Intertechno (V3)** | Ja | Ja | `is...` (32bit) | 433.92 MHz |
 | **HMS / EM1000** | Ja | Ja | `H...` | 868.30 MHz |
-| **S300TH / ESA** | Ja | Nein | - | 868.30 MHz |
+| **S300TH / ESA** | Ja | Nein | `S...` | 868.30 MHz |
 | **FHT80b** | Ja | Ja | `T...` | 868.30 MHz |
 | **Oregon Scientific** | Ja | Ja | `To...` (Test) | 433.92 MHz |
 | **Generische Sensoren** | Ja | Nein | `r...` | 433/868 MHz |
@@ -102,18 +102,18 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 
 ## 4. Neue Erkenntnisse / Probleme
 
-*   **[GELÖST] Hardware-Fehlbestückung (Chargenproblem) bestätigt:** Umfangreiche Tests (inkl. Vergleich mit weiteren Modulen der gleichen Charge) haben zweifelsfrei bestätigt, dass die verwendeten `E07-900MM10S` Module trotz ihres 868-MHz-Labels physikalisch für 433 MHz bestückt sind. Die Signalstärke-Differenz zwischen den Bändern beträgt >70 dB, was einen Software-Fehler ausschließt. Mit der neuen Laufzeit-Frequenzumschaltung (`f433`-Kommando) und der persistenten Speicherung der Einstellung im NVS können diese Module nun dauerhaft und korrekt als 433-MHz-Sticks betrieben werden. Das Problem ist damit per Software vollständig gelöst.
-*   **[INFO]** Die parallele Ausführung aller Protokoll-Decoder in der `slowrf_task` ermöglicht den simultanen Empfang verschiedener Protokolle (z.B. Intertechno und Oregon Scientific) auf demselben Frequenzband, ohne dass eine Umschaltung erforderlich ist. Der Stick agiert als Multi-Protokoll-Gateway.
-*   **[INFO]** Das `m<HEX>`-Kommando zum Senden roher Pulsfolgen ist ein extrem mächtiges Werkzeug zur Emulation und zum Testen beliebiger OOK-Protokolle (ähnlich zu `rtl_433`), ohne dass die Firmware neu kompiliert werden muss.
-*   **[INFO]** Eine Feinabstimmung der AGC-Einstellungen des CC1101 (z.B. `AGCCTRL2=0x07`) und des Carrier-Sense-Schwellwerts ist entscheidend für den zuverlässigen Empfang von schwachen Sensorsignalen.
-*   **[INFO]** Ein Cross-Validation-Testaufbau mit zwei CUL32-C6 (einer als Sender/Emulator, einer als Empfänger) und einem Legacy-CUL als Referenz hat sich als sehr effektiv für das Debugging von Protokoll-Decodern erwiesen.
-*   **[INFO]** Hardwareseitiges Carrier Sense (RSSI-Schwellwert) über den GDO2-Pin ist eine sehr effektive Methode, um den RX-Prozessor von der Verarbeitung von reinem Rauschen zu entlasten.
-*   **[INFO]** Das Speichern von Konfigurationen (Modus, Frequenz) im NVS ist essentiell für eine nahtlose Integration in Host-Systeme wie FHEM, da diese erwarten, dass der CUL seinen Zustand nach einem Neustart beibehält.
-*   **[INFO]** Die Firmware hat die finale Cross-Validation-Testphase bestanden und läuft stabil. Alle implementierten Protokolldecoder und -encoder funktionieren wie erwartet.
+*   **Hardware-Fehlbestückung (Chargenproblem) bestätigt:** Umfangreiche Tests haben zweifelsfrei bestätigt, dass die verwendeten `E07-900MM10S` Module trotz ihres 868-MHz-Labels physikalisch für 433 MHz bestückt sind. Mit der Laufzeit-Frequenzumschaltung (`f433`-Kommando) und der persistenten Speicherung der Einstellung im NVS können diese Module nun dauerhaft und korrekt als 433-MHz-Sticks betrieben werden.
+*   **Multi-Protokoll-Gateway-Architektur bestätigt:** Die parallele Ausführung aller Protokoll-Decoder in der `slowrf_task` ermöglicht den simultanen Empfang verschiedener Protokolle (z.B. Intertechno und Oregon Scientific) auf demselben Frequenzband, ohne dass eine Umschaltung erforderlich ist. Für den Empfang muss der Benutzer lediglich die korrekte Frequenz (`f433`/`f868`) wählen.
+*   **Effektiver Testaufbau:** Ein Cross-Validation-Testaufbau mit zwei CUL32-C6 (einer als Sender/Emulator, einer als Empfänger) und einem Legacy-CUL als Referenz hat sich als sehr effektiv für das Debugging von Protokoll-Decodern erwiesen.
+*   **Effiziente Rauschunterdrückung:** Hardwareseitiges Carrier Sense (RSSI-Schwellwert) über den GDO2-Pin ist eine sehr effektive Methode, um den RX-Prozessor von der Verarbeitung von reinem Rauschen zu entlasten.
+*   **Voraussetzung für Host-Integration:** Das Speichern von Konfigurationen (Modus, Frequenz) im NVS ist essentiell für eine nahtlose Integration in Host-Systeme wie FHEM, da diese erwarten, dass der CUL seinen Zustand nach einem Neustart beibehält.
+*   **Mächtige Emulations-Werkzeuge:** Das `m<HEX>`-Kommando zum Senden roher Pulsfolgen ist ein extrem mächtiges Werkzeug zur Emulation und zum Testen beliebiger OOK-Protokolle, ohne dass die Firmware neu kompiliert werden muss.
+*   **Stabilität erreicht:** Die Firmware hat die finale Cross-Validation-Testphase bestanden und läuft stabil. Alle implementierten Protokolldecoder und -encoder funktionieren wie erwartet. Das Release v1.0.1 ist stabil.
 
 ## 5. Nächste Schritte
 
 *   **FHEM-Integration:** Validierung der Firmware mit einem Host-System (FHEM) zur Sicherstellung der Kompatibilität und Langzeitstabilität.
+*   **SIGNALduino-Kompatibilität:** Prüfung der Kompatibilität mit dem FHEM **SIGNALduino**-Modul. Dies würde die Unterstützung hunderter zusätzlicher Sensoren ermöglichen. Ggf. Implementierung eines kompatiblen Raw-Message-Formats (z.B. `MU;...`).
 *   **RSSI-Kalibrierung:** Abgleich der ausgegebenen RSSI-Hex-Werte mit realen dBm-Werten für eine genauere Signalstärken-Anzeige.
 *   **Langzeittests:** Überwachung der Stabilität und des Speicherverbrauchs über mehrere Tage im produktiven Einsatz.
 *   **Roadmap-Planung:** Evaluierung der Integration in moderne IoT-Ökosysteme (z.B. als Matter/Thread-Bridge).
