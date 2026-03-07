@@ -32,16 +32,17 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
     *   **Thread-Sicherheit:** Alle Zugriffe auf den CC1101-Treiber sind durch einen **rekursiven Mutex (Semaphore)** geschützt. Dies verhindert Race Conditions und Datenkorruption.
     *   **Multi-Protokoll-Gateway:** Die Firmware agiert als "Staubsauger" für alle unterstützten OOK-Protokolle auf der aktiven Frequenz. Alle Decoder laufen parallel.
 *   **Zukünftige Architektur: On-Board Intelligence & Matter**
-    *   **Dateisystem:** Integration eines **SPIFFS-Dateisystems** zur Speicherung einer flexiblen Protokoll-Datenbank (`protocols.json`).
-    *   **Table-Driven Decoding Engine:** Anstelle von fest einkompilierten Decodern wird eine generische Engine die Pulsfolgen mit den in `protocols.json` definierten Mustern abgleichen.
+    *   **Dateisystem:** Integration eines **SPIFFS-Dateisystems** zur Speicherung einer flexiblen Protokoll-Datenbank (`protocols.json`). Ein Fallback-Mechanismus lädt einen hartcodierten Default, falls die Datei fehlt.
+    *   **Table-Driven Decoding Engine:** Anstelle von fest einkompilierten Decodern wird eine generische Engine die Pulsfolgen mit den in `protocols.json` definierten Mustern abgleichen. Das JSON-Format nutzt ein `timing`-Objekt mit Multiplikatoren für eine kompakte und flexible Definition.
     *   **Matter-Architektur:** Der Stick wird als **Matter Aggregator (Bridge)** implementiert. Nur das Gateway wird einmalig gepaired. Erkannte SlowRF-Geräte werden als dynamische **Endpoints** (z.B. Temperatursensor, Schalter) im Matter-Netzwerk on-the-fly angelegt und über eine **"Dynamic Endpoint Registry"** (`matter_bridge.c`) verwaltet. Die Anwendungslogik ist gegen eine **API-Interface-Schicht** (`matter_interface.h`) entwickelt, um die Kompilierbarkeit ohne das vollständige SDK zu gewährleisten (Simulations-Modus).
 *   **Bivalenter Betriebsmodus (Hybride Intelligenz):** Die Firmware ist umschaltbar gestaltet, um die Stärken von CUL und SIGNALduino zu vereinen.
     *   **CUL-Modus (`X21`):** 100%ige Kompatibilität zum etablierten CUL-Protokoll.
-    *   **SIGNALduino-Modus (`X25`):** Vollständige Emulation eines SIGNALduino mit Rohdaten-Ausgabe (`MU;...` für unbekannte, `MS;...` für bekannte Protokolle). Die Ausgabe erfolgt über eine zentrale `slowrf_output_packet`-Funktion.
+    *   **SIGNALduino-Modus (`X25`):** Vollständige Emulation eines SIGNALduino mit Rohdaten-Ausgabe (`MU;...` für unbekannte, `MS;...` für bekannte Protokolle). Die Ausgabe erfolgt über eine zentrale `slowrf_output_packet`-Funktion. Die `MU`-Ausgabe wird unterdrückt, wenn ein Decoder (fest oder generisch) das Signal erfolgreich verarbeitet hat.
+*   **WiFi & Web-Interface:** Ein integrierter HTTP-Server (Port 80) bietet nach der WLAN-Verbindung eine Weboberfläche zur Diagnose. Diese zeigt System-Stammdaten und ein Live-Log der letzten empfangenen Funk-Events an. Alle Decoder leiten ihre Ergebnisse parallel an die serielle Schnittstelle und das Web-Log.
 *   **Intellectual Property (IP) / Kopierschutz (3-Säulen-Strategie):**
     *   **1. Kommerzieller Schutz ("Matter-Schild"):** Die Bindung an den Matter-Standard erfordert ein offizielles **Device Attestation Certificate (DAC)**. Clones ohne dieses Zertifikat werden von Systemen wie Apple/Google Home als "nicht verifiziert" markiert.
     *   **2. Technischer Schutz (Hardware-Verschlüsselung):** Nutzung der ESP32-C6 Hardware-Features wie **Flash Encryption** (bindet die Firmware an den individuellen Chip) und **Secure Boot V2** (erlaubt nur vom Hersteller signierte Firmware-Updates).
-    *   **3. Software-Bindung (IP-Schutz):** Kritische Logik, wie die zukünftige `protocols.json`-Decoding-Engine, kann an die **Chip-Unique-ID (MAC-Adresse)** gebunden werden, um eine einfache Software-Kopie zu verhindern.
+    *   **3. Software-Bindung (IP-Schutz):** Kritische Logik, wie die zukünftige `protocols.json`-Decoding-Engine, kann an die **Chip-Unique-ID (MAC-Adresse)** gebunden werden. Diese ID wird bereits über das erweiterte `V`-Kommando ausgegeben und ist somit programmatisch verfügbar.
 *   **Frequenzerkennung und -management:**
     *   **Hardware-Default:** Die Modulfrequenz (433/868 MHz) wird initial über einen GPIO-Pin (`GPIO_433MARKER`) erkannt.
     *   **Software-Override:** Ein Benutzer kann die Frequenz zur Laufzeit per Kommando (`f433` oder `f868`) umschalten. Diese Einstellung wird **permanent im NVS gespeichert**.
@@ -50,7 +51,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
     *   **Rausch-Unterdrückung:** `GDO2` ist als **Carrier Sense** konfiguriert (`IOCFG2=0x0E`).
 *   **Signal-Aussendung (TX):**
     *   Der `GDO0_PIN` wird dynamisch als Output konfiguriert, um Sendesequenzen per Bit-Banging zu erzeugen.
-*   **Versionierung:** Automatisierte Build-Nummer und detaillierter, culfw-kompatibler Versions-String.
+*   **Versionierung:** Automatisierte Build-Nummer und detaillierter, culfw-kompatibler Versions-String, der nun auch die Chip-ID enthält.
 
 ## 3. Implementierungsstatus
 
@@ -73,7 +74,6 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** End-to-End Validierung aller implementierten Protokolle.
 *   **[DONE]** Benutzer-Dokumentation (`COMMANDS.md`) erstellt und aktualisiert.
 *   **[DONE]** Release Management: Finaler Code-Stand als **Release v1.0.1** auf GitHub getaggt.
-*   **[DONE]** Chip-Unique-ID (MAC) Auslesung als Basis für Kopierschutz implementiert.
 *   **[DONE]** Partitionsschema für Dateisystem (SPIFFS) und Matter-Unterstützung erweitert (`partitions.csv` mit 3MB App-Partition).
 *   **[DONE]** Architektur für Matter-Integration finalisiert (Portability-Layer via `matter_interface.h` mit Simulations-Modus).
 *   **[DONE]** Basis-Struktur für Matter-Bridge-Modul (`matter_bridge.c/h`) erstellt (Dynamic Endpoint Registry).
@@ -90,22 +90,18 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** WiFi-Konnektivität implementiert (Verbindung zu "PalmBeach WiFi").
 *   **[DONE]** Device-Identität: Erweiterung des `V` (Version) Kommandos um die eindeutige Chip-ID (MAC).
 *   **[DONE]** Web-Interface: Implementierung eines einfachen HTTP-Servers zur Anzeige von Live-Funk-Events und Systemstatus.
+*   **[DONE]** Integration der RF-Decoder mit dem Web-Log für Live-Event-Anzeige.
+*   **[DONE]** Chip-Unique-ID (MAC) Auslesung als Basis für Kopierschutz implementiert.
 
 ## 4. Neue Erkenntnisse / Probleme
 
-*   **Build-System gehärtet:** Ein hartnäckiges Build-Problem mit der `esp_hid`-Komponente (Bluetooth-Abhängigkeit) wurde durch eine lokale Dummy-Komponente gelöst. Ein weiteres Problem durch **doppelte Header-Dateien** (`src/slowrf.h` vs. `include/slowrf.h`) wurde durch eine saubere Trennung und Refactoring der Includes behoben, was den Build-Prozess weiter stabilisiert.
-*   **Decoder-Architektur optimiert:** Die interne Datenstruktur des `generic_decoder` wurde von "Pulse Pairs" auf eine **flache Liste von Puls-Definitionen** umgestellt. Dies hat die State-Machine-Logik erheblich vereinfacht.
-*   **Robuste Konfigurations-Engine:** Die SPIFFS-Ladelogik in `config_loader.c` ist mit einem **Fallback-Mechanismus** ausgestattet. Falls `protocols.json` fehlt, wird ein hartcodierter Default-JSON-String geladen, was die Grundfunktion sicherstellt.
-*   **JSON-Protokoll-Format verfeinert:** Das Format für `protocols.json` nutzt nun ein zentrales `timing`-Objekt, dessen Werte über **Multiplikatoren** in den `definitions` wiederverwendet werden. Dies ist flexibel, kompakt und reduziert Redundanz.
-*   **Vollautonome Matter-Bridge:** Die Integration ist abgeschlossen. Alle Decoder (fest und generisch) melden erkannte Geräte und deren Zustände automatisch an das `matter_bridge`-Modul. Dieses registriert neue Geräte on-the-fly als Matter-Endpoints und aktualisiert deren Status, wodurch der Stick als autonomes Gateway fungiert.
-*   **SIGNALduino-Emulation verfeinert:** Ein Puls-Akkumulator (`mu_buffer`) erfasst Roh-Pulse. Wird ein Paket von einem Decoder (fest oder generisch) erkannt, wird eine `MS;...`-Nachricht gesendet und die Rohdaten-Ausgabe unterdrückt. Nur wenn kein Decoder matcht, werden die gesammelten Pulse als `MU;...`-Nachricht ausgegeben.
-*   **Integriertes Web-Interface:** Ein HTTP-Server auf Port 80 bietet eine einfache Weboberfläche, die nach der WLAN-Verbindung erreichbar ist. Sie zeigt System-Stammdaten (Frequenz, Modus) und ein Live-Log der letzten 10 empfangenen Funk-Events an. Alle Decoder leiten ihre Ergebnisse nun parallel an die serielle Schnittstelle und das Web-Log weiter.
-*   **Eindeutige Geräte-Identität:** Das `V`-Kommando wurde um die MAC-Adresse des Chips erweitert. Dies erleichtert die eindeutige Zuordnung des Sticks in Host-Systemen und schafft eine Basis für zukünftige IP-Schutzmaßnahmen, die an die Hardware-ID gebunden sind.
+*   **Flash-Partition-Konflikt:** Beim Upload der Firmware via `esptool` tritt ein **Overlap-Fehler bei Adresse `0x10000`** auf. Dies deutet auf einen Konflikt zwischen dem Bootloader-Offset und der in `partitions.csv` definierten App-Partition (`factory`) hin. Die Standardkonfiguration von PlatformIO für das `esp32-c6-devkitc-1` Board kollidiert mit der benutzerdefinierten Partitionstabelle, was einen erfolgreichen Flash-Vorgang verhindert.
 
 ## 5. Nächste Schritte
 
+*   **Behebung des Flash-Overlap-Fehlers:** Korrektur der `partitions.csv` oder der PlatformIO-Build-Konfiguration, um einen erfolgreichen Upload der Firmware zu ermöglichen. Dies hat höchste Priorität.
 *   **Validierung:** Durchführung von Tests zur Verifizierung der `MU;`-Rohdaten-Timings im Vergleich zu einem originalen SIGNALduino.
-*   **Stabilitätstests:** Durchführung von Langzeittests im hybriden Matter-Gateway-Betrieb mit aktiver WiFi-Verbindung.
+*   **Stabilitätstests:** Durchführung von Langzeittests im hybriden Matter-Gateway-Betrieb mit aktiver WiFi-Verbindung und Web-Interface.
 
 ## 6. Hardware-Konfiguration (Pinout)
 
