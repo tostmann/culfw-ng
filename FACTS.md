@@ -51,3 +51,8 @@ ignoriere normalen Funktraffic während der Test wie: F666666xxx
 *GITHUB*
 
 ssh git@github.com:tostmann/culfw-ng.git
+
+*WIFI*
+
+SSID: "PalmBeach WiFi"
+Password: "12345678"

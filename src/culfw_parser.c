@@ -12,6 +12,7 @@
 #include "driver/usb_serial_jtag.h"
 #include "cc1101.h"
 #include "slowrf.h"
+#include "matter_bridge.h"
 #include "rom/ets_sys.h"
 
 static const char *TAG = "CULFW_PARSER";
