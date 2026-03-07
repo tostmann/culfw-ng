@@ -7,6 +7,7 @@
 #include "esp_random.h"
 #include "nvs_flash.h"
 #include "nvs.h"
+#include "esp_spiffs.h"
 #include "driver/gpio.h"
 #include "driver/usb_serial_jtag.h"
 #include "cc1101.h"
