@@ -4,6 +4,19 @@
 
 Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks zur Emulation von SlowRF-Protokollen (wie FS20, Intertechno, etc.). Die Firmware soll die RF-Protokolle über ein CC1101-Modul senden und empfangen.
 
+### 1.1 Unterstützte Protokolle
+
+| Protokoll | Empfang (RX) | Senden (TX) | Kommando | Frequenz (Standard) |
+| :--- | :---: | :---: | :--- | :--- |
+| **FS20** | Ja | Ja | `F...` | 868.30 MHz |
+| **Intertechno (V1)** | Ja | Ja | `is...` | 433.92 MHz |
+| **Intertechno (V3)** | Ja | Ja | `is...` (32bit) | 433.92 MHz |
+| **HMS / EM1000** | Ja | Ja | `H...` | 868.30 MHz |
+| **S300TH / ESA** | Ja | Nein | - | 868.30 MHz |
+| **FHT80b** | Ja | Ja | `T...` | 868.30 MHz |
+| **Oregon Scientific** | Ja | Nein | - | 433.92 MHz |
+| **Generische Sensoren** | Ja | Nein | `r...` | 433/868 MHz |
+
 ## 2. Architektur & Design-Entscheidungen
 
 *   **Plattform:** ESP32-C6 mit ESP-IDF Framework, verwaltet über PlatformIO.
@@ -21,6 +34,7 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
         *   **HMS/S300TH Sensor-Decoder:** Eine generische PWM-Decoder-Logik verarbeitet Sensor-Protokolle. Sie unterscheidet '0'- und '1'-Bits anhand der Länge des High-Pulses bei konstanter Low-Puls-Länge und akkumuliert die Daten in Nibbles.
         *   **Oregon Scientific Decoder (V2/V3):** Nach Erkennung der charakteristischen OS-Präambel (eine Folge kurzer Pulse) werden die nachfolgenden, Manchester-kodierten Daten dekodiert. Der Decoder extrahiert die Daten-Nibbles und validiert das Paket anhand des Sync-Nibbles (`0xA`).
         *   **FHT-Decoder:** Erkennt das FHT-spezifische Sync-Muster und dekodiert die nachfolgenden 9-Bit-Datenpakete (8 Datenbits + 1 Steuerbit).
+        *   **Generischer PWM-Sensor-Decoder (rtl_433-ähnlich):** Eine flexible Zustandsmaschine dekodiert diverse OOK/PWM-basierte Sensoren, die nicht von den spezifischen Decodern abgedeckt werden. Sie analysiert das Puls-Timing und gibt die rohen Daten als Hex-String mit dem Präfix `r` aus.
 *   **Frequenzerkennung und -management:**
     *   **Hardware-Default:** Die Modulfrequenz (433/868 MHz) wird initial über einen GPIO-Pin (`GPIO_433MARKER`) mit internem Pull-Up erkannt.
     *   **Software-Override:** Ein Benutzer kann die Frequenz zur Laufzeit per Kommando (`f433` oder `f868`) umschalten. Diese Einstellung wird **permanent im NVS gespeichert** und überschreibt beim nächsten Start die Hardware-Erkennung. Dies ermöglicht den korrekten Betrieb von fehlbestückten Modulen.
@@ -46,6 +60,7 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
     *   Eine LED (`GPIO_8`) signalisiert aktive Sendevorgänge.
     *   Ein periodischer "CUL-TICK" wird über die serielle Schnittstelle gesendet, um die Verbindung zum Host zu signalisieren.
     *   `H<HEX>`-Kommando zum Senden von HMS-Protokolldaten.
+    *   `T<HEX>`-Kommando zum Senden von FHT-Protokolldaten.
     *   `f<freq>`-Kommando (`f433`/`f868`) zur Laufzeit-Umschaltung der Frequenz.
 
 ## 3. Implementierungsstatus
@@ -79,6 +94,7 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 *   **[DONE]** Protokoll-Erweiterung: Sende-Encoder für HMS (`H...`-Kommando) implementiert.
 *   **[DONE]** Protokoll-Erweiterung: Sende-Encoder und Empfangs-Decoder für **Intertechno V1 & V3** (433MHz) implementiert.
 *   **[DONE]** Protokoll-Erweiterung: Empfangs-Decoder für **Oregon Scientific**, sowie Sende- und Empfangs-Logik für **FHT** implementiert.
+*   **[DONE]** Protokoll-Erweiterung: Generischer PWM-Decoder für rtl_433-ähnliche Sensoren (Raw-Hex-Ausgabe `r...`) implementiert.
 *   **[DONE]** Implementierung einer Laufzeit-Frequenzumschaltung (`f433`/`f868`) mit Speicherung im NVS.
 *   **[DONE]** End-to-End Test: Alle implementierten Protokolle (FS20, IT, HMS, FHT, OS) sind funktional auf dem 433-MHz-Band validiert.
 *   **[DONE]** Projekt-Setup: Initiales Git-Repository auf GitHub erstellt, bereinigt und Code gepusht.
@@ -96,7 +112,7 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 ## 5. Nächste Schritte
 
 *   **FHEM-Integration:** Validierung der Firmware mit einem Host-System (FHEM) zur Sicherstellung der Kompatibilität und Langzeitstabilität.
-*   **Dokumentation:** Erstellen einer kurzen Anleitung für die neuen Diagnose- und Konfigurationsbefehle (`R`, `W`, `X99`, `TX1`/`TX0`, `H`, `f`, `T`).
+*   **Dokumentation:** Erstellen einer kurzen Anleitung für die neuen Diagnose- und Konfigurationsbefehle (`R`, `W`, `X99`, `TX1`/`TX0`, `H`, `f`, `T`) und die Raw-Sensor-Ausgabe (`r...`).
 *   **Langzeittests:** Überwachung der Stabilität und des Speicherverbrauchs über mehrere Tage.
 
 ## 6. Hardware-Konfiguration (Pinout)
