@@ -184,9 +184,18 @@ void slowrf_task(void *pvParameters) {
 
     bool it3_last_sync = false;
 
+    // Initialize generic decoder
+    generic_decoder_init();
+
     while (1) {
         if (xQueueReceive(pulse_queue, &p_in, portMAX_DELAY)) {
             uint16_t pulse = p_in.duration;
+            // p_in.level is current pin state, so pulse was !level
+            uint8_t pulse_level = !p_in.level;
+            
+            // Feed Generic Decoder
+            generic_decoder_process_pulse(pulse, pulse_level);
+
             uint8_t level = p_in.level;
 
             if (slowrf_debug) {
