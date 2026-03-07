@@ -87,6 +87,11 @@ static void generic_decoder_output_packet(rf_proto_internal_t *p, uint64_t data,
     if (len > 0) {
         usb_serial_jtag_write_bytes(msg, len, 0);
     }
+
+    // Web Event
+    char web_msg[64];
+    snprintf(web_msg, sizeof(web_msg), "G:%s %llX (%d)", p->name, data, rssi);
+    slowrf_add_web_event(web_msg);
     
     // Also notify Matter Bridge
     matter_bridge_report_event(p->name, p->matter_type == 1 ? DEVICE_TYPE_TEMP_SENSOR : DEVICE_TYPE_SWITCH, (float)data);
