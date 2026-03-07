@@ -35,7 +35,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
     *   **Table-Driven Decoding Engine:** Anstelle von fest einkompilierten Decodern wird eine generische Engine die Pulsfolgen mit den in `protocols.json` definierten Mustern abgleichen. Das JSON-Format nutzt ein `timing`-Objekt mit Multiplikatoren für eine kompakte und flexible Definition. Die Protokolldatenbank kann zur Laufzeit über das `GR`-Kommando (Generic Reload) neu geladen werden.
     *   **Matter-Architektur:** Der Stick wird als **Matter Aggregator (Bridge)** implementiert. Nur das Gateway wird einmalig gepaired. Erkannte SlowRF-Geräte werden als dynamische **Endpoints** (z.B. Temperatursensor, Schalter) im Matter-Netzwerk on-the-fly angelegt und über eine **"Dynamic Endpoint Registry"** (`matter_bridge.c`) verwaltet. Die Anwendungslogik ist gegen eine **API-Interface-Schicht** (`matter_interface.h`) entwickelt, um die Kompilierbarkeit ohne das vollständige SDK zu gewährleisten (Simulations-Modus).
 *   **Bivalenter Betriebsmodus (Hybride Intelligenz):** Die Firmware ist umschaltbar gestaltet, um die Stärken von CUL und SIGNALduino zu vereinen.
-    *   **CUL-Modus (`X21`):** 100%ige Kompatibilität zum etablierten CUL-Protokoll.
+    *   **CUL-Modus (`X21`):** 100%ige Kompatibilität zum etablierten CUL-Protokoll. Ausgabe generischer Protokolle mit neuem `G`-Präfix (`G<Name><Daten>...`).
     *   **SIGNALduino-Modus (`X25`):** Vollständige Emulation eines SIGNALduino mit Rohdaten-Ausgabe (`MU;...` für unbekannte, `MS;...` für bekannte Protokolle). Die Ausgabe erfolgt über eine zentrale `slowrf_output_packet`-Funktion. Die `MU`-Ausgabe wird unterdrückt, wenn ein Decoder (fest oder generisch) das Signal erfolgreich verarbeitet hat.
 *   **WiFi & Web-Interface:** Ein integrierter HTTP-Server (Port 80) bietet nach der WLAN-Verbindung eine Weboberfläche zur Diagnose. Diese zeigt System-Stammdaten und ein Live-Log der letzten empfangenen Funk-Events an, wobei die neuesten Ereignisse oben stehen (Reverse-Chronological Order). Alle Decoder leiten ihre Ergebnisse parallel an die serielle Schnittstelle und das Web-Log.
 *   **Intellectual Property (IP) / Kopierschutz (3-Säulen-Strategie):**
@@ -95,21 +95,23 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Device-Identität: Erweiterung des V (Version) Kommandos um die eindeutige Chip-ID (MAC) und die aktuelle IP-Adresse.
 *   **[DONE]** Funktionstest: Erfolgreiche Verifizierung der IP-Ausgabe (V-Kommando) und des Web-Interfaces auf 433/868 MHz Hardware.
 *   **[DONE]** Implementierung von Diagnose-Kommandos für Generic Decoder (`GL` zum Auflisten, `GR` zum Neuladen).
-*   **[DONE]** Validierung der Generic Decoder State Machine mit injizierten Test-Signalen (Nexa).
 *   **[DONE]** Validierung des JSON-Parsers und der Protokoll-Lade-Logik aus SPIFFS.
 *   **[DONE]** Anbindung des Generic Decoders an die SIGNALduino MU-Unterdrückungslogik.
+*   **[DONE]** Validierung der *Sync-Detektion* in der Generic Decoder State Machine mit injizierten Test-Signalen (Nexa).
+*   **[DONE]** Protokoll-Datenbank (`protocols.json`) um Intertechno_V1 erweitert.
 
 ## 4. Neue Erkenntnisse / Probleme
 
 *   **Architektur-Korrektur (Single-Core):** Der ESP32-C6 ist ein **Single-Core Prozessor (RISC-V)**. Die RTOS-Architektur wurde auf ein Single-Core-Modell mit **Task-Priorisierung** als primäres Steuerungsinstrument umgestellt, um die Echtzeitfähigkeit zu gewährleisten.
 *   **Architektur-Verfeinerung (Initialisierung):** Die Initialisierungs-Sequenz wurde angepasst. `config_loader_load_protocols()` wird nun in `app_main` ausgeführt, *bevor* die `slowrf_task` startet. Die `generic_decoder_init()`-Funktion innerhalb des Tasks wurde modifiziert, sodass sie nur noch die Decoder-*Zustände* zurücksetzt, aber nicht die bereits geladenen Protokoll-Definitionen, um eine Race Condition zu vermeiden.
 *   **Architektur-Verfeinerung (JSON-Format):** Das `protocols.json`-Format wurde optimiert. Anstatt starrer Timing-Werte wie `sync_low` werden nun Multiplikatoren der Basis-Pulsbreite (`short`) verwendet (z.B. `"sync": [{"h": 1, "l": 10}]`). Dies erhöht die Lesbarkeit und Flexibilität der Protokolldefinitionen.
+*   **Generic Decoder Bug:** Die State Machine erkennt die Sync-Sequenz von Test-Signalen korrekt, scheitert aber an der Dekodierung der nachfolgenden Daten-Bits. Die Logik zur Finalisierung eines Bits und dem Übergang zum nächsten in `STATE_READ_BITS` ist fehlerhaft.
 
 ## 5. Nächste Schritte
 
-*   **Validierung:** Testen des Generic Decoders mit **realen Funksignalen** von Fernbedienungen (Nexa, IT) und Optimierung der Timing-Parameter in `protocols.json`.
+*   **Generic Decoder:** Fehlerbehebung in der Bit-Matching-Logik (`STATE_READ_BITS`) und vollständige Validierung des Decoders mit injizierten und realen Signalen (Nexa, IT).
 *   **Stabilitätstests:** Durchführung von Langzeittests im hybriden Matter-Gateway-Betrieb mit aktiver WiFi-Verbindung und Web-Interface.
-*   **SIGNALduino Kompatibilität:** Verfeinerung der `MS;`-Ausgabeformate des Generic Decoders, um eine hohe Kompatibilität mit bestehenden Host-Systemen zu erreichen.
+*   **SIGNALduino Kompatibilität:** Verfeinerung der `MS;`-Ausgabeformate des Generic Decoders, um eine hohe Kompatibilität mit bestehenden Host-Systemen zu erreichen. Das Format (`MS;P0=...;P1=...;D=...`) ist bereits definiert.
 *   **Protokoll-DB Erweiterung:** Hinzufügen weiterer OOK-Protokolle (z.B. Somfy RTS, Ambient Weather) zur `protocols.json`.
 
 ## 6. Hardware-Konfiguration (Pinout)
