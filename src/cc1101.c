@@ -4,16 +4,30 @@
 #include "esp_log.h"
 #include "nvs_flash.h"
 #include "nvs.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+#include "freertos/task.h"
 
 static const char *TAG = "CC1101";
 static spi_device_handle_t spi;
 static bool cc1101_is_433_flag = false;
+static SemaphoreHandle_t spi_mutex = NULL;
+
+void cc1101_lock() {
+    if (spi_mutex) xSemaphoreTake(spi_mutex, portMAX_DELAY);
+}
+
+void cc1101_unlock() {
+    if (spi_mutex) xSemaphoreGive(spi_mutex);
+}
 
 bool cc1101_is_433() {
     return cc1101_is_433_flag;
 }
 
 esp_err_t cc1101_init() {
+    if (!spi_mutex) spi_mutex = xSemaphoreCreateMutex();
+    
     spi_bus_config_t buscfg = {
         .miso_io_num = GPIO_MISO,
         .mosi_io_num = GPIO_MOSI,
@@ -24,33 +38,29 @@ esp_err_t cc1101_init() {
     };
     
     spi_device_interface_config_t devcfg = {
-        .clock_speed_hz = 500000, // 500kHz
+        .clock_speed_hz = 500000, 
         .mode = 0,
         .spics_io_num = GPIO_SS,
         .queue_size = 7,
     };
 
-    ESP_LOGI(TAG, "Initializing SPI: SCK=%d, MISO=%d, MOSI=%d, SS=%d", GPIO_SCK, GPIO_MISO, GPIO_MOSI, GPIO_SS);
+    ESP_LOGI(TAG, "Initializing SPI...");
     esp_err_t ret = spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_CH_AUTO);
     if (ret != ESP_OK) return ret;
 
     ret = spi_bus_add_device(SPI2_HOST, &devcfg, &spi);
     if (ret != ESP_OK) return ret;
 
+    cc1101_lock();
     cc1101_cmd_strobe(CC1101_SRES);
     vTaskDelay(pdMS_TO_TICKS(50));
-
-    // Dummy read to clear anything
-    cc1101_read_reg(CC1101_PARTNUM | CC1101_READ_BURST);
     
-    uint8_t partnum = cc1101_read_reg(CC1101_PARTNUM | CC1101_READ_BURST);
     uint8_t version = cc1101_read_reg(CC1101_VERSION | CC1101_READ_BURST);
+    cc1101_unlock();
 
-    ESP_LOGI(TAG, "CC1101 Partnum: 0x%02x, Version: 0x%02x", partnum, version);
-
+    ESP_LOGI(TAG, "CC1101 Version: 0x%02x", version);
     if (version == 0 || version == 0xFF) return ESP_FAIL;
 
-    // Default configuration for SlowRF (OOK/ASK)
     gpio_config_t marker_conf = {
         .pin_bit_mask = (1ULL << GPIO_433MARKER),
         .mode = GPIO_MODE_INPUT,
@@ -60,7 +70,6 @@ esp_err_t cc1101_init() {
     vTaskDelay(pdMS_TO_TICKS(10));
     cc1101_is_433_flag = (gpio_get_level(GPIO_433MARKER) == 0);
 
-    // Load from NVS
     nvs_handle_t my_handle;
     if (nvs_open("storage", NVS_READONLY, &my_handle) == ESP_OK) {
         uint8_t freq_val = 0;
@@ -71,52 +80,47 @@ esp_err_t cc1101_init() {
         nvs_close(my_handle);
     }
 
-    ESP_LOGI(TAG, "Active Frequency: %s MHz", cc1101_is_433_flag ? "433" : "868");
-    bool is_433 = cc1101_is_433_flag;
-
-    // Common SlowRF Setup (ASK, ~2.4k Baud, etc.)
-    cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Output
-    cc1101_write_reg(0x00, 0x0E); // IOCFG2: Carrier Sense (High when RSSI > Threshold)
-    cc1101_write_reg(0x08, 0x32); // PKTCTRL0: Asynchronous Serial Mode
-    cc1101_write_reg(0x0B, 0x06); // FSCTRL1
-    cc1101_write_reg(0x0C, 0x00); // FSCTRL0
+    cc1101_lock();
+    cc1101_write_reg(0x02, 0x0D); 
+    cc1101_write_reg(0x00, 0x0E); 
+    cc1101_write_reg(0x08, 0x32); 
+    cc1101_write_reg(0x0B, 0x06); 
+    cc1101_write_reg(0x0C, 0x00); 
     
-    if (is_433) {
-        cc1101_write_reg(0x0D, 0x10); // FREQ2
-        cc1101_write_reg(0x0E, 0xB3); // FREQ1
-        cc1101_write_reg(0x0F, 0x3B); // FREQ0 (433.92 MHz)
+    if (cc1101_is_433_flag) {
+        cc1101_write_reg(0x0D, 0x10); 
+        cc1101_write_reg(0x0E, 0xB3); 
+        cc1101_write_reg(0x0F, 0x3B); 
     } else {
-        cc1101_write_reg(0x0D, 0x21); // FREQ2
-        cc1101_write_reg(0x0E, 0x65); // FREQ1
-        cc1101_write_reg(0x0F, 0x6A); // FREQ0 (868.3 MHz)
+        cc1101_write_reg(0x0D, 0x21); 
+        cc1101_write_reg(0x0E, 0x65); 
+        cc1101_write_reg(0x0F, 0x6A); 
     }
     
-    cc1101_write_reg(0x10, 0x58); // MDMCFG4: BW 325kHz
-    cc1101_write_reg(0x11, 0x93); // MDMCFG3
-    cc1101_write_reg(0x12, 0x30); // MDMCFG2: ASK/OOK, No sync
-    cc1101_write_reg(0x13, 0x22); // MDMCFG1
-    cc1101_write_reg(0x14, 0xF8); // MDMCFG0
-    cc1101_write_reg(0x15, 0x15); // DEVIATN
-    cc1101_write_reg(0x18, 0x18); // MCSM0
-    cc1101_write_reg(0x19, 0x16); // FOCCFG
-    cc1101_write_reg(0x1A, 0x6C); // BSCFG
-    cc1101_write_reg(0x1B, 0x07); // AGCCTRL2: Maximize gain
-    cc1101_write_reg(0x1C, 0x00); // AGCCTRL1: Low threshold for carrier sense
-    cc1101_write_reg(0x1D, 0x91); // AGCCTRL0
-    cc1101_write_reg(0x21, 0x56); // FREND1
-    cc1101_write_reg(0x22, 0x11); // FREND0: ASK/OOK use PATABLE[1] for '1'
-    cc1101_write_reg(0x23, 0xE9); // FSCAL3
-    cc1101_write_reg(0x24, 0x2A); // FSCAL2
-    cc1101_write_reg(0x25, 0x00); // FSCAL1
-    cc1101_write_reg(0x26, 0x1F); // FSCAL0
+    cc1101_write_reg(0x10, 0x58); 
+    cc1101_write_reg(0x11, 0x93); 
+    cc1101_write_reg(0x12, 0x30); 
+    cc1101_write_reg(0x13, 0x22); 
+    cc1101_write_reg(0x14, 0xF8); 
+    cc1101_write_reg(0x15, 0x15); 
+    cc1101_write_reg(0x18, 0x18); 
+    cc1101_write_reg(0x19, 0x16); 
+    cc1101_write_reg(0x1A, 0x6C); 
+    cc1101_write_reg(0x1B, 0x07); 
+    cc1101_write_reg(0x1C, 0x00); 
+    cc1101_write_reg(0x1D, 0x91); 
+    cc1101_write_reg(0x21, 0x56); 
+    cc1101_write_reg(0x22, 0x11); 
+    cc1101_write_reg(0x23, 0xE9); 
+    cc1101_write_reg(0x24, 0x2A); 
+    cc1101_write_reg(0x25, 0x00); 
+    cc1101_write_reg(0x26, 0x1F); 
 
-    // PATABLE: [0]=0x00 (for '0'), [1]=0xC0 (for '1' -> +10dBm)
     uint8_t patable[8] = {0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     cc1101_write_burst(0x3E, patable, 8);
-    
+    cc1101_unlock();
 
     cc1101_set_rx_mode();
-
     return ESP_OK;
 }
 
