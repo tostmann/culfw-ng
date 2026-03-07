@@ -60,8 +60,9 @@ void slowrf_add_web_event(const char* msg) {
 
 int slowrf_get_web_events(char* buf, int max_len) {
     int len = 0;
+    // Iterate backwards from the last added event
     for (int i = 0; i < MAX_WEB_EVENTS; i++) {
-        int idx = (web_event_idx + i) % MAX_WEB_EVENTS;
+        int idx = (web_event_idx - 1 - i + MAX_WEB_EVENTS) % MAX_WEB_EVENTS;
         if (web_events[idx].msg[0] != 0) {
             len += snprintf(buf + len, max_len - len, "[%llds] %s<br>", web_events[idx].timestamp, web_events[idx].msg);
         }
