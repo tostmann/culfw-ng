@@ -226,8 +226,16 @@ void slowrf_task(void *pvParameters) {
                         len += snprintf(out+len, sizeof(out)-len, "%02X\r\n", rssi);
                         usb_serial_jtag_write_bytes(out, len, 0);
                     }
+                    if (fht_dec.byte_cnt >= 5) {
+                        char out[64];
+                        int len = snprintf(out, sizeof(out), "T");
+                        for (int i = 0; i < fht_dec.byte_cnt; i++) len += snprintf(out + len, sizeof(out) - len, "%02X", fht_dec.data[i]);
+                        len += snprintf(out + len, sizeof(out) - len, "%02X\r\n", rssi);
+                        usb_serial_jtag_write_bytes(out, len, 0);
+                    }
                 }
                 reset_fs20(&fs_dec);
+                reset_fht(&fht_dec);
                 reset_itv1(&it1_dec);
                 reset_itv3(&it3_dec);
                 reset_sensor(&hms_dec);
