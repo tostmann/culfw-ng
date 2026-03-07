@@ -163,53 +163,48 @@ void slowrf_task(void *pvParameters) {
             if (pulse > SLOWRF_SYNC_MIN) {
                 if (slowrf_reporting) {
                     uint8_t rssi = cc1101_read_rssi();
-                    bool is_433 = cc1101_is_433();
 
-                    if (!is_433 && fs_dec.byte_cnt >= 4) {
+                    if (fs_dec.byte_cnt >= 4) {
                         char out[64];
                         int len = snprintf(out, sizeof(out), "F");
                         for (int i = 0; i < fs_dec.byte_cnt; i++) len += snprintf(out + len, sizeof(out) - len, "%02X", fs_dec.data[i]);
                         len += snprintf(out + len, sizeof(out) - len, "%02X\r\n", rssi);
                         usb_serial_jtag_write_bytes(out, len, 0);
                     }
-                    if (is_433) {
-                        if (it1_dec.pos == 12 && !it3_last_sync) {
-                            char out[64];
-                            int len = snprintf(out, sizeof(out), "is%s%02X\r\n", it1_dec.s, rssi);
-                            usb_serial_jtag_write_bytes(out, len, 0);
+                    if (it1_dec.pos == 12 && !it3_last_sync) {
+                        char out[64];
+                        int len = snprintf(out, sizeof(out), "is%s%02X\r\n", it1_dec.s, rssi);
+                        usb_serial_jtag_write_bytes(out, len, 0);
+                    }
+                    if (it3_dec.bit_pos == 32) {
+                        char out[128];
+                        int len = snprintf(out, sizeof(out), "is%s%02X\r\n", it3_dec.s, rssi);
+                        usb_serial_jtag_write_bytes(out, len, 0);
+                    }
+                    if (os_dec.nibble_cnt >= 16) {
+                        char out[128];
+                        int len = snprintf(out, sizeof(out), "P");
+                        for (int i=0; i < os_dec.nibble_cnt; i++) {
+                            int idx = i / 2;
+                            uint8_t n = (i % 2 == 0) ? (os_dec.data[idx] & 0xF) : (os_dec.data[idx] >> 4);
+                            len += snprintf(out + len, sizeof(out) - len, "%X", n);
                         }
-                        if (it3_dec.bit_pos == 32) {
-                            char out[128];
-                            int len = snprintf(out, sizeof(out), "is%s%02X\r\n", it3_dec.s, rssi);
-                            usb_serial_jtag_write_bytes(out, len, 0);
-                        }
-                        // ... (OS omitted for brevity, but I will include it)
-                        if (os_dec.nibble_cnt >= 16) {
-                            char out[128];
-                            int len = snprintf(out, sizeof(out), "P"); // OS V2/3 uses 'P' prefix in culfw
-                            for (int i=0; i < os_dec.nibble_cnt; i++) {
-                                int idx = i / 2;
-                                uint8_t n = (i % 2 == 0) ? (os_dec.data[idx] & 0xF) : (os_dec.data[idx] >> 4);
-                                len += snprintf(out + len, sizeof(out) - len, "%X", n);
-                            }
-                            len += snprintf(out + len, sizeof(out) - len, "%02X\r\n", rssi);
-                            usb_serial_jtag_write_bytes(out, len, 0);
-                        }
-                    } else {
-                        if (hms_dec.nibble_cnt >= 19) {
-                            char out[64];
-                            int len = snprintf(out, sizeof(out), "H");
-                            for(int i=0; i<hms_dec.nibble_cnt; i++) len += snprintf(out+len, sizeof(out)-len, "%X", hms_dec.nibbles[i]);
-                            len += snprintf(out+len, sizeof(out)-len, "%02X\r\n", rssi);
-                            usb_serial_jtag_write_bytes(out, len, 0);
-                        }
-                        if (s300_dec.nibble_cnt >= 9) {
-                            char out[64];
-                            int len = snprintf(out, sizeof(out), "K");
-                            for(int i=0; i<s300_dec.nibble_cnt; i++) len += snprintf(out+len, sizeof(out)-len, "%X", s300_dec.nibbles[i]);
-                            len += snprintf(out+len, sizeof(out)-len, "%02X\r\n", rssi);
-                            usb_serial_jtag_write_bytes(out, len, 0);
-                        }
+                        len += snprintf(out + len, sizeof(out) - len, "%02X\r\n", rssi);
+                        usb_serial_jtag_write_bytes(out, len, 0);
+                    }
+                    if (hms_dec.nibble_cnt >= 19) {
+                        char out[64];
+                        int len = snprintf(out, sizeof(out), "H");
+                        for(int i=0; i<hms_dec.nibble_cnt; i++) len += snprintf(out+len, sizeof(out)-len, "%X", hms_dec.nibbles[i]);
+                        len += snprintf(out+len, sizeof(out)-len, "%02X\r\n", rssi);
+                        usb_serial_jtag_write_bytes(out, len, 0);
+                    }
+                    if (s300_dec.nibble_cnt >= 9) {
+                        char out[64];
+                        int len = snprintf(out, sizeof(out), "K");
+                        for(int i=0; i<s300_dec.nibble_cnt; i++) len += snprintf(out+len, sizeof(out)-len, "%X", s300_dec.nibbles[i]);
+                        len += snprintf(out+len, sizeof(out)-len, "%02X\r\n", rssi);
+                        usb_serial_jtag_write_bytes(out, len, 0);
                     }
                 }
                 reset_fs20(&fs_dec);
@@ -228,38 +223,36 @@ void slowrf_task(void *pvParameters) {
                 continue;
             }
 
-            // --- OREGON SCIENTIFIC (433 MHz) ---
-            if (cc1101_is_433()) {
-                if (pulse > 200 && pulse < 1400) {
-                    if (!os_dec.sync_found) {
-                        if (pulse < 700) {
-                            if (++os_dec.pulse_state > 16) { // Preamble (1s/0s)
-                                os_dec.sync_found = true;
-                                os_dec.nibble_cnt = 0; os_dec.bit_cnt = 0; os_dec.pulse_state = 0;
-                            }
-                        } else os_dec.pulse_state = 0;
-                    } else {
-                        int bit = -1;
-                        if (pulse < 700) { // Short pulse
-                            if (os_dec.pulse_state == 1) { 
-                                bit = (level == 1) ? 0 : 1; // Manchester: Mid-bit transition
-                                os_dec.pulse_state = 0; 
-                            } else os_dec.pulse_state = 1;
-                        } else { // Long pulse (missing mid-bit)
-                            bit = (level == 1) ? 0 : 1;
-                            os_dec.pulse_state = 1;
+            // --- OREGON SCIENTIFIC ---
+            if (pulse > 200 && pulse < 1400) {
+                if (!os_dec.sync_found) {
+                    if (pulse < 700) {
+                        if (++os_dec.pulse_state > 16) { // Preamble (1s/0s)
+                            os_dec.sync_found = true;
+                            os_dec.nibble_cnt = 0; os_dec.bit_cnt = 0; os_dec.pulse_state = 0;
                         }
-                        
-                        if (bit != -1) {
-                            if (os_dec.nibble_cnt < 20) {
-                                int idx = os_dec.nibble_cnt / 2;
-                                if (os_dec.nibble_cnt % 2 == 0) os_dec.data[idx] = (os_dec.data[idx] & 0xF0) | (bit << os_dec.bit_cnt);
-                                else os_dec.data[idx] = (os_dec.data[idx] & 0x0F) | (bit << (os_dec.bit_cnt + 4));
-                                
-                                if (++os_dec.bit_cnt == 4) {
-                                    os_dec.bit_cnt = 0;
-                                    os_dec.nibble_cnt++;
-                                }
+                    } else os_dec.pulse_state = 0;
+                } else {
+                    int bit = -1;
+                    if (pulse < 700) { // Short pulse
+                        if (os_dec.pulse_state == 1) { 
+                            bit = (level == 1) ? 0 : 1; // Manchester: Mid-bit transition
+                            os_dec.pulse_state = 0; 
+                        } else os_dec.pulse_state = 1;
+                    } else { // Long pulse (missing mid-bit)
+                        bit = (level == 1) ? 0 : 1;
+                        os_dec.pulse_state = 1;
+                    }
+                    
+                    if (bit != -1) {
+                        if (os_dec.nibble_cnt < 20) {
+                            int idx = os_dec.nibble_cnt / 2;
+                            if (os_dec.nibble_cnt % 2 == 0) os_dec.data[idx] = (os_dec.data[idx] & 0xF0) | (bit << os_dec.bit_cnt);
+                            else os_dec.data[idx] = (os_dec.data[idx] & 0x0F) | (bit << (os_dec.bit_cnt + 4));
+                            
+                            if (++os_dec.bit_cnt == 4) {
+                                os_dec.bit_cnt = 0;
+                                os_dec.nibble_cnt++;
                             }
                         }
                     }
