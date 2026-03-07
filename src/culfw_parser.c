@@ -15,6 +15,7 @@
 #include "slowrf.h"
 #include "matter_bridge.h"
 #include "generic_decoder.h"
+#include "config_loader.h"
 #include "rom/ets_sys.h"
 #include "esp_netif.h"
 
