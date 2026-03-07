@@ -281,10 +281,10 @@ void slowrf_task(void *pvParameters) {
             it1_dec.pulse_cnt++;
             if (it1_dec.pulse_cnt >= 4) {
                 int idx = (it1_dec.pulse_cnt - 4) % 4;
-                uint16_t p1 = it1_dec.pulse_buf[idx], p2 = it1_dec.pulse_buf[(idx+1)%4], p3 = it1_dec.pulse_buf[(idx+2)%4], p4 = it1_dec.pulse_buf[(idx+3)%4];
-                #define IS_T_V1(p) (p >= 200 && p <= 700)
-                #define IS_3T_V1(p) (p > 800 && p <= 1750)
-                if (it1_dec.pos < 12) {
+                uint16_t p1 = it1_dec.pulse_buf[idx], p2 = it1_dec.pulse_buf[(idx + 1) % 4], p3 = it1_dec.pulse_buf[(idx + 2) % 4], p4 = it1_dec.pulse_buf[(idx + 3) % 4];
+                #define IS_T_V1(p) (p >= 150 && p <= 750)
+                #define IS_3T_V1(p) (p > 800 && p <= 1850)
+                if (it1_dec.pos < 16) {
                     char bit = 0;
                     if (IS_T_V1(p1) && IS_3T_V1(p2) && IS_T_V1(p3) && IS_3T_V1(p4)) bit = '0';
                     else if (IS_3T_V1(p1) && IS_T_V1(p2) && IS_3T_V1(p3) && IS_T_V1(p4)) bit = '1';
