@@ -40,7 +40,7 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
     *   **Software-Override:** Ein Benutzer kann die Frequenz zur Laufzeit per Kommando (`f433` oder `f868`) umschalten. Diese Einstellung wird **permanent im NVS gespeichert** und überschreibt beim nächsten Start die Hardware-Erkennung. Dies ermöglicht den korrekten Betrieb von fehlbestückten Modulen.
 *   **Signal-Erfassung (RX):**
     *   Der CC1101 wird im **asynchronen seriellen Modus** (`PKTCTRL0 = 0x32`) betrieben, um ein rohes, demoduliertes ASK/OOK-Signal am `GDO0_PIN` bereitzustellen. Dieser Pin wird als Interrupt-Quelle genutzt, um die Timestamps der Signalflanken an den `slowrf_task` zu übergeben.
-    *   **Rausch-Unterdrückung:** `GDO2` ist als **Carrier Sense** konfiguriert (`IOCFG2=0x0E`). Der GPIO-Interrupt wird nur verarbeitet, wenn der Carrier-Sense-Pin aktiv ist, wodurch Rauschen bei inaktivem Kanal effektiv gefiltert wird.
+    *   **Rausch-Unterdrückung:** `GDO2` ist als **Carrier Sense** konfiguriert (`IOCFG2=0x0E`). Der GPIO-Interrupt wird nur verarbeitet, wenn der Carrier-Sense-Pin aktiv ist, wodurch Rauschen bei inaktivem Kanal effektiv gefiltert wird. Die AGC-Einstellungen wurden für maximale Empfindlichkeit optimiert (`AGCCTRL2=0x07`).
     *   **Cross-Band-Logik:** Die strikte Frequenzband-Prüfung im Decoder wurde entfernt, um die funktionale Validierung aller Protokoll-Decoder auf einer einzigen, physikalisch optimalen Frequenz (z.B. 433 MHz bei fehlbestückten Modulen) zu ermöglichen und die Flexibilität zu erhöhen. Der Stick fungiert nun als Multi-Protokoll-Gateway für die jeweils konfigurierte Frequenz.
 *   **Signal-Aussendung (TX):**
     *   Der `GDO0_PIN` wird dynamisch als Output konfiguriert, um Sendesequenzen per Bit-Banging mit präzisen Microsekunden-Delays (`ets_delay_us`) zu erzeugen.
@@ -62,6 +62,7 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
     *   `H<HEX>`-Kommando zum Senden von HMS-Protokolldaten.
     *   `T<HEX>`-Kommando zum Senden von FHT-Protokolldaten.
     *   `f<freq>`-Kommando (`f433`/`f868`) zur Laufzeit-Umschaltung der Frequenz.
+    *   `m<HEX>`-Kommando zum Senden von rohen Pulsfolgen (µs-genau) zur Emulation beliebiger OOK-Protokolle.
 
 ## 3. Implementierungsstatus
 
@@ -103,17 +104,18 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 
 *   **[GELÖST] Hardware-Fehlbestückung (Chargenproblem) bestätigt:** Umfangreiche Tests (inkl. Vergleich mit weiteren Modulen der gleichen Charge) haben zweifelsfrei bestätigt, dass die verwendeten `E07-900MM10S` Module trotz ihres 868-MHz-Labels physikalisch für 433 MHz bestückt sind. Die Signalstärke-Differenz zwischen den Bändern beträgt >70 dB, was einen Software-Fehler ausschließt. Mit der neuen Laufzeit-Frequenzumschaltung (`f433`-Kommando) und der persistenten Speicherung der Einstellung im NVS können diese Module nun dauerhaft und korrekt als 433-MHz-Sticks betrieben werden. Das Problem ist damit per Software vollständig gelöst.
 *   **[INFO]** Die Entfernung der strikten Frequenzband-Prüfung im Decoder ermöglicht es, alle Protokolle (z.B. auch FS20) auf einem physikalisch besser geeigneten Band (z.B. 433 MHz) zu testen und zu betreiben. Dies erhöht die Flexibilität und ist entscheidend für den Betrieb mit falsch bestückter Hardware.
-*   **[INFO]** Die culfw-Implementierung des FS20-Protokolls verwendet **gerade Parität (Even Parity)**, abweichend von manchen Spezifikationen. Dies ist für die Kompatibilität entscheidend.
-*   **[INFO]** Eine längere Präambel (z.B. 24 '0'-Bits statt 12) und eine hohe Wiederholrate (z.B. 10x) verbessern die FS20-Übertragungssicherheit signifikant.
+*   **[INFO]** Das `m<HEX>`-Kommando zum Senden roher Pulsfolgen ist ein extrem mächtiges Werkzeug zur Emulation und zum Testen beliebiger OOK-Protokolle (ähnlich zu `rtl_433`), ohne dass die Firmware neu kompiliert werden muss.
+*   **[INFO]** Eine Feinabstimmung der AGC-Einstellungen des CC1101 (z.B. `AGCCTRL2=0x07`) und des Carrier-Sense-Schwellwerts ist entscheidend für den zuverlässigen Empfang von schwachen Sensorsignalen.
+*   **[INFO]** Ein Cross-Validation-Testaufbau mit zwei CUL32-C6 (einer als Sender/Emulator, einer als Empfänger) und einem Legacy-CUL als Referenz hat sich als sehr effektiv für das Debugging von Protokoll-Decodern erwiesen.
 *   **[INFO]** Hardwareseitiges Carrier Sense (RSSI-Schwellwert) über den GDO2-Pin ist eine sehr effektive Methode, um den RX-Prozessor von der Verarbeitung von reinem Rauschen zu entlasten.
 *   **[INFO]** Das Speichern von Konfigurationen (Modus, Frequenz) im NVS ist essentiell für eine nahtlose Integration in Host-Systeme wie FHEM, da diese erwarten, dass der CUL seinen Zustand nach einem Neustart beibehält.
-*   **[INFO]** Die Remote-Register-Befehle (`R`/`W`) sind ein mächtiges Werkzeug zur Feinabstimmung der RF-Parameter (z.B. AGC-Verhalten, Frequenz-Offsets), ohne dass eine Neukompilierung erforderlich ist.
 
 ## 5. Nächste Schritte
 
 *   **FHEM-Integration:** Validierung der Firmware mit einem Host-System (FHEM) zur Sicherstellung der Kompatibilität und Langzeitstabilität.
-*   **Dokumentation:** Erstellen einer kurzen Anleitung für die neuen Diagnose- und Konfigurationsbefehle (`R`, `W`, `X99`, `TX1`/`TX0`, `H`, `f`, `T`) und die Raw-Sensor-Ausgabe (`r...`).
-*   **Langzeittests:** Überwachung der Stabilität und des Speicherverbrauchs über mehrere Tage.
+*   **RSSI-Kalibrierung:** Abgleich der ausgegebenen RSSI-Hex-Werte mit realen dBm-Werten für eine genauere Signalstärken-Anzeige.
+*   **Dokumentation:** Erstellen einer kurzen Anleitung für die neuen Diagnose- und Konfigurationsbefehle (`R`, `W`, `X99`, `f`, `H`, `T`, `m`) und die Raw-Sensor-Ausgabe (`r...`).
+*   **Langzeittests:** Überwachung der Stabilität und des Speicherverbrauchs über mehrere Tage im produktiven Einsatz.
 
 ## 6. Hardware-Konfiguration (Pinout)
 
