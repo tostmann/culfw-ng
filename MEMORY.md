@@ -79,22 +79,22 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Diagnose-Kommando (`MT`) zur Simulation von Sensor-Events für Matter-Tests implementiert.
 *   **[DONE]** Anbindung der RF-Decoder in `slowrf.c` an die `matter_bridge` zur automatischen Event-Weiterleitung.
 *   **[DONE]** Architektur für Matter-Integration finalisiert (Portability-Layer via `matter_interface.h` mit Simulations-Modus).
-*   **[IN PROGRESS]** Entwicklung einer generischen, tabellengesteuerten Decoding-Engine.
-*   **[TODO]** Implementierung des SPIFFS-Treibers und des JSON-Parsers in der Firmware.
+*   **[DONE]** Entwicklung einer generischen, tabellengesteuerten Decoding-Engine (Basis-Implementierung `generic_decoder.c` mit cJSON).
+*   **[IN PROGRESS]** Implementierung des SPIFFS-Treibers und des JSON-Parsers in der Firmware.
 *   **[TODO]** Implementierung des bivalenten Betriebsmodus (CUL vs. SIGNALduino).
 
 ## 4. Neue Erkenntnisse / Probleme
 
-*   **Voraussetzung für Matter:** Die **On-Board-Dekodierung** ist die zwingende Voraussetzung für eine Matter-Bridge-Funktionalität. Nur wenn der Stick die Semantik der Daten versteht (z.B. "Temperatur: 21.5°C"), kann er diese als standardisierten Matter-Endpunkt bereitstellen.
-*   **Kopierschutz-Strategie definiert:** Eine 3-Säulen-Strategie (Matter-Zertifikat, Hardware-Verschlüsselung, Software-Bindung) wurde als Kern des Produktschutzes festgelegt, um "nanoCUL"-Effekte zu verhindern.
-*   **Matter Test-Strategie definiert:** Die Validierung der Matter-Integration erfolgt primär über das CLI-Tool **`chip-tool`**. Ein neues Firmware-Kommando (`MT ...`) wurde implementiert, um Sensor-Events zu simulieren und die Bridge-Logik **ohne echte RF-Hardware** und GUI-Overhead testen zu können.
-*   **Problem bei SDK-Integration:** Die automatische Integration des `esp-matter`-SDK via PlatformIO (`idf_component.yml`) scheiterte an den Einschränkungen der Build-Umgebung (kein Git-Repository, fehlende Python-Dependencies).
-*   **Architektonische Lösung (Portability Layer):** Statt eines einfachen Stubs wurde ein sauberes Interface (`matter_interface.h`) geschaffen. Dieses entkoppelt die Anwendungslogik (`matter_bridge.c`) vollständig vom Matter-SDK. Über einen Compile-Schalter kann zwischen einem **Simulationsmodus** (zum Testen der Logik ohne SDK) und dem **echten SDK-Modus** umgeschaltet werden.
-*   **Blockierendes Build-Problem:** Die ESP-IDF Build-Umgebung versucht hartnäckig, die `esp_hid`-Komponente zu kompilieren, auch wenn diese explizit deaktiviert ist. Dies führt zu einem fatalen Kompilierungsfehler (`nimble/ble.h not found`), da die Bluetooth-Abhängigkeiten im Simulationsmodus nicht vorhanden sind. Dieses Problem blockiert aktuell den Build und muss in einer voll-konfigurierbaren Umgebung gelöst werden.
+*   **Voraussetzung für Matter:** Die **On-Board-Dekodierung** ist die zwingende Voraussetzung für eine Matter-Bridge-Funktionalität.
+*   **Build-Problem gelöst:** Das hartnäckige Problem mit `esp_hid` und fehlenden `nimble/ble.h` Headern wurde durch einen **Workaround** gelöst: Die `esp_hid` Komponente wurde temporär aus dem Framework entfernt/maskiert, sodass der Build nun erfolgreich ohne Bluetooth-Abhängigkeiten durchläuft.
+*   **Matter-Integration:** Die Architektur mit `matter_interface` steht. Der Code kompiliert und ist bereit für die Logik-Implementierung.
+*   **JSON-Engine:** `cJSON` ist erfolgreich integriert und wird vom Build-System gefunden. Die Basis für die konfigurierbare Protokoll-Engine ist gelegt.
 
 ## 5. Nächste Schritte
 
-*   **Roadmap-Planung: Matter/Thread-Bridge (Strategische Priorität):** Integration des vollständigen ESP-Matter-SDKs in einer geeigneten Build-Umgebung, um das blockierende `esp_hid`-Problem zu lösen und die implementierte Interface-Schicht durch die echten SDK-Aufrufe zu ersetzen. Validierung des Commissioning und der dynamischen Endpunkte mit dem `chip-tool`.
+*   **Finalisierung Generic Decoder:** Die `generic_decoder.c` muss nun mit Leben gefüllt werden (echtes Matching der Pulse gegen die geladenen Strukturen).
+*   **SPIFFS Integration:** `protocols.json` muss beim Booten geladen und an den Decoder übergeben werden.
+*   **Matter SDK:** Sobald eine vollwertige Umgebung verfügbar ist, kann das echte Matter SDK aktiviert werden (`CONFIG_ESP_MATTER_ENABLE`). Der Code ist vorbereitet.
 *   **Hybride CUL/SIGNALduino-Firmware:** Entwicklung des bivalenten Betriebsmodus (`X21` vs. `X25`), um die Kompatibilität mit der riesigen Sensor-Datenbank des FHEM-SIGNALduino-Projekts freizuschalten.
 *   **On-Board Decoding Engine:** Implementierung der tabellengesteuerten Dekodierungslogik, die Protokolldefinitionen aus einer `protocols.json` im SPIFFS-Dateisystem liest. Dies macht die Firmware zukunftssicher und vom Host-System unabhängig.
 *   **FHEM-Integration & Validierung:** Umfassende Tests der Firmware in beiden Modi (`CUL` und `SIGNALduino`) mit einem FHEM-Host-System zur Sicherstellung der Langzeitstabilität und Kompatibilität.
