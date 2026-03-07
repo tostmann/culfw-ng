@@ -66,8 +66,16 @@ static void handle_command(char *cmd) {
         bool is_433 = cc1101_is_433();
         uint8_t mac[6];
         esp_read_mac(mac, ESP_MAC_WIFI_STA);
-        len = snprintf(out, sizeof(out), "V %s culfw-NG Build: %d (%s %s) CUL32-C6 ID:%02X%02X%02X%02X%02X%02X (F-Band: %sMHz)\r\n", 
-                       FW_VERSION, BUILD_NUMBER, __DATE__, __TIME__, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], is_433 ? "433" : "868");
+        
+        esp_netif_ip_info_t ip_info;
+        esp_netif_t* netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
+        char ip_addr[16] = "0.0.0.0";
+        if (netif && esp_netif_get_ip_info(netif, &ip_info) == ESP_OK) {
+            esp_ip4addr_ntoa(&ip_info.ip, ip_addr, sizeof(ip_addr));
+        }
+
+        len = snprintf(out, sizeof(out), "V %s culfw-NG Build: %d (%s %s) CUL32-C6 ID:%02X%02X%02X%02X%02X%02X IP:%s (F-Band: %sMHz)\r\n", 
+                       FW_VERSION, BUILD_NUMBER, __DATE__, __TIME__, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], ip_addr, is_433 ? "433" : "868");
     } else if (cmd[0] == 'X') {
         if (cmd[1] == '0' && cmd[2] == '0') {
             reporting_enabled = false;
