@@ -272,30 +272,32 @@ void slowrf_task(void *pvParameters) {
             }
 
             // --- OREGON SCIENTIFIC (V2/V3) ---
-            if (pulse > 200 && pulse < 1300) {
+            if (pulse > 200 && pulse < 1400) {
                 if (!os_dec.sync_found) {
-                    if (pulse > 350 && pulse < 650) {
-                        if (++os_dec.pulse_state > 12) {
+                    if (pulse > 350 && pulse < 700) { // Short pulse
+                        if (++os_dec.pulse_state > 16) {
                             os_dec.sync_found = true;
                             os_dec.nibble_cnt = 0; os_dec.bit_cnt = 0; os_dec.pulse_state = 0;
+                            memset(os_dec.data, 0, sizeof(os_dec.data));
                         }
                     } else os_dec.pulse_state = 0;
                 } else {
+                    // Manchester: T=500us. Short=T, Long=2T. 
+                    // OS: Transition mid-bit. '1' is Fall, '0' is Rise.
                     int bit = -1;
-                    if (pulse < 750) { // Short (T)
+                    if (pulse < 800) { // Short
                         if (os_dec.pulse_state == 1) {
-                            bit = (level == 1) ? 1 : 0; 
+                            bit = (level == 1) ? 1 : 0; // Transition happened
                             os_dec.pulse_state = 0;
                         } else os_dec.pulse_state = 1;
-                    } else if (pulse < 1250) { // Long (2T)
+                    } else { // Long
                         bit = (level == 1) ? 1 : 0;
                         os_dec.pulse_state = 1;
                     }
 
                     if (bit != -1) {
-                        if (os_dec.nibble_cnt < 20) {
+                        if (os_dec.nibble_cnt < 24) {
                             if (bit) os_dec.data[os_dec.nibble_cnt/2] |= (1 << (os_dec.bit_cnt + (os_dec.nibble_cnt % 2 ? 4 : 0)));
-                            else     os_dec.data[os_dec.nibble_cnt/2] &= ~(1 << (os_dec.bit_cnt + (os_dec.nibble_cnt % 2 ? 4 : 0)));
                             if (++os_dec.bit_cnt == 4) {
                                 os_dec.bit_cnt = 0;
                                 if (os_dec.nibble_cnt == 0 && (os_dec.data[0] & 0xF) != 0xA) os_dec.sync_found = false;
