@@ -114,6 +114,13 @@ bool generic_decoder_load_from_json(const char* json_string) {
         cJSON *freq = cJSON_GetObjectItem(proto, "freq");
         p->freq = freq ? freq->valueint : 433;
 
+        cJSON *type = cJSON_GetObjectItem(proto, "type");
+        if (type && type->valuestring && strcmp(type->valuestring, "sensor") == 0) {
+            p->matter_type = 1;
+        } else {
+            p->matter_type = 0; // Default switch
+        }
+
         cJSON *timing = cJSON_GetObjectItem(proto, "timing");
         if (timing) {
             p->short_us = cJSON_GetObjectItem(timing, "short")->valueint;
