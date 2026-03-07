@@ -256,6 +256,7 @@ void generic_decoder_process_pulse(uint16_t duration, uint8_t level) {
             
             bool possible0 = s->match_bit0;
             bool possible1 = s->match_bit1;
+            // ESP_LOGI(TAG, "BitMatch: P:%d L:%d Pos0:%d Pos1:%d", duration, level, s->bit0_match_idx, s->bit1_match_idx);
             
             // Check Bit 0
             if (possible0) {
