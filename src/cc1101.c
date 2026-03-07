@@ -125,31 +125,38 @@ esp_err_t cc1101_init() {
 }
 
 void cc1101_set_rx_mode() {
+    cc1101_lock();
     cc1101_cmd_strobe(CC1101_SIDLE);
     gpio_set_direction(GPIO_GDO0, GPIO_MODE_INPUT);
-    cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Output
+    cc1101_write_reg(0x02, 0x0D); 
     cc1101_cmd_strobe(CC1101_SRX);
     gpio_intr_enable(GPIO_GDO0);
+    cc1101_unlock();
 }
 
 void cc1101_set_tx_mode() {
+    cc1101_lock();
     gpio_intr_disable(GPIO_GDO0);
     cc1101_cmd_strobe(CC1101_SIDLE);
     vTaskDelay(pdMS_TO_TICKS(1));
-    cc1101_write_reg(0x02, 0x0D); // IOCFG0: GDO0 Serial Data Input
+    cc1101_write_reg(0x02, 0x0D); 
     gpio_set_direction(GPIO_GDO0, GPIO_MODE_OUTPUT);
     gpio_set_level(GPIO_GDO0, 0);
     cc1101_cmd_strobe(CC1101_STX);
     
-    // Wait for TX mode
     int timeout = 100;
     while (((cc1101_read_reg(0x35 | CC1101_READ_BURST) & 0x70) != 0x30) && timeout--) {
+        cc1101_unlock();
         vTaskDelay(1);
+        cc1101_lock();
     }
+    cc1101_unlock();
 }
 
 void cc1101_set_idle_mode() {
+    cc1101_lock();
     cc1101_cmd_strobe(CC1101_SIDLE);
+    cc1101_unlock();
 }
 
 void cc1101_set_frequency(bool is_433) {
@@ -162,22 +169,25 @@ void cc1101_set_frequency(bool is_433) {
         nvs_close(my_handle);
     }
 
+    cc1101_lock();
     cc1101_cmd_strobe(CC1101_SIDLE);
     if (is_433) {
-        cc1101_write_reg(0x0D, 0x10); // FREQ2
-        cc1101_write_reg(0x0E, 0xB3); // FREQ1
-        cc1101_write_reg(0x0F, 0x3B); // FREQ0 (433.92 MHz)
+        cc1101_write_reg(0x0D, 0x10); 
+        cc1101_write_reg(0x0E, 0xB3); 
+        cc1101_write_reg(0x0F, 0x3B); 
     } else {
-        cc1101_write_reg(0x0D, 0x21); // FREQ2
-        cc1101_write_reg(0x0E, 0x65); // FREQ1
-        cc1101_write_reg(0x0F, 0x6A); // FREQ0 (868.3 MHz)
+        cc1101_write_reg(0x0D, 0x21); 
+        cc1101_write_reg(0x0E, 0x65); 
+        cc1101_write_reg(0x0F, 0x6A); 
     }
+    cc1101_unlock();
     cc1101_set_rx_mode();
 }
 
 uint8_t cc1101_read_rssi() {
-    // RSSI is in 0x34 status register
+    cc1101_lock();
     uint8_t rssi_raw = cc1101_read_reg(0x34 | CC1101_READ_BURST);
+    cc1101_unlock();
     return rssi_raw;
 }
 
