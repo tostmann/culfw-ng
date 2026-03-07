@@ -14,6 +14,7 @@
 #include "cc1101.h"
 #include "slowrf.h"
 #include "matter_bridge.h"
+#include "generic_decoder.h"
 #include "rom/ets_sys.h"
 #include "esp_netif.h"
 
