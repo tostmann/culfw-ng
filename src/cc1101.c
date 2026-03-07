@@ -355,6 +355,46 @@ void cc1101_send_hms(const char* hex_data) {
     gpio_set_level(GPIO_LED, 1);
 }
 
+static void fht_bit(int bit) {
+    if (bit) {
+        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(600);
+        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(400);
+    } else {
+        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(400);
+        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(600);
+    }
+}
+
+void cc1101_send_fht(const char* hex_data) {
+    uint8_t data[16];
+    int len = 0;
+    for (int i = 0; i < (int)strlen(hex_data) && i < 32; i += 2) {
+        char hex[3] = { hex_data[i], hex_data[i+1], 0 };
+        data[len++] = strtol(hex, NULL, 16);
+    }
+    
+    gpio_set_level(GPIO_LED, 0);
+    cc1101_set_tx_mode();
+    vTaskDelay(pdMS_TO_TICKS(5));
+
+    for (int r = 0; r < 3; r++) {
+        for (int i = 0; i < 12; i++) fht_bit(0);
+        fht_bit(0); fht_bit(0); fht_bit(0); fht_bit(0);
+        fht_bit(1); fht_bit(1); fht_bit(0); fht_bit(0);
+
+        for (int i = 0; i < len; i++) {
+            fht_bit(0); // Start bit
+            for (int bit = 7; bit >= 0; bit--) fht_bit((data[i] >> bit) & 1);
+            fht_bit(1); // Stop bit
+        }
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+    
+    gpio_set_level(GPIO_GDO0, 0);
+    gpio_set_level(GPIO_LED, 1);
+    cc1101_set_rx_mode();
+}
+
 esp_err_t cc1101_write_reg(uint8_t reg, uint8_t val) {
     spi_transaction_t t = {
         .length = 16,
