@@ -34,7 +34,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **Zukünftige Architektur: On-Board Intelligence & Matter**
     *   **Dateisystem:** Integration eines **SPIFFS-Dateisystems** zur Speicherung einer flexiblen Protokoll-Datenbank (`protocols.json`).
     *   **Table-Driven Decoding Engine:** Anstelle von fest einkompilierten Decodern wird eine generische Engine die Pulsfolgen mit den in `protocols.json` definierten Mustern abgleichen.
-    *   **Matter-Architektur:** Der Stick wird als **Matter Aggregator (Bridge)** implementiert. Nur das Gateway wird einmalig gepaired. Erkannte SlowRF-Geräte werden als dynamische **Endpoints** (z.B. Temperatursensor, Schalter) im Matter-Netzwerk on-the-fly angelegt und über eine **"Dynamic Endpoint Registry"** (`matter_bridge.c`) verwaltet. Die Anwendungslogik ist gegen eine **API-Wrapper-Schicht** (`matter_wrapper.h`) entwickelt, um die Kompilierbarkeit ohne das vollständige SDK zu gewährleisten.
+    *   **Matter-Architektur:** Der Stick wird als **Matter Aggregator (Bridge)** implementiert. Nur das Gateway wird einmalig gepaired. Erkannte SlowRF-Geräte werden als dynamische **Endpoints** (z.B. Temperatursensor, Schalter) im Matter-Netzwerk on-the-fly angelegt und über eine **"Dynamic Endpoint Registry"** (`matter_bridge.c`) verwaltet. Die Anwendungslogik ist gegen eine **API-Interface-Schicht** (`matter_interface.h`) entwickelt, um die Kompilierbarkeit ohne das vollständige SDK zu gewährleisten (Simulations-Modus).
 *   **Bivalenter Betriebsmodus (Hybride Intelligenz):** Die Firmware wird umschaltbar gestaltet, um die Stärken von CUL und SIGNALduino zu vereinen.
     *   **CUL-Modus (`X21`):** 100%ige Kompatibilität zum etablierten CUL-Protokoll.
     *   **SIGNALduino-Modus (`X25`):** Vollständige Emulation eines SIGNALduino mit Rohdaten-Ausgabe (`MU;...`, `MS;...`).
@@ -78,7 +78,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Basis-Struktur für Matter-Bridge-Modul (`matter_bridge.c/h`) erstellt (Dynamic Endpoint Registry).
 *   **[DONE]** Diagnose-Kommando (`MT`) zur Simulation von Sensor-Events für Matter-Tests implementiert.
 *   **[DONE]** Anbindung der RF-Decoder in `slowrf.c` an die `matter_bridge` zur automatischen Event-Weiterleitung.
-*   **[DONE]** Implementierung der Matter-Bridge-Logik (Dynamic Endpoints) gegen eine API-Wrapper-Schicht (`matter_wrapper.h`), um die Entwicklung vom SDK-Build zu entkoppeln.
+*   **[DONE]** Architektur für Matter-Integration finalisiert (Portability-Layer via `matter_interface.h` mit Simulations-Modus).
 *   **[IN PROGRESS]** Entwicklung einer generischen, tabellengesteuerten Decoding-Engine.
 *   **[TODO]** Implementierung des SPIFFS-Treibers und des JSON-Parsers in der Firmware.
 *   **[TODO]** Implementierung des bivalenten Betriebsmodus (CUL vs. SIGNALduino).
@@ -89,11 +89,12 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **Kopierschutz-Strategie definiert:** Eine 3-Säulen-Strategie (Matter-Zertifikat, Hardware-Verschlüsselung, Software-Bindung) wurde als Kern des Produktschutzes festgelegt, um "nanoCUL"-Effekte zu verhindern.
 *   **Matter Test-Strategie definiert:** Die Validierung der Matter-Integration erfolgt primär über das CLI-Tool **`chip-tool`**. Ein neues Firmware-Kommando (`MT ...`) wurde implementiert, um Sensor-Events zu simulieren und die Bridge-Logik **ohne echte RF-Hardware** und GUI-Overhead testen zu können.
 *   **Problem bei SDK-Integration:** Die automatische Integration des `esp-matter`-SDK via PlatformIO (`idf_component.yml`) scheiterte an den Einschränkungen der Build-Umgebung (kein Git-Repository, fehlende Python-Dependencies).
-*   **Lösung (API-Wrapper):** Als Workaround wurde die Bridge-Logik (`matter_bridge.c`) gegen eine **Wrapper/Stub-Schicht** (`matter_wrapper.h`) implementiert. Dies entkoppelt die Anwendungslogik vom SDK, ermöglicht eine kompilierbare und testbare Firmware und stellt sicher, dass der Code "SDK-ready" ist. Die vollständige Integration erfordert nur noch den Austausch des Wrappers gegen das echte SDK in einer geeigneten Build-Umgebung.
+*   **Architektonische Lösung (Portability Layer):** Statt eines einfachen Stubs wurde ein sauberes Interface (`matter_interface.h`) geschaffen. Dieses entkoppelt die Anwendungslogik (`matter_bridge.c`) vollständig vom Matter-SDK. Über einen Compile-Schalter kann zwischen einem **Simulationsmodus** (zum Testen der Logik ohne SDK) und dem **echten SDK-Modus** umgeschaltet werden.
+*   **Blockierendes Build-Problem:** Die ESP-IDF Build-Umgebung versucht hartnäckig, die `esp_hid`-Komponente zu kompilieren, auch wenn diese explizit deaktiviert ist. Dies führt zu einem fatalen Kompilierungsfehler (`nimble/ble.h not found`), da die Bluetooth-Abhängigkeiten im Simulationsmodus nicht vorhanden sind. Dieses Problem blockiert aktuell den Build und muss in einer voll-konfigurierbaren Umgebung gelöst werden.
 
 ## 5. Nächste Schritte
 
-*   **Roadmap-Planung: Matter/Thread-Bridge (Strategische Priorität):** Integration des vollständigen ESP-Matter-SDKs in einer geeigneten Build-Umgebung, um die implementierten API-Wrapper durch die echten SDK-Aufrufe zu ersetzen. Validierung des Commissioning und der dynamischen Endpunkte mit dem `chip-tool`.
+*   **Roadmap-Planung: Matter/Thread-Bridge (Strategische Priorität):** Integration des vollständigen ESP-Matter-SDKs in einer geeigneten Build-Umgebung, um das blockierende `esp_hid`-Problem zu lösen und die implementierte Interface-Schicht durch die echten SDK-Aufrufe zu ersetzen. Validierung des Commissioning und der dynamischen Endpunkte mit dem `chip-tool`.
 *   **Hybride CUL/SIGNALduino-Firmware:** Entwicklung des bivalenten Betriebsmodus (`X21` vs. `X25`), um die Kompatibilität mit der riesigen Sensor-Datenbank des FHEM-SIGNALduino-Projekts freizuschalten.
 *   **On-Board Decoding Engine:** Implementierung der tabellengesteuerten Dekodierungslogik, die Protokolldefinitionen aus einer `protocols.json` im SPIFFS-Dateisystem liest. Dies macht die Firmware zukunftssicher und vom Host-System unabhängig.
 *   **FHEM-Integration & Validierung:** Umfassende Tests der Firmware in beiden Modi (`CUL` und `SIGNALduino`) mit einem FHEM-Host-System zur Sicherstellung der Langzeitstabilität und Kompatibilität.
