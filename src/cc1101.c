@@ -395,6 +395,46 @@ void cc1101_send_fht(const char* hex_data) {
     cc1101_set_rx_mode();
 }
 
+static void os_manchester(int bit) {
+    int T = 500;
+    if (bit) {
+        // '1': Transition High to Low mid-bit
+        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T);
+        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T);
+    } else {
+        // '0': Transition Low to High mid-bit
+        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T);
+        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T);
+    }
+}
+
+void cc1101_send_oregon(const char* hex_data) {
+    gpio_set_level(GPIO_LED, 0);
+    cc1101_set_tx_mode();
+    vTaskDelay(pdMS_TO_TICKS(5));
+
+    for (int r = 0; r < 2; r++) {
+        // Preamble: 16-24 '1' bits (short pulses)
+        for (int i = 0; i < 32; i++) {
+            gpio_set_level(GPIO_GDO0, 1); ets_delay_us(500);
+            gpio_set_level(GPIO_GDO0, 0); ets_delay_us(500);
+        }
+        
+        // Data in Manchester
+        for (int i = 0; hex_data[i]; i++) {
+            uint8_t n = (hex_data[i] >= 'A') ? (hex_data[i]-'A'+10) : (hex_data[i]-'0');
+            for (int b = 0; b < 4; b++) { // OS sends LSB first
+                os_manchester((n >> b) & 1);
+            }
+        }
+        gpio_set_level(GPIO_GDO0, 0);
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+
+    cc1101_set_rx_mode();
+    gpio_set_level(GPIO_LED, 1);
+}
+
 esp_err_t cc1101_write_reg(uint8_t reg, uint8_t val) {
     spi_transaction_t t = {
         .length = 16,
