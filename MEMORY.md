@@ -13,26 +13,28 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 *   **SPI-Kommunikation:** Die SPI-Geschwindigkeit wurde zur Erhöhung der Stabilität auf 500 kHz festgelegt. Für das Auslesen der Statusregister (z.B. `PARTNUM`, `VERSION`) wird der `READ_BURST`-Modus (`0xC0`) verwendet, da der Chip Adressen unter `0x30` sonst als Command-Strobes interpretiert.
 *   **Persistenz:** Wichtige Einstellungen (z.B. der Reporting-Modus `X21`, die RF-Frequenz) werden im **Non-Volatile Storage (NVS)** des ESP32 gespeichert und bei Neustart automatisch wiederhergestellt.
 *   **Software-Architektur:** FreeRTOS-Task-basiert.
-    *   `culfw_parser_task`: Verarbeitet eingehende serielle Befehle. Unterscheidet nun zwischen strukturierten Kommandos (z.B. `F12345678`) und Raw-Befehlen. Erkennt Protokollvarianten anhand der Datenlänge (z.B. `is` für Intertechno V1 vs. V3). Verarbeitet das `H<HEX>` Kommando zum Senden von HMS-Daten und die Frequenzumschaltung (`f433`/`f868`).
+    *   `culfw_parser_task`: Verarbeitet eingehende serielle Befehle. Unterscheidet nun zwischen strukturierten Kommandos (z.B. `F12345678`) und Raw-Befehlen. Erkennt Protokollvarianten anhand der Datenlänge (z.B. `is` für Intertechno V1 vs. V3). Verarbeitet das `H<HEX>` Kommando zum Senden von HMS-Daten, das `T<HEX>` Kommando für FHT-Daten und die Frequenzumschaltung (`f433`/`f868`).
     *   `slowrf_task`: Implementiert parallele Zustandsmaschinen/Decoder, um aus den vom CC1101 empfangenen Pulsfolgen gültige Datenpakete zu dekodieren.
         *   **FS20-Decoder:** Dedizierte Sync-Bit-Erkennung -> 9-Bit-Akkumulation (8 Daten + 1 Parität) -> Prüfung auf **gerade Parität (Even Parity)**. Der Decoder ist robust gegen Timing-Schwankungen und kann "missed edges" (zwei kurze Pulse als ein langer Puls) verarbeiten.
         *   **Intertechno V1 Decoder:** Verwendet ein 4-Puls-Schiebefenster, um das charakteristische IT-Timing-Muster (1xT, 3xT) zu erkennen und Trits zu dekodieren. Die Timing-Toleranzen wurden erweitert, um auch Sender mit leichten Abweichungen zu erfassen.
         *   **Intertechno V3 Decoder:** Erkennt das lange Sync-Signal (~9.3ms) und dekodiert die nachfolgenden 32 PWM-kodierten Bits. Die Sync-Erkennung verhindert eine Fehldetektion von V1-Signalen.
         *   **HMS/S300TH Sensor-Decoder:** Eine generische PWM-Decoder-Logik verarbeitet Sensor-Protokolle. Sie unterscheidet '0'- und '1'-Bits anhand der Länge des High-Pulses bei konstanter Low-Puls-Länge und akkumuliert die Daten in Nibbles.
         *   **Oregon Scientific Decoder (V2/V3):** Nach Erkennung der charakteristischen OS-Präambel (eine Folge kurzer Pulse) werden die nachfolgenden, Manchester-kodierten Daten dekodiert. Der Decoder extrahiert die Daten-Nibbles und validiert das Paket anhand des Sync-Nibbles (`0xA`).
+        *   **FHT-Decoder:** Erkennt das FHT-spezifische Sync-Muster und dekodiert die nachfolgenden 9-Bit-Datenpakete (8 Datenbits + 1 Steuerbit).
 *   **Frequenzerkennung und -management:**
     *   **Hardware-Default:** Die Modulfrequenz (433/868 MHz) wird initial über einen GPIO-Pin (`GPIO_433MARKER`) mit internem Pull-Up erkannt.
     *   **Software-Override:** Ein Benutzer kann die Frequenz zur Laufzeit per Kommando (`f433` oder `f868`) umschalten. Diese Einstellung wird **permanent im NVS gespeichert** und überschreibt beim nächsten Start die Hardware-Erkennung. Dies ermöglicht den korrekten Betrieb von fehlbestückten Modulen.
 *   **Signal-Erfassung (RX):**
     *   Der CC1101 wird im **asynchronen seriellen Modus** (`PKTCTRL0 = 0x32`) betrieben, um ein rohes, demoduliertes ASK/OOK-Signal am `GDO0_PIN` bereitzustellen. Dieser Pin wird als Interrupt-Quelle genutzt, um die Timestamps der Signalflanken an den `slowrf_task` zu übergeben.
     *   **Rausch-Unterdrückung:** `GDO2` ist als **Carrier Sense** konfiguriert (`IOCFG2=0x0E`). Der GPIO-Interrupt wird nur verarbeitet, wenn der Carrier-Sense-Pin aktiv ist, wodurch Rauschen bei inaktivem Kanal effektiv gefiltert wird.
-    *   **Cross-Band-Unterdrückung:** Die `slowrf_task` prüft vor der Ausgabe eines dekodierten Pakets das per Software konfigurierte Frequenzband. 868MHz-Sticks geben nur FS20, HMS und S300TH aus, 433MHz-Sticks nur Intertechno und Oregon Scientific.
+    *   **Cross-Band-Logik:** Die strikte Frequenzband-Prüfung im Decoder wurde entfernt, um die funktionale Validierung aller Protokoll-Decoder auf einer einzigen, physikalisch optimalen Frequenz (z.B. 433 MHz bei fehlbestückten Modulen) zu ermöglichen und die Flexibilität zu erhöhen. Der Stick fungiert nun als Multi-Protokoll-Gateway für die jeweils konfigurierte Frequenz.
 *   **Signal-Aussendung (TX):**
     *   Der `GDO0_PIN` wird dynamisch als Output konfiguriert, um Sendesequenzen per Bit-Banging mit präzisen Microsekunden-Delays (`ets_delay_us`) zu erzeugen.
     *   Zur Vermeidung von Echos (Selbst-Empfang) wird der `GDO0`-Interrupt während des Sendevorgangs temporär deaktiviert.
     *   Zur Sicherstellung der Sende-Bereitschaft wird vor dem Senden der **MARCSTATE** (`0x35`) geprüft und der `STX`-Strobe bei Bedarf wiederholt, bis der Chip im `TX`-State (`0x13`) ist.
     *   Für eine korrekte ASK-Modulation und maximale Reichweite wird die `PATABLE` mit `{0x00, 0xC0, ...}` (+10 dBm) initialisiert und das `FREND0`-Register auf `0x11` gesetzt.
     *   **FS20-Paketstruktur:** Die Präambel wurde auf 24 '0'-Bits verlängert und Pakete werden zur Erhöhung der Übertragungssicherheit **10-fach** wiederholt.
+    *   **FHT-Paketstruktur:** Für das Senden von FHT-Daten (`T`-Kommando) wird die spezifische Präambel gefolgt von den 10-Bit-Datenframes (Start, 8 Daten, Stop) per Bit-Banging erzeugt.
 *   **RF-Konfiguration:** Die Frequenzregister des CC1101 wurden präzise auf die Standard-Mittenfrequenzen kalibriert (868.30 MHz für FS20/HMS/S300TH, 433.92 MHz für Intertechno).
 *   **Versionierung:** Automatisierte Build-Nummer und detaillierter, culfw-kompatibler Versions-String (`V`-Kommando), der zur besseren Diagnose auch das erkannte Frequenzband enthält.
 *   **Diagnose & Feedback:**
@@ -73,31 +75,28 @@ Entwicklung einer culfw-kompatiblen Firmware für ESP32-C6 basierte CUL-Sticks z
 *   **[DONE]** RSSI-Reporting: Empfangene Datenpakete werden um den RSSI-Wert ergänzt.
 *   **[DONE]** Remote-Diagnose: Implementierung von `R`/`W`-Befehlen zum Lesen/Schreiben von CC1101-Registern.
 *   **[DONE]** Host-System-Interface: Periodischer "CUL-TICK" als Heartbeat implementiert.
-*   **[DONE]** Implementierung einer frequenz-selektiven Protokoll-Dekodierung zur Unterdrückung von Cross-Band-Empfang.
 *   **[DONE]** Protokoll-Erweiterung: Empfangs-Decoder für **HMS** und **S300TH** (868MHz) implementiert.
 *   **[DONE]** Protokoll-Erweiterung: Sende-Encoder für HMS (`H...`-Kommando) implementiert.
 *   **[DONE]** Protokoll-Erweiterung: Sende-Encoder und Empfangs-Decoder für **Intertechno V1 & V3** (433MHz) implementiert.
-*   **[DONE]** Protokoll-Erweiterung: Implementierung des Empfangs-Decoders für **Oregon Scientific**.
+*   **[DONE]** Protokoll-Erweiterung: Empfangs-Decoder für **Oregon Scientific**, sowie Sende- und Empfangs-Logik für **FHT** implementiert.
 *   **[DONE]** Implementierung einer Laufzeit-Frequenzumschaltung (`f433`/`f868`) mit Speicherung im NVS.
-*   **[DONE]** End-to-End Test: HMS und S300TH Empfang gegen Referenz-CUL validiert.
-*   **[DONE]** End-to-End Test: Intertechno V1/V3 (433MHz) und FS20 (868MHz) RX/TX sind gegen einen Referenz-CUL validiert, inklusive strikter Kanaltrennung.
+*   **[DONE]** End-to-End Test: Alle implementierten Protokolle (FS20, IT, HMS, FHT, OS) sind funktional auf dem 433-MHz-Band validiert.
 *   **[DONE]** Projekt-Setup: Initiales Git-Repository auf GitHub erstellt, bereinigt und Code gepusht.
 
 ## 4. Neue Erkenntnisse / Probleme
 
 *   **[GELÖST] Hardware-Fehlbestückung (Chargenproblem) bestätigt:** Umfangreiche Tests (inkl. Vergleich mit weiteren Modulen der gleichen Charge) haben zweifelsfrei bestätigt, dass die verwendeten `E07-900MM10S` Module trotz ihres 868-MHz-Labels physikalisch für 433 MHz bestückt sind. Die Signalstärke-Differenz zwischen den Bändern beträgt >70 dB, was einen Software-Fehler ausschließt. Mit der neuen Laufzeit-Frequenzumschaltung (`f433`-Kommando) und der persistenten Speicherung der Einstellung im NVS können diese Module nun dauerhaft und korrekt als 433-MHz-Sticks betrieben werden. Das Problem ist damit per Software vollständig gelöst.
+*   **[INFO]** Die Entfernung der strikten Frequenzband-Prüfung im Decoder ermöglicht es, alle Protokolle (z.B. auch FS20) auf einem physikalisch besser geeigneten Band (z.B. 433 MHz) zu testen und zu betreiben. Dies erhöht die Flexibilität und ist entscheidend für den Betrieb mit falsch bestückter Hardware.
 *   **[INFO]** Die culfw-Implementierung des FS20-Protokolls verwendet **gerade Parität (Even Parity)**, abweichend von manchen Spezifikationen. Dies ist für die Kompatibilität entscheidend.
 *   **[INFO]** Eine längere Präambel (z.B. 24 '0'-Bits statt 12) und eine hohe Wiederholrate (z.B. 10x) verbessern die FS20-Übertragungssicherheit signifikant.
 *   **[INFO]** Hardwareseitiges Carrier Sense (RSSI-Schwellwert) über den GDO2-Pin ist eine sehr effektive Methode, um den RX-Prozessor von der Verarbeitung von reinem Rauschen zu entlasten.
 *   **[INFO]** Das Speichern von Konfigurationen (Modus, Frequenz) im NVS ist essentiell für eine nahtlose Integration in Host-Systeme wie FHEM, da diese erwarten, dass der CUL seinen Zustand nach einem Neustart beibehält.
 *   **[INFO]** Die Remote-Register-Befehle (`R`/`W`) sind ein mächtiges Werkzeug zur Feinabstimmung der RF-Parameter (z.B. AGC-Verhalten, Frequenz-Offsets), ohne dass eine Neukompilierung erforderlich ist.
-*   **[INFO]** Eine softwareseitige Prüfung des Frequenzbandes vor dem Melden eines dekodierten Pakets ist eine effektive und notwendige Methode, um Cross-Band-Störungen zu eliminieren, selbst wenn der RF-Chip physikalisch Signale außerhalb seines Zielbandes empfängt.
-*   **[INFO]** Protokoll-Umfang komplettiert: Mit der Implementierung des Oregon-Scientific-Decoders werden nun alle wichtigen SlowRF-Protokolle beider Frequenzbänder unterstützt (FS20, HMS, S300TH @ 868MHz; Intertechno V1/V3, Oregon Scientific @ 433MHz).
 
 ## 5. Nächste Schritte
 
 *   **FHEM-Integration:** Validierung der Firmware mit einem Host-System (FHEM) zur Sicherstellung der Kompatibilität und Langzeitstabilität.
-*   **Dokumentation:** Erstellen einer kurzen Anleitung für die neuen Diagnose- und Konfigurationsbefehle (`R`, `W`, `X99`, `TX1`/`TX0`, `H`, `f`).
+*   **Dokumentation:** Erstellen einer kurzen Anleitung für die neuen Diagnose- und Konfigurationsbefehle (`R`, `W`, `X99`, `TX1`/`TX0`, `H`, `f`, `T`).
 *   **Langzeittests:** Überwachung der Stabilität und des Speicherverbrauchs über mehrere Tage.
 
 ## 6. Hardware-Konfiguration (Pinout)
