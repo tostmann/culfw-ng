@@ -38,10 +38,10 @@ uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_t
     
     // Create actual Matter Endpoint based on type
     switch(type) {
-        case MATTER_DEVICE_SWITCH:
+        case DEVICE_TYPE_SWITCH:
             endpoint = on_off_light::create(node, nullptr, ENDPOINT_FLAG_NONE, nullptr);
             break;
-        case MATTER_DEVICE_TEMP_SENSOR:
+        case DEVICE_TYPE_TEMP_SENSOR:
             endpoint = temperature_sensor::create(node, nullptr, ENDPOINT_FLAG_NONE, nullptr);
             break;
         // ... add more types
