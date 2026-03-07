@@ -36,6 +36,11 @@ static void slowrf_output_packet(const char* prefix, const char* data, uint8_t r
         len = snprintf(out, sizeof(out), "%s%s%02X\r\n", prefix, data, rssi);
     }
     usb_serial_jtag_write_bytes(out, len, 0);
+    
+    // Web Event
+    char web_msg[64];
+    snprintf(web_msg, sizeof(web_msg), "%s%s (%d)", prefix, data, rssi);
+    add_web_event(web_msg);
 }
 
 #define MAX_WEB_EVENTS 10
