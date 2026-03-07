@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "esp_log.h"
+#include "driver/usb_serial_jtag.h"
 #include "matter_bridge.h"
 #include "matter_interface.h"
 
