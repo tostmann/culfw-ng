@@ -46,6 +46,11 @@ void app_main(void) {
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
+
+    // Load Configuration
+    if (config_loader_init()) {
+        config_loader_load_protocols();
+    }
     
     // Initialize Matter Bridge Foundation
     matter_bridge_init();
