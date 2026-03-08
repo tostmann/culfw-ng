@@ -337,3 +337,14 @@ void generic_decoder_list_protocols() {
         usb_serial_jtag_write_bytes(out, len, 0);
     }
 }
+
+int generic_decoder_get_web_list(char* buf, int max_len) {
+    int len = snprintf(buf, max_len, "<h3>Protocols</h3><ul>");
+    for (int i = 0; i < protocol_count; i++) {
+        len += snprintf(buf + len, max_len - len, "<li>%s (%d MHz, %d-%d bits): %lu Decoded</li>", 
+                        protocols[i].name, protocols[i].freq, protocols[i].min_bits, protocols[i].max_bits, protocols[i].count_decoded);
+        if (len > max_len - 100) break;
+    }
+    len += snprintf(buf + len, max_len - len, "</ul>");
+    return len;
+}
