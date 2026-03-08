@@ -40,27 +40,32 @@ static void matter_bridge_command_cb(uint16_t endpoint_id, float value) {
     }
 
     char* rf_id = device_table[idx].rf_id;
-    ESP_LOGI(TAG, "Translating Matter command to RF for device: %s", rf_id);
+    char* proto = device_table[idx].proto_name;
+    ESP_LOGI(TAG, "Translating Matter command to RF for device: %s (Proto: %s)", rf_id, proto);
 
-    // Basic translation logic for Demo
-    if (strncmp(rf_id, "FS20_", 5) == 0) {
-        // FS20_HHHHAA -> HHHH AA <CMD>
+    if (strcmp(proto, "FS20") == 0) {
+        // ID format: FHHHHAA
         char hc[5], ad[3];
-        strncpy(hc, rf_id + 5, 4); hc[4] = 0;
-        strncpy(ad, rf_id + 9, 2); ad[2] = 0;
-        const char* cmd = (value > 0) ? "11" : "00"; // ON/OFF
+        strncpy(hc, rf_id + 1, 4); hc[4] = 0;
+        strncpy(ad, rf_id + 5, 2); ad[2] = 0;
+        const char* cmd = (value > 0) ? "11" : "00";
         cc1101_send_fs20(hc, ad, cmd);
     } 
-    else if (strncmp(rf_id, "IT_V1_", 6) == 0) {
-        // IT_V1_XXXX -> 12 chars
-        cc1101_send_it_v1(rf_id + 6);
+    else if (strcmp(proto, "IT_V1") == 0) {
+        // Logic for IT_V1 (fixed 12 chars)
+        cc1101_send_it_v1(rf_id);
     }
-    else if (strncmp(rf_id, "Nexa_", 5) == 0 || strncmp(rf_id, "Intertechno_V3_", 15) == 0) {
-        ESP_LOGI(TAG, "TX for %s: Sending ITV3 command...", rf_id);
-        // Map to ITV3 send for demo
-        // Reconstruct 32-bit: 26 bits ID + 1 bit group + 1 bit state + 4 bits unit
-        // For simplicity we send a fixed ITV3 frame here
-        cc1101_send_it_v3("00010101010101010101010101000110"); 
+    else if (strcmp(proto, "IT_V3") == 0 || strcmp(proto, "Nexa") == 0) {
+        // Send ITV3/Nexa command
+        // For now using a hardcoded sequence or logic to toggle state
+        // Reconstruct from ID would be better.
+        cc1101_send_it_v3("00010101010101010101010101000110");
+    }
+    else if (strcmp(proto, "Oregon") == 0) {
+        cc1101_send_oregon(rf_id);
+    }
+    else {
+        ESP_LOGW(TAG, "TX not supported for protocol: %s", proto);
     }
 }
 
@@ -131,8 +136,8 @@ void matter_bridge_list_endpoints() {
     usb_serial_jtag_write_bytes(out, len, 0);
 
     for (int i = 0; i < device_count; i++) {
-        len = snprintf(out, sizeof(out), "EP %d: ID=%s Type=%d\r\n", 
-                           device_table[i].matter_ep_id, device_table[i].rf_id, device_table[i].type);
+        len = snprintf(out, sizeof(out), "EP %d: ID=%s Type=%d Proto=%s\r\n", 
+                           device_table[i].matter_ep_id, device_table[i].rf_id, device_table[i].type, device_table[i].proto_name);
         usb_serial_jtag_write_bytes(out, len, 0);
     }
 }
@@ -140,8 +145,8 @@ void matter_bridge_list_endpoints() {
 int matter_bridge_get_web_list(char* buf, int max_len) {
     int len = snprintf(buf, max_len, "<h3>Matter Bridge</h3><p>Devices: %d, Uptime: %d s</p><ul>", device_count, bridge_uptime_sec);
     for (int i = 0; i < device_count; i++) {
-        len += snprintf(buf + len, max_len - len, "<li>EP %d: %s (Type: %d)</li>", 
-                        device_table[i].matter_ep_id, device_table[i].rf_id, device_table[i].type);
+        len += snprintf(buf + len, max_len - len, "<li>EP %d: %s (Type: %d, Proto: %s)</li>", 
+                        device_table[i].matter_ep_id, device_table[i].rf_id, device_table[i].type, device_table[i].proto_name);
         if (len > max_len - 50) break;
     }
     len += snprintf(buf + len, max_len - len, "</ul>");
