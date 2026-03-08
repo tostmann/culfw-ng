@@ -76,6 +76,25 @@
         "min": 24,
         "max": 40
       }
+    },
+    {
+      "name": "X10_RF",
+      "type": "switch",
+      "freq": 433,
+      "timing": {
+        "short": 560,
+        "long": 1120,
+        "tolerance": 200
+      },
+      "definitions": {
+        "bit0": [ {"h": 1, "l": 1} ],
+        "bit1": [ {"h": 1, "l": 3} ],
+        "sync": [ {"h": 8, "l": 8} ]
+      },
+      "len": {
+        "min": 32,
+        "max": 32
+      }
     }
   ]
 }
