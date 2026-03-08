@@ -32,25 +32,25 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
     *   **Stabilität:** Der Stack für den `culfw_parser_task` wurde auf 8192 Bytes erhöht, um Stack Overflows bei der Verarbeitung sehr langer serieller Kommandos (z.B. via `mi`-Kommando) zu verhindern.
     *   **Multi-Protokoll-Gateway:** Die Firmware agiert als "Staubsauger" für alle unterstützten OOK-Protokolle auf der aktiven Frequenz. Alle Decoder laufen parallel.
 *   **Zukünftige Architektur: On-Board Intelligence & Matter**
-    *   **Dateisystem:** Integration eines **SPIFFS-Dateisystems** zur Speicherung einer flexiblen Protokoll-Datenbank (`protocols.json`). Ein Fallback-Mechanismus lädt einen hartcodierten Default, falls die Datei fehlt.
-    *   **Table-Driven Decoding Engine:** Anstelle von fest einkompilierten Decodern wird eine generische Engine die Pulsfolgen mit den in `protocols.json` definierten Mustern abgleichen. Das JSON-Format nutzt ein `timing`-Objekt mit Multiplikatoren für eine kompakte und flexible Definition sowie ein **`"type"`-Feld** (`"switch"`, `"sensor"`) zur korrekten Zuordnung im Matter-Gateway. Die Protokolldatenbank kann zur Laufzeit über das `GR`-Kommando (Generic Reload) neu geladen werden.
+    *   **Dateisystem:** Integration eines **SPIFFS-Dateisystems** zur Speicherung einer flexiblen, **verschlüsselten** Protokoll-Datenbank (`protocols.enc`). Ein Fallback-Mechanismus lädt einen hartcodierten Default, falls die Datei fehlt.
+    *   **Table-Driven Decoding Engine:** Anstelle von fest einkompilierten Decodern wird eine generische Engine die Pulsfolgen mit den in der Protokolldatenbank definierten Mustern abgleichen. Das JSON-Format nutzt ein `timing`-Objekt mit Multiplikatoren für eine kompakte und flexible Definition sowie ein **`"type"`-Feld** (`"switch"`, `"sensor"`) zur korrekten Zuordnung im Matter-Gateway. Die Protokolldatenbank kann zur Laufzeit über das `GR`-Kommando (Generic Reload) neu geladen werden.
     *   **Matter-Architektur (Bidirektional):** Der Stick wird als **Matter Aggregator (Bridge)** implementiert. Die Bridge arbeitet in beide Richtungen:
         *   **RX (RF $\rightarrow$ Matter):** Erkannte SlowRF-Geräte werden als dynamische **Endpoints** (z.B. Temperatursensor, Schalter) im Matter-Netzwerk on-the-fly angelegt und über eine **"Dynamic Endpoint Registry"** (`matter_bridge.c`) verwaltet. Der Name des dekodierenden Protokolls (z.B. "Nexa") wird pro Endpunkt gespeichert.
-        *   **TX (Matter $\rightarrow$ RF):** Eingehende Matter-Befehle werden über einen **Callback-Mechanismus** (`matter_bridge_command_cb`) verarbeitet. Die Bridge-Logik identifiziert den Ziel-Endpunkt, liest den gespeicherten Protokoll-Namen aus und ruft den passenden Encoder auf, um den Befehl in ein SlowRF-Funkkommando zu übersetzen und über den CC1101 zu senden.
+        *   **TX (Matter $\rightarrow$ RF):** Eingehende Matter-Befehle werden über einen **Callback-Mechanismus** (`matter_bridge_command_cb`) verarbeitet. Die Bridge-Logik identifiziert den Ziel-Endpunkt, liest den bei der Endpoint-Erstellung gespeicherten Protokoll-Namen (z.B. "Nexa") aus und ruft den passenden Encoder auf, um den Befehl in ein SlowRF-Funkkommando zu übersetzen und über den CC1101 zu senden.
         *   Die Anwendungslogik ist gegen eine **API-Interface-Schicht** (`matter_interface.h`) entwickelt, um die Kompilierbarkeit ohne das vollständige SDK zu gewährleisten (Simulations-Modus).
     *   **Matter Endpoint ID-Masking:** Um die Proliferation von Endpoints zu verhindern (z.B. ON/OFF-Befehle derselben Fernbedienung), wird eine ID-Maskierung verwendet. Statusbits im RF-Code werden bei der Generierung der Endpoint-ID durch ein 'X' ersetzt, sodass ein physisches Gerät immer demselben Matter-Endpoint zugeordnet wird. Für generische Protokolle wird die ID aus dem Protokollnamen und den oberen Bits des RF-Codes gebildet (z.B. `Nexa_FFFFFF`).
-*   **Bivalenter Betriebsmodus (Hybride Intelligenz):** Die Firmware ist umschaltbar gestaltet, um die Stärken von CUL und SIGNALduino zu vereinen.
+*   **Bivalenter Betriebsmodus (Hybride Intelligenz):** Die Firmware ist umschaltbar gestaltet, um die Stärken von CUL und SIGNALduino zu vereinen. Der gewählte Modus wird im NVS persistent gespeichert.
     *   **CUL-Modus (`X21`):** 100%ige Kompatibilität zum etablierten CUL-Protokoll. Ausgabe generischer Protokolle mit neuem `G`-Präfix (`G<Name><Daten>...`).
     *   **SIGNALduino-Modus (`X25`):** Vollständige Emulation eines SIGNALduino mit Rohdaten-Ausgabe (`MU;...` für unbekannte, `MS;...` für bekannte Protokolle). Die Ausgabe erfolgt über eine zentrale `slowrf_output_packet`-Funktion. Die `MU`-Ausgabe wird unterdrückt, wenn ein Decoder (fest oder generisch) das Signal erfolgreich verarbeitet hat.
 *   **WiFi & Web-Dashboard:** Ein integrierter HTTP-Server (Port 80) bietet ein **vollwertiges Diagnose-Dashboard** mit Auto-Refresh. Es zeigt:
     *   **System-Stammdaten:** Frequenz, Betriebsmodus, Uptime.
-    *   **Geladene Protokolle:** Liste der Generic Protocols aus `protocols.json` inkl. der Anzahl dekodierter Pakete.
+    *   **Geladene Protokolle:** Liste der Generic Protocols aus `protocols.enc` inkl. der Anzahl dekodierter Pakete.
     *   **Matter Bridge Status:** Liste aller dynamisch erstellten Endpunkte mit ihren RF-IDs, Protokollen und Typen.
     *   **Live-Log:** Die letzten empfangenen Funk-Events in umgekehrt chronologischer Reihenfolge.
 *   **Intellectual Property (IP) / Kopierschutz (3-Säulen-Strategie):**
     *   **1. Kommerzieller Schutz ("Matter-Schild"):** Die Bindung an den Matter-Standard erfordert ein offizielles **Device Attestation Certificate (DAC)**. Clones ohne dieses Zertifikat werden von Systemen wie Apple/Google Home als "nicht verifiziert" markiert.
     *   **2. Technischer Schutz (Hardware-Verschlüsselung):** Nutzung der ESP32-C6 Hardware-Features wie **Flash Encryption** (bindet die Firmware an den individuellen Chip) und **Secure Boot V2** (erlaubt nur vom Hersteller signierte Firmware-Updates).
-    *   **3. Software-Bindung (IP-Schutz):** Kritische Logik, wie die zukünftige `protocols.json`-Decoding-Engine, kann an die **Chip-Unique-ID (MAC-Adresse)** gebunden werden. Diese ID wird bereits über das erweiterte `V`-Kommando ausgegeben und ist somit programmatisch verfügbar.
+    *   **3. Software-Bindung (IP-Schutz):** Die Protokoll-Datenbank (`protocols.json`) wird als verschlüsselte Datei (`protocols.enc`) auf dem SPIFFS abgelegt. Die Entschlüsselung im `config_loader` ist direkt an die **Chip-Unique-ID (MAC-Adresse)** gebunden, was die Portierung der IP auf nicht autorisierte Hardware verhindert.
 *   **Frequenzerkennung und -management:**
     *   **Hardware-Default:** Die Modulfrequenz (433/868 MHz) wird initial über einen GPIO-Pin (`GPIO_433MARKER`) erkannt.
     *   **Software-Override:** Ein Benutzer kann die Frequenz zur Laufzeit per Kommando (`f433` oder `f868`) umschalten. Diese Einstellung wird **permanent im NVS gespeichert**.
@@ -128,6 +128,12 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Erweiterung des Web-Interfaces zu einem vollwertigen Diagnose-Dashboard (System-Status, Protokoll-Liste, Matter-Endpunkte, Live-Log).
 *   **[DONE]** Implementierung von Auto-Refresh für das Web-Dashboard.
 *   **[DONE]** Implementierung eines seriellen Test-Kommandos (`MC <EP_ID> <Value>`) zur Validierung des Matter-TX-Pfads.
+*   **[DONE]** Implementierung der Protokoll-Verschlüsselung (XOR mit Chip-ID) im `config_loader`.
+*   **[DONE]** Erstellung eines Tools (`encrypt_protocols.py`) zur Vorbereitung der verschlüsselten Protokolldatenbank.
+*   **[DONE]** Bindung der Entschlüsselung an die Hardware-ID (MAC-Adresse).
+*   **[DONE]** Erweiterung des `GR`-Kommandos zum Neuladen der *verschlüsselten* Datenbank.
+*   **[DONE]** Persistenz des Betriebsmodus (`X21`/`X25`) im NVS implementiert.
+*   **[DONE]** `COMMANDS.md` um neue Diagnose- und Sicherheits-Kommandos erweitert.
 
 ## 4. Neue Erkenntnisse / Probleme
 
@@ -137,14 +143,15 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **Erkenntnis (System-Stabilität):** Die Verarbeitung sehr langer serieller Kommandos (>1000 Bytes) für die Signal-Injektion führte zu Stack-Overflow-Crashes. Dies erforderte eine signifikante Erhöhung des Stacks für den `culfw_parser_task` (auf 8KB) und der Größe des seriellen RX-Puffers.
 *   **Erkenntnis (Decoder-Robustheit):** Die Generic Decoder Logik muss in der Lage sein, ein gültiges Paket auch dann abzuschließen, wenn die Bit-Anzahl im `min`/`max`-Bereich liegt und der nächste Puls *nicht* mehr zu einem validen Bit passt. Diese "early exit"-Logik ist entscheidend für die Unterstützung von Protokollen mit variabler Länge.
 *   **Erkenntnis (Diagnose-Fähigkeit):** Ein vollumfängliches Web-Dashboard, das Protokolle, Matter-Endpunkte und Live-Logs kombiniert, ist für die Validierung des komplexen Brückensystems unerlässlich und beschleunigt die Fehlersuche erheblich.
-*   **Erkenntnis (TX-Architektur):** Damit die bidirektionale Bridge einen von Matter empfangenen Befehl (z. B. "an") in das korrekte Funkprotokoll übersetzen kann, muss beim erstmaligen Empfang eines Signals (RX-Pfad) der Name des dekodierenden Protokolls (z.B. "Nexa") zusammen mit der Funk-ID in der Endpoint Registry gespeichert werden.
+*   **Erkenntnis (TX-Architektur):** Für die bidirektionale Bridge wurde die Endpoint Registry erweitert, um den Namen des dekodierenden Protokolls (z.B. "Nexa") zu speichern. Dies ist die entscheidende Information, um bei einem Matter-Befehl (TX) den korrekten Encoder aufrufen zu können.
+*   **Erkenntnis (IP-Schutz):** Eine einfache Verschlüsselung der `protocols.json` auf dem Dateisystem, gebunden an die eindeutige Chip-ID, stellt einen effektiven Basisschutz gegen unautorisierte Firmware-Clones und die Extraktion der Protokoll-Logik dar. Dies bildet die zweite Säule der 3-Säulen-Schutzstrategie.
 
 ## 5. Nächste Schritte
 
 *   **Matter SDK-Integration:** Wechsel vom Simulations-Modus (`matter_interface.c`) zur echten ESP-Matter SDK-Implementierung, um die Bridge-Funktionalität in realen Matter-Ökosystemen (Apple Home, Google Home) zu testen.
 *   **Reichweiten- & Störfestigkeitstests:** Durchführung von Tests mit realen Sendern/Sensoren über größere Distanzen und in Umgebungen mit potentiellen Störquellen (z.B. WLAN, andere Funkprotokolle).
-*   **IP-Schutz Implementierung:** Aktivierung und Konfiguration von **Secure Boot V2** und **Flash Encryption** in der finalen Hardware.
-*   **Dokumentation & Release:** Finalisierung der `COMMANDS.md` und Vorbereitung eines stabilen Release-Kandidaten (v1.1.0).
+*   **IP-Schutz Finalisierung:** Aktivierung und Konfiguration der Hardware-Sicherheitsfeatures **Secure Boot V2** und **Flash Encryption** als Ergänzung zum implementierten Software-Schutz.
+*   **Dokumentation & Release:** Finalisierung der Benutzerdokumentation und Vorbereitung eines stabilen Release-Kandidaten (v1.1.0).
 
 ## 6. Hardware-Konfiguration (Pinout)
 
