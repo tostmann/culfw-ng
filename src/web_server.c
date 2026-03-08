@@ -75,11 +75,13 @@ static esp_err_t index_get_handler(httpd_req_t *req) {
         mode == SLOWRF_MODE_CUL ? "CUL" : "SIGNALduino",
         36000 - duty_cycle_get_remaining(),
         proto_list,
+        reg_dump ? reg_dump : "N/A",
         matter_list,
         events[0] ? events : "Waiting for radio signals..."
     );
 
     httpd_resp_send(req, resp, HTTPD_RESP_USE_STRLEN);
+    if (reg_dump) free(reg_dump);
     free(resp);
     free(matter_list);
     free(proto_list);
