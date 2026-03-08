@@ -38,6 +38,8 @@ typedef struct {
     uint16_t min_bits;
     uint16_t max_bits;
     uint8_t id_ignore_bits;
+    float scale;
+    float offset;
     int matter_type; // 0=Switch, 1=Sensor
     uint32_t count_decoded;
 } rf_proto_internal_t;
