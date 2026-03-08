@@ -16,7 +16,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 | **FHT80b** | Ja | Ja | `T...` | 868.30 MHz |
 | **Oregon Scientific** | Ja | Ja | `To...` (Test) | 433.92 MHz |
 | **Somfy RTS** | Nein | Ja | `Ys...` / Matter | 433.42 MHz |
-| **Generische Sensoren** | Ja | Nein | `r...` | 433/868 MHz |
+| **Generische Sensoren** | Ja | Ja (via Matter) | `r...` / Matter | 433/868 MHz |
 
 ## 2. Architektur & Design-Entscheidungen
 
@@ -75,7 +75,6 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** RTOS-Architektur gehärtet (Task-Priorisierung, rekursiver SPI-Mutex).
 *   **[DONE]** End-to-End Validierung aller implementierten Protokolle.
 *   **[DONE]** Benutzer-Dokumentation (`COMMANDS.md`) erstellt und aktualisiert.
-*   **[DONE]** Release Management: Finaler Code-Stand als **Release v1.0.1** auf GitHub getaggt.
 *   **[DONE]** Partitionsschema für Dateisystem (SPIFFS) und Matter-Unterstützung erweitert (`partitions.csv` mit 3MB App-Partition).
 *   **[DONE]** Architektur für Matter-Integration finalisiert (Portability-Layer via `matter_interface.h` mit Simulations-Modus).
 *   **[DONE]** Basis-Struktur für Matter-Bridge-Modul (`matter_bridge.c/h`) erstellt (Dynamic Endpoint Registry).
@@ -107,8 +106,9 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** End-to-End-Test: Vollständiger RX->Matter->TX-Zyklus für Schalter- (Nexa) und Aktor-Protokolle (Somfy RTS) validiert.
 *   **[DONE]** End-to-End-Test (Generic): Validierung des vollständigen Pfades für tabellengesteuerte Protokolle (Generic Decoder -> Matter Bridge -> TX-Translation).
 *   **[DONE]** IP-Schutz: Tooling zur hardwaregebundenen Verschlüsselung der Protokolldatenbank (`encrypt_protocols.py`) erfolgreich eingesetzt und im Feld validiert (Hardware-MAC Bindung).
-*   **[DONE]** Test-Infrastruktur: Python-Script (`test_matter_bridge.py`) zur automatisierten Validierung der Bridge-Logik erstellt.
+*   **[DONE]** Erstellung einer automatisierten Test-Infrastruktur (Python-Skripte) zur Validierung der Bridge- und Decoder-Logik.
 *   **[DONE]** Code-Bereinigung und Finalisierung der Dokumentation (`COMMANDS.md`).
+*   **[DONE]** Release Management: Finaler Code-Stand als **Release v1.0.4** und Binaries (`binaries/`) auf GitHub vorbereitet.
 
 ## 4. Neue Erkenntnisse / Probleme
 
@@ -118,10 +118,11 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **Erkenntnis (Implementierung regulatorischer Notwendigkeit):** Die Implementierung einer serverseitigen **Duty-Cycle-Überwachung** ist für ein kommerziell tragfähiges Produkt im 868-MHz-Band unerlässlich, um die gesetzliche 1%-Regel einzuhalten. Die Realisierung (`culfw_duty_cycle.c`) sichert die Konformität ab.
 *   **Erkenntnis (Diagnose-Fähigkeit):** Ein vollumfängliches, **interaktives** Web-Dashboard, das nicht nur Live-Daten anzeigt, sondern auch die direkte Steuerung (Frequenz, Modus) und die Simulation von Ereignissen (Matter-TX) ermöglicht, ist für die Validierung des komplexen Brückensystems unerlässlich und beschleunigt die Fehlersuche erheblich.
 *   **Erkenntnis (Matter SDK Komplexität):** Die direkte Integration des ESP-Matter SDK in eine bestehende PlatformIO/ESP-IDF-Umgebung ist aufwändig. Die gewählte Architektur mit einer Abstraktionsschicht (`matter_interface.h`) und einem **Simulations-Modus** hat sich als entscheidend erwiesen, um die Gateway-Logik unabhängig vom schweren SDK entwickeln und testen zu können. Dies ermöglicht eine Parallelentwicklung und reduziert die Build-Komplexität.
+*   **Erkenntnis (Unverzichtbarkeit der Test-Automation):** Die Validierung der komplexen, bidirektionalen Gateway-Logik (RF <-> Matter) ist ohne eine skriptbasierte Test-Infrastruktur (Python) kaum machbar. Die Fähigkeit, sowohl Funksignale (`mi`-Kommando) als auch Matter-Befehle (`MC`-Kommando) über die serielle Schnittstelle zu simulieren, hat sich als entscheidend für die schnelle und zuverlässige End-to-End-Verifikation erwiesen.
 
 ## 5. Nächste Schritte
 
-*   **Finale Matter SDK-Integration:** Einrichten der dedizierten Build-Umgebung (ESP-IDF 5.x mit esp-matter), um vom Simulations-Modus auf die echte Implementierung umzuschalten und Tests in realen Matter-Ökosystemen (Apple Home, Google Home) durchzuführen.
+*   **Finale Matter SDK-Integration:** Umstellung vom Simulations-Modus auf das native ESP-Matter SDK in einer dedizierten Build-Umgebung (ESP-IDF 5.x mit esp-matter), um Tests in realen Matter-Ökosystemen (Apple Home, Google Home) durchzuführen.
 *   **IP-Schutz Härtung:** Aktivierung der ESP32-C6 Hardware-Sicherheitsfeatures **Secure Boot V2** und **Flash Encryption**, um die 3-Säulen-Strategie zu vervollständigen.
 *   **Erweiterung der Protokoll-Unterstützung (TX):** Ausbau der Matter-TX-Logik für weitere Protokolle wie HMS und FHT80b.
 *   **System-Validierung:** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
