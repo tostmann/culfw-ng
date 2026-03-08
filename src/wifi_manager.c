@@ -60,3 +60,13 @@ void wifi_manager_init(void) {
 
     ESP_LOGI(TAG, "WiFi initialization finished.");
 }
+
+void wifi_manager_get_ip(char* ip) {
+    esp_netif_t* netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
+    esp_netif_ip_info_t ip_info;
+    if (netif && esp_netif_get_ip_info(netif, &ip_info) == ESP_OK) {
+        snprintf(ip, 16, IPSTR, IP2STR(&ip_info.ip));
+    } else {
+        strcpy(ip, "0.0.0.0");
+    }
+}
