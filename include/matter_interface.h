@@ -29,3 +29,9 @@ uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_t
  * @param value The new value (float for generic usage, cast internally)
  */
 void matter_interface_update_attribute(uint16_t endpoint_id, float value);
+
+/**
+ * @brief Get status string of Matter implementation
+ * @return "SIMULATED" or "REAL"
+ */
+const char* matter_interface_get_status(void);
