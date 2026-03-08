@@ -5,9 +5,20 @@
 #include "matter_bridge.h"
 #include "matter_interface.h"
 #include "slowrf.h"
+#include "cc1101.h"
 
 static const char *TAG = "MATTER_BRIDGE";
 #define MAX_ENDPOINTS 20
+
+typedef struct {
+    char rf_id[64];
+    uint16_t matter_ep_id;
+    matter_device_type_t type;
+} bridged_device_t;
+
+static bridged_device_t device_table[MAX_ENDPOINTS];
+static int device_count = 0;
+static uint32_t bridge_uptime_sec = 0;
 
 // Callback for commands from Matter side
 static void matter_bridge_command_cb(uint16_t endpoint_id, float value) {
@@ -41,27 +52,12 @@ static void matter_bridge_command_cb(uint16_t endpoint_id, float value) {
     } 
     else if (strncmp(rf_id, "IT_V1_", 6) == 0) {
         // IT_V1_XXXX -> 12 chars
-        // Placeholder for real mapping, for now we assume rf_id is the code
-        // and we toggle the last bit for ON/OFF
         cc1101_send_it_v1(rf_id + 6);
     }
     else if (strncmp(rf_id, "Nexa_", 5) == 0 || strncmp(rf_id, "Intertechno_V3_", 15) == 0) {
-        // Nexa/ITV3 usually uses 32 bits. 
-        // We'd need to reconstruct the full 32bit frame here.
-        // For simulation, we just log it.
         ESP_LOGI(TAG, "TX for %s not fully implemented yet", rf_id);
     }
 }
-
-typedef struct {
-    char rf_id[64]; // Increased to 64 for IT V3 or generic names
-    uint16_t matter_ep_id;
-    matter_device_type_t type;
-} bridged_device_t;
-
-static bridged_device_t device_table[MAX_ENDPOINTS];
-static int device_count = 0;
-static uint32_t bridge_uptime_sec = 0;
 
 static void matter_bridge_periodic_task(void* arg) {
     while(1) {
