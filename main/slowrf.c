@@ -307,13 +307,6 @@ void slowrf_task(void *pvParameters) {
                 flush_mu_buffer();
                 if (slowrf_reporting) {
                     uint8_t rssi = cc1101_read_rssi();
-                    
-                    if (slowrf_debug) {
-                        char dbg[64];
-                        snprintf(dbg, sizeof(dbg), "SYNC:%d IT1:%d IT3:%d LastSync:%d\r\n", 
-                                 pulse, it1_dec.pos, it3_dec.bit_pos, it3_last_sync);
-                        usb_serial_jtag_write_bytes(dbg, strlen(dbg), 0);
-                    }
 
                     if (fs_dec.byte_cnt >= 4) {
                         char d[32]; char id[16];
@@ -323,7 +316,7 @@ void slowrf_task(void *pvParameters) {
                         slowrf_output_packet("F", d, rssi);
                         matter_bridge_report_event(id, "FS20", DEVICE_TYPE_SWITCH, (fs_dec.data[3] & 0x1) ? 1.0 : 0.0);
                     }
-                    // Relaxed check: removed !it3_last_sync for now to test
+                    // IT_V1 Check: Removed !it3_last_sync because CUL sends ~10000us sync which overlaps with IT_V3 sync range
                     if (it1_dec.pos == 12) {
                         slowrf_output_packet("is", it1_dec.s, rssi);
                         char id[17]; strcpy(id, it1_dec.s);
