@@ -67,10 +67,10 @@ void matter_interface_init(void) {
     payload.commissioningFlow = chip::CommissioningFlow::kStandard;
     payload.rendezvousInformation.SetValue(chip::RendezvousInformationFlag::kOnNetwork);
 
-    char manual_code[chip::kManualSetupCodeMaxLength + 1];
-    if (chip::ManualSetupPayloadGenerator(payload).payloadDecimalString(manual_code, sizeof(manual_code)) == CHIP_NO_ERROR) {
+    std::string manual_code;
+    if (chip::ManualSetupPayloadGenerator(payload).payloadDecimalStringRepresentation(manual_code) == CHIP_NO_ERROR) {
         ESP_LOGW("MATTER_SETUP", "========================================");
-        ESP_LOGW("MATTER_SETUP", "Manual Code: %s", manual_code);
+        ESP_LOGW("MATTER_SETUP", "Manual Code: %s", manual_code.c_str());
         ESP_LOGW("MATTER_SETUP", "Passcode: %lu", payload.setUpPINCode);
         ESP_LOGW("MATTER_SETUP", "Discriminator: %d", payload.discriminator);
         ESP_LOGW("MATTER_SETUP", "========================================");
