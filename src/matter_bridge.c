@@ -91,6 +91,48 @@ static void matter_bridge_command_cb(uint16_t endpoint_id, float value) {
     else if (strcmp(proto, "Oregon") == 0) {
         cc1101_send_oregon(rf_id);
     }
+    else if (strcmp(proto, "Somfy") == 0) {
+        // ID format: Somfy_ADDR (ADDR is 3 bytes hex)
+        char* addr_str = strchr(rf_id, '_');
+        if (addr_str) {
+            addr_str++;
+            uint32_t addr = strtoul(addr_str, NULL, 16);
+            uint16_t rolling = rolling_code_get_and_inc(rf_id);
+            
+            uint8_t cmd_byte = 0x10; // "My" / Stop
+            if (value >= 1.0f) cmd_byte = 0x20; // Up
+            else if (value <= 0.0f) cmd_byte = 0x40; // Down
+            
+            // Somfy RTS Frame Generation (simplified obfuscation)
+            uint8_t frame[7];
+            frame[0] = 0xA7; // Encryption key (static for now)
+            frame[1] = cmd_byte << 4; // Command in upper nibble? No, Somfy is different.
+            // Actually Somfy is: [Key] [Cmd|Checksum] [RollingCode] [Address]
+            // We just send the hex for now if it was already prepared or we implement full obfuscation.
+            // Let's implement the basic XOR obfuscation.
+            
+            frame[1] = (cmd_byte & 0xF0); 
+            frame[2] = (rolling >> 8) & 0xFF;
+            frame[3] = (rolling) & 0xFF;
+            frame[4] = (addr >> 16) & 0xFF;
+            frame[5] = (addr >> 8) & 0xFF;
+            frame[6] = (addr) & 0xFF;
+            
+            // Checksum
+            uint8_t ck = 0;
+            for(int i=0; i<7; i++) ck ^= frame[i] ^ (frame[i] >> 4);
+            frame[1] |= (ck & 0x0F);
+            
+            // Obfuscation: frame[i] = frame[i] ^ frame[i-1]
+            uint8_t obfuscated[7];
+            obfuscated[0] = frame[0];
+            for(int i=1; i<7; i++) obfuscated[i] = frame[i] ^ obfuscated[i-1];
+            
+            char hex[15];
+            for(int i=0; i<7; i++) sprintf(hex + i*2, "%02X", obfuscated[i]);
+            cc1101_send_somfy(hex);
+        }
+    }
     else {
         ESP_LOGW(TAG, "TX not supported for protocol: %s", proto);
     }
