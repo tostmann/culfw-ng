@@ -58,10 +58,15 @@ bool config_loader_init() {
 }
 
 static void config_loader_xor_decrypt(char* data, size_t len) {
-    const char key[] = "CULFW-NG-IP-PROTECT-2024";
-    size_t key_len = strlen(key);
+    uint8_t mac[6];
+    esp_read_mac(mac, ESP_MAC_WIFI_STA);
+    const char base_key[] = "CULFW-NG-IP-PROTECT-2024";
+    size_t base_key_len = strlen(base_key);
+    
     for (size_t i = 0; i < len; i++) {
-        data[i] ^= key[i % key_len];
+        // Mix base key with MAC bits
+        char key_char = base_key[i % base_key_len] ^ mac[i % 6];
+        data[i] ^= key_char;
     }
 }
 
