@@ -9,6 +9,13 @@
 static const char *TAG = "MATTER_BRIDGE";
 #define MAX_ENDPOINTS 20
 
+// Callback for commands from Matter side
+static void matter_bridge_command_cb(uint16_t endpoint_id, float value) {
+    ESP_LOGI(TAG, "Command received from Matter: EP %d -> %.1f", endpoint_id, value);
+    // Find device in our table
+    // (This part will be implemented to send RF)
+}
+
 typedef struct {
     char rf_id[16];
     uint16_t matter_ep_id;
