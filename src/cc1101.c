@@ -437,7 +437,7 @@ static void os_manchester(int bit) {
 }
 
 void cc1101_send_somfy(const char* hex_data) {
-    if (!duty_cycle_add_tx(200)) return;
+    if (!duty_cycle_add_tx(300)) return;
     uint8_t data[10];
     int len = 0;
     for (int i = 0; i < (int)strlen(hex_data) && i < 20; i += 2) {
@@ -448,42 +448,42 @@ void cc1101_send_somfy(const char* hex_data) {
     gpio_set_level(GPIO_LED, 0);
     cc1101_set_frequency_raw(433420000);
     cc1101_set_tx_mode();
-    vTaskDelay(pdMS_TO_TICKS(5));
+    vTaskDelay(pdMS_TO_TICKS(10));
 
-    for (int r = 0; r < 2; r++) {
-        // Preamble
-        gpio_set_level(GPIO_GDO0, 1); ets_delay_us(9415);
-        gpio_set_level(GPIO_GDO0, 0); ets_delay_us(89565); // Inter-frame or start? No, Somfy has long preamble
+    // 1. Wake-up pulse (only once)
+    gpio_set_level(GPIO_GDO0, 1); ets_delay_us(9415);
+    gpio_set_level(GPIO_GDO0, 0); ets_delay_us(89565);
 
-        // Hardware Sync
+    for (int r = 0; r < 3; r++) { // Repeat frame 3 times
+        // 2. Hardware Sync (7 pulses)
         for(int i=0; i<7; i++) {
-            gpio_set_level(GPIO_GDO0, 1); ets_delay_us(2560);
-            gpio_set_level(GPIO_GDO0, 0); ets_delay_us(2560);
+            gpio_set_level(GPIO_GDO0, 1); ets_delay_us(2500);
+            gpio_set_level(GPIO_GDO0, 0); ets_delay_us(2500);
         }
         
-        // Software Sync
+        // 3. Software Sync
         gpio_set_level(GPIO_GDO0, 1); ets_delay_us(4550);
         gpio_set_level(GPIO_GDO0, 0); ets_delay_us(640);
 
-        // Manchester Data
+        // 4. Manchester Data (approx 1.2ms per bit)
         for (int i = 0; i < len; i++) {
             for (int bit = 7; bit >= 0; bit--) {
                 if ((data[i] >> bit) & 1) {
                     // '1' is Low-to-High
-                    gpio_set_level(GPIO_GDO0, 0); ets_delay_us(640);
-                    gpio_set_level(GPIO_GDO0, 1); ets_delay_us(640);
+                    gpio_set_level(GPIO_GDO0, 0); ets_delay_us(600);
+                    gpio_set_level(GPIO_GDO0, 1); ets_delay_us(600);
                 } else {
                     // '0' is High-to-Low
-                    gpio_set_level(GPIO_GDO0, 1); ets_delay_us(640);
-                    gpio_set_level(GPIO_GDO0, 0); ets_delay_us(640);
+                    gpio_set_level(GPIO_GDO0, 1); ets_delay_us(600);
+                    gpio_set_level(GPIO_GDO0, 0); ets_delay_us(600);
                 }
             }
         }
         gpio_set_level(GPIO_GDO0, 0);
-        vTaskDelay(pdMS_TO_TICKS(30));
+        vTaskDelay(pdMS_TO_TICKS(30)); // Inter-frame gap
     }
 
-    cc1101_set_frequency(true); // Back to 433.92
+    cc1101_set_frequency(true); // Back to 433.92 (or whatever was configured)
     cc1101_set_rx_mode();
     gpio_set_level(GPIO_LED, 1);
 }
