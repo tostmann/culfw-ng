@@ -28,3 +28,8 @@ void generic_decoder_process_pulse(uint16_t duration, uint8_t level);
  * @brief List all loaded generic protocols
  */
 void generic_decoder_list_protocols();
+
+/**
+ * @brief Get HTML formatted list for web interface
+ */
+int generic_decoder_get_web_list(char* buf, int max_len);
