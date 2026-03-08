@@ -30,27 +30,42 @@ static esp_err_t index_get_handler(httpd_req_t *req) {
     snprintf(resp, 8192, 
         "<html><head><title>CUL32-C6 Status</title>"
         "<meta http-equiv='refresh' content='5'>"
-        "<style>body { font-family: sans-serif; margin: 20px; background: #f0f2f5; }"
-        ".card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }"
-        "h1 { color: #1a73e8; } h3 { border-bottom: 1px solid #ddd; padding-bottom: 5px; }"
-        ".log { font-family: monospace; background: #333; color: #0f0; padding: 10px; border-radius: 4px; max-height: 300px; overflow-y: auto; }"
+        "<style>body { font-family: -apple-system, system-ui, sans-serif; margin: 20px; background: #f4f7f6; color: #444; }"
+        ".card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }"
+        "h1 { color: #2c3e50; font-weight: 300; } h3 { color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-top: 0; }"
+        ".log { font-family: 'Courier New', Courier, monospace; background: #2b2b2b; color: #a9b7c6; padding: 15px; border-radius: 8px; max-height: 250px; overflow-y: auto; line-height: 1.4; }"
+        "a { text-decoration: none; color: white; background: #3498db; padding: 3px 8px; border-radius: 4px; font-size: 0.9em; }"
+        "a:hover { background: #2980b9; }"
+        "ul { list-style: none; padding: 0; } li { padding: 8px 0; border-bottom: 1px solid #eee; }"
+        "li:last-child { border: none; }"
+        "input, button { padding: 5px; border-radius: 4px; border: 1px solid #ccc; }"
+        "button { background: #2ecc71; color: white; border: none; cursor: pointer; }"
+        "button:hover { background: #27ae60; }"
         "</style></head><body>"
-        "<h1>CUL32-C6 Gateway Status</h1>"
+        "<h1>CUL32-C6 Gateway <span style='font-size: 0.5em; vertical-align: middle;'>Build %d</span></h1>"
         "<div class='card'><h3>System Control</h3>"
-        "<p><b>Frequency:</b> %s MHz [<a href='/cmd?c=f433'>433</a>] [<a href='/cmd?c=f868'>868</a>]</p>"
-        "<p><b>Mode:</b> X%02X (%s) [<a href='/cmd?c=X21'>X21 (CUL)</a>] [<a href='/cmd?c=X25'>X25 (SIG)</a>]</p></div>"
+        "<p><b>Frequency:</b> <span style='color: #e67e22;'>%s MHz</span> &nbsp; <a href='/cmd?c=f433'>Switch 433</a> <a href='/cmd?c=f868'>Switch 868</a></p>"
+        "<p><b>Mode:</b> <span style='color: #e67e22;'>X%02X (%s)</span> &nbsp; <a href='/cmd?c=X21'>CUL Mode</a> <a href='/cmd?c=X25'>SIGduino Mode</a></p></div>"
         "<div class='card'>%s</div>"
         "<div class='card'>%s"
-        "<h3>Matter Simulation</h3>"
-        "<form action='/cmd' method='get'>"
-        "EP: <input type='text' name='c_ep' size='3' value='10'> "
-        "Val: <input type='text' name='c_val' size='3' value='1'> "
-        "<button type='submit' onclick='this.form.c.value=\"MC \" + this.form.c_ep.value + \" \" + this.form.c_val.value'>Simulate TX</button>"
+        "<h3>Matter Signal Injection (TX Simulation)</h3>"
+        "<form action='/cmd' method='get' onsubmit='this.c.value=\"MC \" + this.c_ep.value + \" \" + this.c_val.value'>"
+        "Endpoint ID: <input type='text' name='c_ep' size='3' value='10'> "
+        "Value (0=Off, 1=On, or Float): <input type='text' name='c_val' size='3' value='1'> "
+        "<button type='submit'>Send Command</button>"
         "<input type='hidden' name='c'>"
         "</form></div>"
-        "<div class='card'><h3>Live Events</h3><div class='log'>%s</div></div>"
-        "<hr><p><small>CULFW-NG Build %d</small></p>"
+        "<div class='card'><h3>Live Activity</h3><div class='log'>%s</div></div>"
         "</body></html>",
+        BUILD_NUMBER,
+        is_433 ? "433" : "868",
+        mode,
+        mode == SLOWRF_MODE_CUL ? "CUL" : "SIGNALduino",
+        proto_list,
+        matter_list,
+        events[0] ? events : "Waiting for radio signals...",
+        BUILD_NUMBER
+    );
         is_433 ? "433" : "868",
         mode,
         mode == SLOWRF_MODE_CUL ? "CUL" : "SIGNALduino",
