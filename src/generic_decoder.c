@@ -86,7 +86,7 @@ static void generic_decoder_output_packet(rf_proto_internal_t *p, uint64_t data,
     }
 
     if (len > 0) {
-        usb_serial_jtag_write_bytes(msg, len, 0);
+        usb_serial_jtag_write_bytes(msg, len, portMAX_DELAY);
     }
 
     // Web Event
