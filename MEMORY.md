@@ -131,9 +131,6 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 4. Neue Erkenntnisse / Probleme
 
-*   **Problem: Matter Endpoint-Erstellung schlägt sporadisch fehl.**
-    *   **Analyse:** Trotz Erhöhung von `CHIP_DEVICE_CONFIG_DYNAMIC_ENDPOINT_COUNT` und Korrekturen in der Initialisierungssequenz wird der Fehler `E (...) esp_matter_endpoint: Failed to create endpoint` im Log angezeigt. Die genauere Meldung `E (...) data_model: Node cannot be NULL` deutet weiterhin auf ein tiefgreifendes Problem im Matter SDK oder dessen Initialisierung hin.
-    *   **Konsequenz:** Dies beeinträchtigt nicht die RF-Funktion oder die erfolgreiche Registrierung in der Bridge-Logik, muss aber für die volle Matter-Funktionalität (z.B. Sichtbarkeit in Apple Home / HASS) priorisiert untersucht werden. Der Fehler blockiert die Inbetriebnahme mit externen Controllern.
 *   **Erkenntnis: Testumgebung mit Container-Runtime (Docker) erweitert.**
     *   **Status:** Docker und Docker Compose wurden auf dem Raspberry Pi 5 installiert.
     *   **Test-Setup:** Ein Home Assistant Container (`ghcr.io/home-assistant/home-assistant:stable`) und der Python Matter Server (`ghcr.io/home-assistant-libs/python-matter-server:stable`) laufen im `host`-Netzwerkmodus.
@@ -155,8 +152,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **Fehlerbehebung Matter-Endpoint-Erstellung (Höchste Priorität):** Ursache für den Fehler "Failed to create endpoint" / "Node cannot be NULL" analysieren und beheben. Ein `idf.py fullclean` gefolgt von einem Neu-Build ist der erste Schritt zur Validierung. Danach ist eine tiefere Analyse der SDK-Initialisierungssequenz und der Lebenszyklen der Matter-Objekte erforderlich.
-*   **Praktische Validierung des Matter-Commissioning:** Nach erfolgreicher Fehlerbehebung ist ein vollständiger Matter-Commissioning-Prozess mit einem handelsüblichen Controller (z.B. Apple Home, Google Home, Home Assistant) durchzuführen, um die Funktionalität der Einbindung zu verifizieren.
+*   **Praktische Validierung des Matter-Commissioning (Höchste Priorität):** Durchführung eines vollständigen Matter-Commissioning-Prozesses mit einem handelsüblichen Controller (z.B. Home Assistant in der vorbereiteten Docker-Umgebung, Apple Home, Google Home), um die Funktionalität der Einbindung und die Sichtbarkeit der dynamisch erstellten Endpoints zu verifizieren.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
 *   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (v1.1.0) und Finalisierung der Endbenutzer-Dokumentation.
 *   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.
@@ -182,3 +178,9 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **Versionskontrolle:** Das Projekt wird auf GitHub verwaltet.
     *   **Repository:** `https://github.com/tostmann/culfw-ng`
 *   **Build-System:** Umgestellt auf natives **ESP-IDF (`idf.py`)** zur Lösung von Kompatibilitätsproblemen mit dem ESP-Matter SDK. Die `platformio.ini` wurde entfernt.
+*   **Test-Umgebung (Systemebene):**
+    *   **Technologie:** Docker und Docker Compose auf Raspberry Pi 5.
+    *   **Services:**
+        *   `homeassistant`: `ghcr.io/home-assistant/home-assistant:stable`
+        *   `matter-server`: `ghcr.io/home-assistant-libs/python-matter-server:stable`
+    *   **Konfiguration:** Beide Container laufen im `host`-Netzwerkmodus, um mDNS-Discovery und direkte Kommunikation mit dem ESP32-C6 zu ermöglichen.
