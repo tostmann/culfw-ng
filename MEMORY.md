@@ -134,6 +134,8 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Erweiterung des `GR`-Kommandos zum Neuladen der *verschlüsselten* Datenbank.
 *   **[DONE]** Persistenz des Betriebsmodus (`X21`/`X25`) im NVS implementiert.
 *   **[DONE]** `COMMANDS.md` um neue Diagnose- und Sicherheits-Kommandos erweitert.
+*   **[DONE]** Bidirektionale Matter-Bridge (TX-Pfad): Implementierung der Logik zur Rekonstruktion von Sendebefehlen (Nexa/IT_V3) aus der Matter-ID.
+*   **[DONE]** Validierung der Generic Decoder "Early Exit"-Logik mit injizierten Nexa-Signalen.
 
 ## 4. Neue Erkenntnisse / Probleme
 
@@ -145,12 +147,14 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **Erkenntnis (Diagnose-Fähigkeit):** Ein vollumfängliches Web-Dashboard, das Protokolle, Matter-Endpunkte und Live-Logs kombiniert, ist für die Validierung des komplexen Brückensystems unerlässlich und beschleunigt die Fehlersuche erheblich.
 *   **Erkenntnis (TX-Architektur):** Für die bidirektionale Bridge wurde die Endpoint Registry erweitert, um den Namen des dekodierenden Protokolls (z.B. "Nexa") zu speichern. Dies ist die entscheidende Information, um bei einem Matter-Befehl (TX) den korrekten Encoder aufrufen zu können.
 *   **Erkenntnis (IP-Schutz):** Eine einfache Verschlüsselung der `protocols.json` auf dem Dateisystem, gebunden an die eindeutige Chip-ID, stellt einen effektiven Basisschutz gegen unautorisierte Firmware-Clones und die Extraktion der Protokoll-Logik dar. Dies bildet die zweite Säule der 3-Säulen-Schutzstrategie.
+*   **Erkenntnis (Bidirektionale Bridge - TX Rekonstruktion):** Für eine voll funktionsfähige bidirektionale Bridge reicht es nicht, nur den Protokollnamen zu speichern. Die Sendelogik muss in der Lage sein, aus der gespeicherten RF-ID (z.B. "Nexa_FFFFFF") den vollständigen Sendebefehl für das jeweilige Protokoll zu rekonstruieren.
 
 ## 5. Nächste Schritte
 
 *   **Matter SDK-Integration:** Wechsel vom Simulations-Modus (`matter_interface.c`) zur echten ESP-Matter SDK-Implementierung, um die Bridge-Funktionalität in realen Matter-Ökosystemen (Apple Home, Google Home) zu testen.
 *   **Reichweiten- & Störfestigkeitstests:** Durchführung von Tests mit realen Sendern/Sensoren über größere Distanzen und in Umgebungen mit potentiellen Störquellen (z.B. WLAN, andere Funkprotokolle).
 *   **IP-Schutz Finalisierung:** Aktivierung und Konfiguration der Hardware-Sicherheitsfeatures **Secure Boot V2** und **Flash Encryption** als Ergänzung zum implementierten Software-Schutz.
+*   **Vervollständigung des TX-Pfads:** Ausbau der Rekonstruktionslogik für Matter-Befehle auf alle relevanten Protokolle (HMS, FHT etc.).
 *   **Dokumentation & Release:** Finalisierung der Benutzerdokumentation und Vorbereitung eines stabilen Release-Kandidaten (v1.1.0).
 
 ## 6. Hardware-Konfiguration (Pinout)
