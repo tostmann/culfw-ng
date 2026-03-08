@@ -50,6 +50,17 @@ void app_main(void) {
     }
     ESP_ERROR_CHECK(ret);
 
+    // Check for factory reset button (GPIO 9) at boot
+    gpio_reset_pin(GPIO_NUM_9);
+    gpio_set_direction(GPIO_NUM_9, GPIO_MODE_INPUT);
+    gpio_set_pull_mode(GPIO_NUM_9, GPIO_PULLUP_ONLY);
+    vTaskDelay(pdMS_TO_TICKS(100));
+    if (gpio_get_level(GPIO_NUM_9) == 0) {
+        ESP_LOGW(TAG, "Factory reset button detected! Erasing NVS...");
+        nvs_flash_erase();
+        esp_restart();
+    }
+
     // Load Configuration
     if (config_loader_init()) {
         config_loader_load_protocols();
