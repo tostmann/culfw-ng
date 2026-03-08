@@ -586,6 +586,6 @@ esp_err_t slowrf_init() {
     gpio_isr_handler_add(GPIO_GDO0, gpio_isr_handler, NULL);
     
     // Core 0 for real-time RF handling
-    xTaskCreatePinnedToCore(slowrf_task, "slowrf_task", 4096, NULL, 10, NULL, 0);
+    xTaskCreatePinnedToCore(slowrf_task, "slowrf_task", 8192, NULL, 10, NULL, 0);
     return ESP_OK;
 }
