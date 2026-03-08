@@ -74,6 +74,7 @@ static esp_err_t index_get_handler(httpd_req_t *req) {
         "</form></div>"
         "<div class='card'><h3>Live Activity</h3><div class='log'>%s</div></div>"
         "</body></html>",
+        mac_str,
         BUILD_NUMBER,
         ip_addr,
         mac_str,
