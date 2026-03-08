@@ -2,6 +2,7 @@
   "protocols": [
     {
       "name": "Nexa",
+      "type": "switch",
       "freq": 433,
       "timing": {
         "short": 250,
@@ -21,6 +22,7 @@
     },
     {
       "name": "Intertechno_V1",
+      "type": "switch",
       "freq": 433,
       "timing": {
         "short": 350,
@@ -39,6 +41,7 @@
     },
     {
       "name": "Intertechno_V3",
+      "type": "switch",
       "freq": 433,
       "timing": {
         "short": 250,
