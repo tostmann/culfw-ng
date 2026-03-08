@@ -20,7 +20,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 2. Architektur & Design-Entscheidungen
 
-*   **Plattform:** ESP32-C6 mit ESP-IDF Framework, verwaltet über PlatformIO.
+*   **Plattform:** ESP32-C6 mit ESP-IDF Framework, verwaltet über **natives ESP-IDF (`idf.py`)**.
 *   **Board:** `ESP32-C6-NINI`
 *   **Kommunikation:** Nativer USB-JTAG/CDC Treiber (`usb_serial_jtag`) für eine nicht-blockierende serielle Schnittstelle. Der RX-Puffer wurde auf 2048 Bytes erhöht, um lange Diagnose-Kommandos zu unterstützen.
 *   **RF-Modul:** CC1101 angebunden via SPI.
@@ -116,7 +116,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Release Management: Finaler Code-Stand als **Release v1.0.7 (Build 7)** und Binaries (`binaries/`) auf GitHub vorbereitet.
 *   **[DONE]** Finale Matter SDK-Integration: Projektstruktur auf ESP-IDF-Standard (`main/`) umgestellt, Abhängigkeiten (`idf_component.yml`) deklariert.
 *   **[DONE]** C/C++ Interoperabilität: C-Wrapper (`matter_interface.cpp`) für Matter SDK implementiert und mit `extern "C"` für die Einbindung in das restliche C-Projekt kompatibel gemacht.
-*   **[DONE]** Build-Blocker-Analyse: Vollständige Diagnose der PlatformIO-Inkompatibilitäten mit dem ESP-Matter SDK. Es wurde festgestellt, dass PlatformIO sowohl das Einbetten von Binärdaten (Zertifikate) als auch CMake-Anweisungen zum Ausschluss von Quelldateien unzuverlässig verarbeitet.
+*   **[DONE]** Strategische Migration des Build-Systems von PlatformIO zu nativem ESP-IDF (`idf.py`) zur Behebung von SDK-Kompatibilitätsproblemen vollzogen.
 
 ## 4. Neue Erkenntnisse / Probleme
 
@@ -126,7 +126,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
         1.  **Fehler bei Binärdaten-Einbettung:** Die CMake-Funktion `target_add_binary_data`, die vom SDK zur Einbettung von Zertifikaten verwendet wird (z.B. in der `esp_insights`-Komponente), wird vom PlatformIO-Build-Prozess nicht korrekt verarbeitet. Dies führt zu Build-Fehlern wegen nicht gefundener Assembly-Dateien (`.S`).
         2.  **Ignorierte Quellcode-Ausschlüsse:** Anweisungen zum Ausschluss von fehlerhaften Quelldateien (z.B. `closure-control-cluster-logic.cpp`) in der `CMakeLists.txt` einer Komponente werden von PlatformIO ignoriert, was die Anwendung von Workarounds für SDK-Bugs verhindert.
     *   **Konsequenz:** Die Notwendigkeit, kontinuierlich fragile "Hacks" (z.B. Pre-Build-Skripte, manuelles Leeren von Quelldateien) zu implementieren, ist für die Entwicklung eines stabilen, kommerziellen Produkts nicht tragfähig.
-    *   **Entscheidung:** Das Projekt wird vollständig auf den nativen ESP-IDF-Toolchain (`idf.py`) umgestellt, um einen stabilen, vorhersagbaren und wartbaren Build-Prozess zu gewährleisten.
+    *   **Entscheidung:** Das Projekt wurde vollständig auf den nativen ESP-IDF-Toolchain (`idf.py`) umgestellt, um einen stabilen, vorhersagbaren und wartbaren Build-Prozess zu gewährleisten.
 *   **Architektur-Anpassung (ESP-IDF-Kompatibilität):** Für die Integration des Matter-SDKs musste die Projektstruktur vom PlatformIO-Standard (`src/`) auf eine ESP-IDF-kompatible Struktur mit einem `main`-Komponentenverzeichnis umgestellt werden. Dies war notwendig, da das Build-System des SDKs eine Komponente namens `main` erwartet.
 *   **Erkenntnis (C/C++ Interoperabilität bei SDKs):** Das ESP-Matter SDK ist in C++ implementiert. Die Integration in ein bestehendes C-Projekt erfordert die Umstellung der Schnittstellen-Module (z.B. `matter_interface.c`) auf C++ (`.cpp`) und die Sicherstellung der C-Linkage für den Rest des Projekts über `extern "C"` im Header, um Linker-Fehler zu vermeiden.
 *   **Erkenntnis (Neue SDK-Abhängigkeiten):** Das Matter-SDK erfordert die Aktivierung und Konfiguration zusätzlicher Systemkomponenten, insbesondere Bluetooth LE (für die Inbetriebnahme), IPv6 und mDNS, die in den `sdkconfig.defaults` explizit aktiviert werden müssen.
@@ -140,7 +140,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **Migration zu nativem ESP-IDF:** Umstellung des gesamten Projekts von PlatformIO auf den nativen ESP-IDF Build-Prozess (`idf.py`). Dies beinhaltet das Entfernen der `platformio.ini` und die ausschließliche Verwaltung der Konfiguration über `sdkconfig.defaults` und `idf.py menuconfig`.
+*   **Korrektur der Build-Konfiguration (CMake):** Anpassung der Include-Pfade in der `main/CMakeLists.txt`, um die "Header not found"-Fehler zu beheben und einen ersten erfolgreichen Build mit `idf.py` zu erreichen.
 *   **Aktivierung der Matter-Funktionalität:** Umstellung des Codes im `matter_interface.cpp` vom Simulations-Modus auf die echten SDK-Funktionsaufrufe für die Endpoint-Erstellung und Attribut-Updates.
 *   **IP-Schutz Härtung:** Aktivierung der ESP32-C6 Hardware-Sicherheitsfeatures **Secure Boot V2** und **Flash Encryption**, um die 3-Säulen-Strategie zu vervollständigen.
 *   **System-Validierung:** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
@@ -166,4 +166,4 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 *   **Versionskontrolle:** Das Projekt wird auf GitHub verwaltet.
     *   **Repository:** `https://github.com/tostmann/culfw-ng`
-*   **Build-System:** Migration von `PlatformIO` zu nativem `ESP-IDF (idf.py)` zur Lösung von Kompatibilitätsproblemen mit dem ESP-Matter SDK.
+*   **Build-System:** Umgestellt auf natives **ESP-IDF (`idf.py`)** zur Lösung von Kompatibilitätsproblemen mit dem ESP-Matter SDK. Die `platformio.ini` wurde entfernt.
