@@ -7,6 +7,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
+#include "culfw_duty_cycle.h"
 
 static const char *TAG = "CC1101";
 static spi_device_handle_t spi;
