@@ -173,16 +173,15 @@ static void handle_command(char *cmd) {
         } else {
             len = snprintf(out, sizeof(out), "GR ERR\r\n");
         }
-    } else if (cmd[0] == 'm' && cmd[1] == 'i') { // mi<HEX> - inject raw durations for testing (RX path)
-        char hex[3];
-        hex[2] = 0;
-        uint8_t level = 0; // First pulse should result in pulse_level 1 (HIGH)
-        for (int i = 2; i < strlen(cmd) - 1; i += 2) {
-            hex[0] = cmd[i];
-            hex[1] = cmd[i+1];
-            uint16_t duration = strtol(hex, NULL, 16) * 10;
+    } else if (cmd[0] == 'm' && cmd[1] == 'i') { // mi<HEX4> - inject raw durations for testing (RX path)
+        char hex[5];
+        hex[4] = 0;
+        uint8_t level = 0; // First pulse results in pulse_level 1 (HIGH)
+        for (int i = 2; i <= (int)strlen(cmd) - 4; i += 4) {
+            strncpy(hex, cmd + i, 4);
+            uint32_t duration = strtol(hex, NULL, 16) * 10;
             if (duration > 0) {
-                slowrf_process_pulse(duration, level);
+                slowrf_process_pulse((uint16_t)duration, level);
                 level = !level;
             }
         }
