@@ -36,5 +36,7 @@ bool duty_cycle_add_tx(uint32_t duration_ms) {
 }
 
 uint32_t duty_cycle_get_remaining() {
-    return 36000 - airtime_ms_1h;
+    bool is_433 = cc1101_is_433();
+    uint32_t limit = is_433 ? 360000 : 36000;
+    return (airtime_ms_1h > limit) ? 0 : (limit - airtime_ms_1h);
 }
