@@ -17,4 +17,5 @@ target_compile_definitions(${COMPONENT_LIB} PUBLIC
     GPIO_LED=8
     GPIO_SW=9
     GPIO_433MARKER=4
+    CONFIG_ESP_MATTER_ENABLE=1
 )
