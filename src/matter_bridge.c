@@ -87,3 +87,14 @@ void matter_bridge_list_endpoints() {
         usb_serial_jtag_write_bytes(out, len, 0);
     }
 }
+
+int matter_bridge_get_web_list(char* buf, int max_len) {
+    int len = snprintf(buf, max_len, "<h3>Matter Bridge</h3><p>Devices: %d, Uptime: %d s</p><ul>", device_count, bridge_uptime_sec);
+    for (int i = 0; i < device_count; i++) {
+        len += snprintf(buf + len, max_len - len, "<li>EP %d: %s (Type: %d)</li>", 
+                        device_table[i].matter_ep_id, device_table[i].rf_id, device_table[i].type);
+        if (len > max_len - 50) break;
+    }
+    len += snprintf(buf + len, max_len - len, "</ul>");
+    return len;
+}
