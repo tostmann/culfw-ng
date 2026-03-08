@@ -259,7 +259,7 @@ void culfw_parser_task(void *pvParameters) {
     }
 
     uint8_t buf[128];
-    char cmd_buf[128];
+    char cmd_buf[512];
     int cmd_pos = 0;
 
     while (1) {
