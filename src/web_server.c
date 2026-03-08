@@ -37,9 +37,13 @@ static esp_err_t index_get_handler(httpd_req_t *req) {
     char mac_str[13];
     sprintf(mac_str, "%02X%02X%02X%02X%02X%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
+    char ip_addr[16];
+    extern void wifi_manager_get_ip(char* ip);
+    wifi_manager_get_ip(ip_addr);
+
     snprintf(resp, 8192, 
         "<html><head><title>CUL32-C6 [%s]</title>"
-        "<meta http-equiv='refresh' content='5'>"
+        "<meta http-equiv='refresh' content='10'>"
         "<style>body { font-family: -apple-system, system-ui, sans-serif; margin: 20px; background: #f4f7f6; color: #444; }"
         ".card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }"
         "h1 { color: #2c3e50; font-weight: 300; } h3 { color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-top: 0; }"
