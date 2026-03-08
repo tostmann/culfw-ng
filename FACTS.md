@@ -57,4 +57,4 @@ SSID: "PalmBeach WiFi"
 Password: "12345678"
 
 * IP Sicherheit / Verschlüsselung *
-bereite verschlüsselung vor. Implementiere aber jetzt im Entwicklungs/Debug Modus alles noch UNVERSCHLÜSSELT
+bereite verschlüsselung vor. Implementiere aber derzeit alles noch UNVERSCHLÜSSELT
