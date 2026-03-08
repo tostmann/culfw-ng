@@ -181,6 +181,8 @@ bool generic_decoder_load_from_json(const char* json_string) {
         if (len) {
             p->min_bits = cJSON_GetObjectItem(len, "min")->valueint;
             p->max_bits = cJSON_GetObjectItem(len, "max")->valueint;
+            cJSON *ignore = cJSON_GetObjectItem(len, "ignore");
+            p->id_ignore_bits = ignore ? ignore->valueint : 0;
         }
 
         ESP_LOGI(TAG, "Loaded: %s (Short: %d us, SyncLen: %d)", p->name, p->short_us, p->sync_len);
