@@ -193,6 +193,12 @@ bool generic_decoder_load_from_json(const char* json_string) {
             cJSON *ignore = cJSON_GetObjectItem(len, "ignore");
             p->id_ignore_bits = ignore ? ignore->valueint : 0;
         }
+        
+        cJSON *scale = cJSON_GetObjectItem(proto, "scale");
+        p->scale = scale ? (float)scale->valuedouble : 1.0f;
+        
+        cJSON *offset = cJSON_GetObjectItem(proto, "offset");
+        p->offset = offset ? (float)offset->valuedouble : 0.0f;
 
         ESP_LOGI(TAG, "Loaded: %s (Short: %d us, SyncLen: %d)", p->name, p->short_us, p->sync_len);
         protocol_count++;
