@@ -17,12 +17,15 @@ typedef struct {
 
 static bridged_device_t device_table[MAX_ENDPOINTS];
 static int device_count = 0;
+static uint32_t bridge_uptime_sec = 0;
 
 static void matter_bridge_periodic_task(void* arg) {
     while(1) {
-        // Here we could simulate periodic attribute reporting or check stack health
-        vTaskDelay(pdMS_TO_TICKS(60000)); // once per minute
-        ESP_LOGI(TAG, "Matter Bridge Heartbeat: %d devices bridged.", device_count);
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        bridge_uptime_sec++;
+        if (bridge_uptime_sec % 60 == 0) {
+            ESP_LOGI(TAG, "Matter Bridge Heartbeat: %d devices bridged. Uptime: %d min.", device_count, bridge_uptime_sec / 60);
+        }
     }
 }
 
