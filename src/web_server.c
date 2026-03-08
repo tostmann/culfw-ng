@@ -34,8 +34,7 @@ static esp_err_t index_get_handler(httpd_req_t *req) {
     sprintf(mac_str, "%02X%02X%02X%02X%02X%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
     snprintf(resp, 8192, 
-        "<html><head><title>CUL32-C6 [%s]</title>",
-        mac_str
+        "<html><head><title>CUL32-C6 [%s]</title>"
         "<meta http-equiv='refresh' content='5'>"
         "<style>body { font-family: -apple-system, system-ui, sans-serif; margin: 20px; background: #f4f7f6; color: #444; }"
         ".card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }"
