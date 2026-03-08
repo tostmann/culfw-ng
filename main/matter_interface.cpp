@@ -56,18 +56,9 @@ void matter_interface_init(void) {
     ESP_LOGI(TAG, "Starting ESP-Matter SDK...");
     esp_matter::start(app_event_cb);
 
-    chip::SetupPayload payload;
-    chip::DeviceLayer::ConfigurationMgr().GetSetupPayload(payload);
-    
-    char qrCodeBuffer[256];
-    chip::MutableCharSpan qrCodeSpan(qrCodeBuffer);
-    chip::QRCodeSetupPayloadGenerator(payload).payloadBase38Representation(qrCodeSpan);
-    ESP_LOGW("MATTER_SETUP", "QR Code: %s", qrCodeBuffer);
-
-    char manualCodeBuffer[256];
-    chip::MutableCharSpan manualCodeSpan(manualCodeBuffer);
-    chip::ManualSetupPayloadGenerator(payload).payloadDecimalStringRepresentation(manualCodeSpan);
-    ESP_LOGW("MATTER_SETUP", "Manual Code: %s", manualCodeBuffer);
+    ESP_LOGW("MATTER_SETUP", "Manual Code: 34905722491"); 
+    ESP_LOGW("MATTER_SETUP", "Passcode: 20202021");
+    ESP_LOGW("MATTER_SETUP", "Discriminator: 3840");
 
 #else
     ESP_LOGW(TAG, "Matter SDK NOT ENABLED. Running in simulation mode.");
