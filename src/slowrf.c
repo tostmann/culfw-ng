@@ -354,9 +354,13 @@ void slowrf_task(void *pvParameters) {
                         matter_bridge_report_event(id, "S300TH", DEVICE_TYPE_TEMP_SENSOR, 20.0); // Placeholder
                     }
                     if (fht_dec.byte_cnt >= 5) {
-                        char d[32]; int dlen = 0;
+                        char d[32]; char id[16];
+                        snprintf(id, sizeof(id), "T%02X%02X%02X", fht_dec.data[0], fht_dec.data[1], fht_dec.data[2]);
+                        int dlen = 0;
                         for (int i = 0; i < fht_dec.byte_cnt; i++) dlen += snprintf(d + dlen, sizeof(d) - dlen, "%02X", fht_dec.data[i]);
                         slowrf_output_packet("T", d, rssi);
+                        // FHT reporting - we use the value byte as state for now
+                        matter_bridge_report_event(id, "FHT", DEVICE_TYPE_TEMP_SENSOR, (float)fht_dec.data[4] / 2.0f);
                     }
                     if (rtl_dec.bit_cnt >= 24) {
                         char d[32];
