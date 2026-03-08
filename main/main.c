@@ -26,8 +26,8 @@ void led_task(void *pvParameters) {
         vTaskDelay(pdMS_TO_TICKS(100));
         gpio_set_level(GPIO_LED, 1);
         
-        const char* tick = "CUL-TICK\r\n";
-        usb_serial_jtag_write_bytes(tick, strlen(tick), 0);
+        //const char* tick = "CUL-TICK\r\n";
+        //usb_serial_jtag_write_bytes(tick, strlen(tick), 0);
         
         vTaskDelay(pdMS_TO_TICKS(900));
     }
