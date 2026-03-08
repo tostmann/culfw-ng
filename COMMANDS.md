@@ -62,7 +62,9 @@ Der Stick verbindet sich automatisch mit dem WLAN (**SSID: PalmBeach WiFi**).
 | :--- | :--- | :--- |
 | `MT <ID> <VAL>` | Simuliert Funk-Event für Matter-Test | `MT FS20_123401 1.0` |
 | `MC <EP> <VAL>` | Simuliert Matter-Kommando (TX-Pfad) | `MC 10 1.0` |
+| `MA <ID> <PR> <T>`| Manuelle Matter-Registrierung | `MA Somfy_1 Somfy 3` |
 | `ML` | Listet registrierte Matter-Endpunkte auf | `ML` |
+| `rssi` | Zeigt den aktuellen RSSI-Wert an | `rssi` |
 
 ## Erweiterte Diagnose (Generic Decoder)
 
