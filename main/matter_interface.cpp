@@ -60,11 +60,13 @@ void matter_interface_init(void) {
     chip::DeviceLayer::ConfigurationMgr().GetSetupPayload(payload);
     
     char qrCodeBuffer[256];
-    chip::QRCodeSetupPayloadGenerator(payload).payloadBase38Representation(qrCodeBuffer, sizeof(qrCodeBuffer));
+    chip::MutableCharSpan qrCodeSpan(qrCodeBuffer);
+    chip::QRCodeSetupPayloadGenerator(payload).payloadBase38Representation(qrCodeSpan);
     ESP_LOGW("MATTER_SETUP", "QR Code: %s", qrCodeBuffer);
 
     char manualCodeBuffer[256];
-    chip::ManualSetupPayloadGenerator(payload).payloadDecimalStringRepresentation(manualCodeBuffer, sizeof(manualCodeBuffer));
+    chip::MutableCharSpan manualCodeSpan(manualCodeBuffer);
+    chip::ManualSetupPayloadGenerator(payload).payloadDecimalStringRepresentation(manualCodeSpan);
     ESP_LOGW("MATTER_SETUP", "Manual Code: %s", manualCodeBuffer);
 
 #else
