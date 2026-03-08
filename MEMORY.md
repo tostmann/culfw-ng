@@ -127,12 +127,16 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Test-Infrastruktur gehärtet (automatischer Factory-Reset des Sender-CULs).
 *   **[DONE]** End-to-End-Test (Sensor-Pfad): Emulation eines Temperatursensors via Intertechno V1 Protokoll erfolgreich validiert.
 *   **[DONE]** Decoder-Validierung (FS20): Erfolgreicher Test des FS20-Decoders und der Matter-Bridge-Anbindung mittels direkter Puls-Injektion (`mi`-Kommando).
+*   **[DONE]** Fehlerbehebung Matter-Initialisierung: Korrektur der Initialisierungssequenz in `matter_interface.cpp` zur expliziten Erzeugung des Root-Nodes und des Aggregator-Endpoints.
 
 ## 4. Neue Erkenntnisse / Probleme
 
 *   **Problem: Matter Endpoint-Erstellung schlägt sporadisch fehl.**
-    *   **Analyse:** Trotz Erhöhung von `CHIP_DEVICE_CONFIG_DYNAMIC_ENDPOINT_COUNT` wird der Fehler `E (...) esp_matter_endpoint: Failed to create endpoint` im Log angezeigt. Die genauere Meldung `E (...) data_model: Node cannot be NULL` deutet auf ein tieferliegendes Problem im Matter SDK oder dessen Initialisierung hin.
-    *   **Konsequenz:** Dies beeinträchtigt nicht die RF-Funktion oder die erfolgreiche Registrierung in der Bridge-Logik, muss aber für die volle Matter-Funktionalität (z.B. Sichtbarkeit in Apple Home) priorisiert untersucht werden.
+    *   **Analyse:** Trotz Erhöhung von `CHIP_DEVICE_CONFIG_DYNAMIC_ENDPOINT_COUNT` und Korrekturen in der Initialisierungssequenz wird der Fehler `E (...) esp_matter_endpoint: Failed to create endpoint` im Log angezeigt. Die genauere Meldung `E (...) data_model: Node cannot be NULL` deutet weiterhin auf ein tiefgreifendes Problem im Matter SDK oder dessen Initialisierung hin.
+    *   **Konsequenz:** Dies beeinträchtigt nicht die RF-Funktion oder die erfolgreiche Registrierung in der Bridge-Logik, muss aber für die volle Matter-Funktionalität (z.B. Sichtbarkeit in Apple Home / HASS) priorisiert untersucht werden. Der Fehler blockiert die Inbetriebnahme mit externen Controllern.
+*   **Erkenntnis: Testumgebung ohne Container-Runtime.**
+    *   **Analyse:** Direkte Integrationstests gegen einen Home Assistant Docker-Container sind in der aktuellen Entwicklungsumgebung nicht möglich, da `docker` bzw. `podman` nicht installiert sind.
+    *   **Konsequenz:** Die Verifikation muss sich auf die korrekte Protokoll-Dekodierung und die fehlerfreie Übergabe der Daten an den Matter-SDK-Stack konzentrieren. Ein erfolgreicher Test wird als "technisch bereit für das Pairing" gewertet.
 *   **Erkenntnis: Erfolgreiche Validierung des Sensor-Pfads.**
     *   Durch die Emulation eines Temperatursensors über das robuste Intertechno-V1-Protokoll (gesendet von einem Legacy-CUL) wurde der komplette Pfad "RF-Empfang -> Sensor-Dekodierung -> Matter Bridge -> Erstellung eines Sensor-Endpoints" erfolgreich End-to-End validiert. Die Architektur ist somit grundsätzlich in der Lage, Sensordaten korrekt an Matter zu übergeben.
 *   **Erkenntnis: Unzuverlässigkeit von Legacy-Hardware als Test-Sender.**
@@ -149,8 +153,8 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **Fehlerbehebung Matter-Endpoint-Erstellung (Höchste Priorität):** Ursache für den Fehler "Failed to create endpoint" / "Node cannot be NULL" analysieren und beheben. Ein `idf.py fullclean` gefolgt von einem Neu-Build ist der erste Schritt zur Validierung. Danach ist eine tiefere Analyse der SDK-Initialisierungssequenz erforderlich.
-*   **Praktische Validierung des Matter-Commissioning:** Nach erfolgreicher Fehlerbehebung ist ein vollständiger Matter-Commissioning-Prozess mit einem handelsüblichen Controller (z.B. Apple Home, Google Home) durchzuführen, um die Funktionalität der Einbindung zu verifizieren.
+*   **Fehlerbehebung Matter-Endpoint-Erstellung (Höchste Priorität):** Ursache für den Fehler "Failed to create endpoint" / "Node cannot be NULL" analysieren und beheben. Ein `idf.py fullclean` gefolgt von einem Neu-Build ist der erste Schritt zur Validierung. Danach ist eine tiefere Analyse der SDK-Initialisierungssequenz und der Lebenszyklen der Matter-Objekte erforderlich.
+*   **Praktische Validierung des Matter-Commissioning:** Nach erfolgreicher Fehlerbehebung ist ein vollständiger Matter-Commissioning-Prozess mit einem handelsüblichen Controller (z.B. Apple Home, Google Home, Home Assistant) durchzuführen, um die Funktionalität der Einbindung zu verifizieren.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
 *   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (v1.1.0) und Finalisierung der Endbenutzer-Dokumentation.
 *   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.
