@@ -10,6 +10,8 @@ typedef enum {
     DEVICE_TYPE_DIMMER
 } matter_device_type_t;
 
+typedef void (*matter_command_cb_t)(uint16_t endpoint_id, float value);
+
 /**
  * @brief Initialize the Matter Stack/Bridge
  */
