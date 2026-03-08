@@ -43,6 +43,9 @@ void matter_bridge_init() {
     // Initialize the underlying Matter stack (or simulation)
     matter_interface_init();
 
+    // Register our callback to receive commands from Matter
+    matter_interface_register_command_cb(matter_bridge_command_cb);
+
     xTaskCreate(matter_bridge_periodic_task, "matter_bridge_task", 2048, NULL, 5, NULL);
 }
 
