@@ -264,6 +264,10 @@ void cc1101_send_it_v1(const char* data) {
 }
 
 void cc1101_send_raw_slowrf(const char* hex_data) {
+    int hex_len = strlen(hex_data);
+    uint32_t estimated_ms = (25 + (hex_len / 2) * 9) * 10; // 10 repeats, approx 1ms per bit
+    if (!duty_cycle_add_tx(estimated_ms)) return;
+
     gpio_set_level(GPIO_LED, 0); // LED ON
     cc1101_set_tx_mode();
     vTaskDelay(pdMS_TO_TICKS(5));
