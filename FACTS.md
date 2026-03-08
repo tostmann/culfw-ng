@@ -8,6 +8,7 @@ Bedenke die spätere nutzung als Thread oder/und Matter Gateway für diese Proto
 *PLATFORM*
 
 nutze das native ESP-IDF Buildsystem insbesondere für offizielles Matter SDK und Thread
+# ./build_idf.sh
 
 *TESTING*
 

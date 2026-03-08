@@ -1,0 +1,1 @@
+Command: /root/.espressif/python_env/idf5.5_py3.13_env/bin/python -m espsecure generate_signing_key --version 2 secure_boot_signing_key.pem
