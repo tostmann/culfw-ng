@@ -66,19 +66,25 @@ static void config_loader_xor_decrypt(char* data, size_t len) {
 }
 
 bool config_loader_load_protocols() {
+    // Auth check disabled for easy debugging as requested
+    /*
     if (!config_loader_check_auth()) {
         ESP_LOGE(TAG, "Authorization failed! IP protection active.");
         return false;
     }
+    */
 
-    // Try encrypted file first
+    // Prefer plain JSON during debugging
     bool encrypted = false;
-    FILE* f = fopen("/data/protocols.enc", "rb");
+    FILE* f = fopen("/data/protocols.json", "r");
     if (f) {
-        encrypted = true;
-        ESP_LOGI(TAG, "Found encrypted protocol database.");
+        ESP_LOGI(TAG, "Found plain protocol database.");
     } else {
-        f = fopen("/data/protocols.json", "r");
+        f = fopen("/data/protocols.enc", "rb");
+        if (f) {
+            encrypted = true;
+            ESP_LOGI(TAG, "Found encrypted protocol database.");
+        }
     }
 
     if (f == NULL) {
