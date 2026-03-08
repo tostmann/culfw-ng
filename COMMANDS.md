@@ -45,17 +45,37 @@ Wenn `X21` aktiv ist, werden empfangene Pakete wie folgt ausgegeben:
 ## Web-Interface & WiFi
 
 Der Stick verbindet sich automatisch mit dem WLAN (**SSID: PalmBeach WiFi**).
-Über die zugewiesene IP-Adresse kann ein einfaches Web-Interface aufgerufen werden:
+Über die zugewiesene IP-Adresse kann ein **vollständiges Diagnose-Dashboard** aufgerufen werden:
 
 *   **URL:** `http://<ip-adresse>/`
-*   **Inhalt:** Aktueller Status, Frequenz, Modus und die letzten 10 empfangenen Funk-Events.
+*   **Inhalt:** 
+    *   System-Stammdaten (Frequenz, Modus, Uptime).
+    *   Liste der aktiven Generic-Protokolle (mit Decodier-Zähler).
+    *   Matter-Bridge Status (Liste aller dynamisch erstellten Endpunkte).
+    *   Live-Log der letzten 10 Funk-Events (Auto-Refresh alle 5s).
 
 ## Matter & Thread Integration (Vorschau)
 
 | Befehl | Beschreibung | Beispiel |
 | :--- | :--- | :--- |
-| `MT` | Simuliert Matter-Events für Tests | `MT F123401` (Switch), `MT H1234T215` (Temp) |
+| `MT <ID> <VAL>` | Simuliert Funk-Event für Matter-Test | `MT FS20_123401 1.0` |
+| `MC <EP> <VAL>` | Simuliert Matter-Kommando (TX-Pfad) | `MC 10 1.0` |
 | `ML` | Listet registrierte Matter-Endpunkte auf | `ML` |
+
+## Erweiterte Diagnose (Generic Decoder)
+
+| Befehl | Beschreibung | Beispiel |
+| :--- | :--- | :--- |
+| `GL` | Listet alle geladenen Generic-Protokolle auf | `GL` |
+| `GR` | Lädt die Protokolldatenbank (`protocols.enc`) neu | `GR` |
+| `mi<HEX>` | Injiziert Pulsfolge in die RX-Pipeline (Test) | `mi00320019...` |
+
+## IP-Schutz & Sicherheit
+
+Die Firmware implementiert eine **3-Säulen-Sicherheitsstrategie**:
+1.  **Hardware-Binding:** Die Protokolldatenbank wird nur auf autorisierten MAC-Adressen geladen.
+2.  **Verschlüsselung:** Die Protokoll-Daten liegen verschlüsselt (`.enc`) auf dem Flash-Dateisystem.
+3.  **Secure Boot:** (In Produktion) Verhindert das Auslesen oder Manipulieren der Firmware.
 
 Hinweis: Die echte Matter-Funktionalität erfordert das `esp-matter` SDK. Derzeit läuft die Firmware im **"Matter-Ready Stub Mode"**, der die Logik simuliert, bis das SDK in der Build-Umgebung verfügbar ist.
 
