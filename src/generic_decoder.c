@@ -38,6 +38,7 @@ typedef struct {
     uint16_t min_bits;
     uint16_t max_bits;
     int matter_type; // 0=Switch, 1=Sensor
+    uint32_t count_decoded;
 } rf_proto_internal_t;
 
 static void generic_decoder_output_packet(rf_proto_internal_t *p, uint64_t data, uint8_t rssi);
