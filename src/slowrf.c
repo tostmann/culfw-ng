@@ -115,6 +115,7 @@ uint8_t slowrf_get_mode() {
 
 void slowrf_mark_matched() {
     protocol_matched = true;
+    mu_idx = 0; // Clear MU buffer if protocol matched
 }
 
 void slowrf_process_pulse(uint16_t duration, uint8_t level) {
