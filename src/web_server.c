@@ -58,6 +58,7 @@ static esp_err_t index_get_handler(httpd_req_t *req) {
         "<p><b>Mode:</b> <span style='color: #e67e22;'>X%02X (%s)</span> &nbsp; <a href='/cmd?c=X21'>CUL Mode</a> <a href='/cmd?c=X25'>SIGduino Mode</a></p>"
         "<p><b>Duty Cycle (1h):</b> %lu / 36000 ms used</p></div>"
         "<div class='card'>%s</div>"
+        "<div class='card'><h3>CC1101 Register Map</h3><div class='log' style='background: #eee; color: #333; font-size: 0.8em;'>%s</div></div>"
         "<div class='card'>%s"
         "<h3>Matter Signal Injection (TX Simulation)</h3>"
         "<form action='/cmd' method='get' onsubmit='this.c.value=\"MC \" + this.c_ep.value + \" \" + this.c_val.value'>"
