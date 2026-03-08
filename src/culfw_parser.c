@@ -257,8 +257,8 @@ void culfw_parser_task(void *pvParameters) {
         usb_serial_jtag_driver_install(&usb_serial_jtag_config);
     }
 
-    uint8_t buf[128];
-    char cmd_buf[512];
+    uint8_t buf[256];
+    char cmd_buf[1024];
     int cmd_pos = 0;
 
     while (1) {
