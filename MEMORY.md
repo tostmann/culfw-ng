@@ -114,12 +114,13 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** End-to-End-Test: Vollständiger RX->Matter->TX-Zyklus für Schalter- (Nexa), Sensor- (HMS) und Aktor-Protokolle (Somfy RTS, FHT) validiert.
 *   **[DONE]** End-to-End-Test (Generic): Validierung des vollständigen Pfades für tabellengesteuerte Protokolle (Generic Decoder -> Matter Bridge -> TX-Translation).
 *   **[DONE]** Release Management: Finaler Code-Stand als **Release v1.0.7 (Build 7)** und Binaries (`binaries/`) auf GitHub vorbereitet.
-*   **[IN PROGRESS]** **Finale Matter SDK-Integration:** Projektstruktur auf ESP-IDF-Standard (`main/`) umgestellt und Abhängigkeiten (`idf_component.yml`) deklariert. Build schlägt aufgrund von Toolchain-Problemen fehl (Header nicht gefunden).
+*   **[DONE]** **Finale Matter SDK-Integration:** Projektstruktur auf ESP-IDF-Standard (`main/`) umgestellt, Abhängigkeiten (`idf_component.yml`) deklariert und Build-Prozess erfolgreich durchgeführt.
+*   **[DONE]** **C/C++ Interoperabilität:** C-Wrapper (`matter_interface.cpp`) für Matter SDK implementiert und mit `extern "C"` für die Einbindung in das restliche C-Projekt kompatibel gemacht.
 
 ## 4. Neue Erkenntnisse / Probleme
 
-*   **Problem (Toolchain-Konflikt bei SDK-Integration):** Die Integration des ESP-Matter SDK über den ESP-IDF Component Manager (`idf_component.yml`) in eine PlatformIO-Umgebung ist nicht nahtlos. PlatformIO löst die via `idf_component.yml` deklarierten Komponenten-Abhängigkeiten nicht automatisch auf, was zu "Header not found"-Fehlern führt.
 *   **Architektur-Anpassung (ESP-IDF-Kompatibilität):** Für die Integration des Matter-SDKs musste die Projektstruktur vom PlatformIO-Standard (`src/`) auf eine ESP-IDF-kompatible Struktur mit einem `main`-Komponentenverzeichnis umgestellt werden. Dies war notwendig, da das Build-System des SDKs eine Komponente namens `main` erwartet.
+*   **Erkenntnis (C/C++ Interoperabilität bei SDKs):** Das ESP-Matter SDK ist in C++ implementiert. Die Integration in ein bestehendes C-Projekt erfordert die Umstellung der Schnittstellen-Module (z.B. `matter_interface.c`) auf C++ (`.cpp`) und die Sicherstellung der C-Linkage für den Rest des Projekts über `extern "C"` im Header, um Linker-Fehler zu vermeiden.
 *   **Erkenntnis (Neue SDK-Abhängigkeiten):** Das Matter-SDK erfordert die Aktivierung und Konfiguration zusätzlicher Systemkomponenten, insbesondere Bluetooth LE (für die Inbetriebnahme), IPv6 und mDNS, die in den `sdkconfig.defaults` explizit aktiviert werden müssen.
 *   **Architektur-Korrektur (Single-Core):** Der ESP32-C6 ist ein **Single-Core Prozessor (RISC-V)**. Die RTOS-Architektur wurde auf ein Single-Core-Modell mit **Task-Priorisierung** als primäres Steuerungsinstrument umgestellt, um die Echtzeitfähigkeit zu gewährleisten.
 *   **Architektur-Verfeinerung (Initialisierung):** Die gesamte Initialisierungssequenz in `app_main` wurde optimiert, um eine stabile System-Startup-Logik sicherzustellen: NVS -> SPIFFS/Config -> WiFi -> Web Server -> Matter Bridge -> CC1101 Radio -> Start der RTOS-Tasks. Dies verhindert Race Conditions zwischen abhängigen Komponenten.
@@ -131,7 +132,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **Finale Matter SDK-Integration:** Behebung des Build-Fehlers durch Sicherstellung, dass PlatformIO die via `idf_component.yml` deklarierten Matter-Komponenten korrekt herunterlädt und in den Build-Prozess einbindet. Umstellung des Codes vom Simulations-Modus auf die echten SDK-Funktionen.
+*   **Aktivierung der Matter-Funktionalität:** Umstellung des Codes im `matter_interface.cpp` vom Simulations-Modus auf die echten SDK-Funktionsaufrufe für die Endpoint-Erstellung und Attribut-Updates.
 *   **IP-Schutz Härtung:** Aktivierung der ESP32-C6 Hardware-Sicherheitsfeatures **Secure Boot V2** und **Flash Encryption**, um die 3-Säulen-Strategie zu vervollständigen.
 *   **System-Validierung:** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
 *   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (v1.1.0) und Finalisierung der Endbenutzer-Dokumentation.
