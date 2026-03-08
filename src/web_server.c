@@ -26,6 +26,9 @@ static esp_err_t index_get_handler(httpd_req_t *req) {
     generic_decoder_get_web_list(proto_list, 2048);
     matter_bridge_get_web_list(matter_list, 2048);
 
+    char *reg_dump = malloc(1024);
+    if (reg_dump) cc1101_get_register_dump(reg_dump, 1024);
+
     bool is_433 = cc1101_is_433();
     uint8_t mode = slowrf_get_mode();
 
