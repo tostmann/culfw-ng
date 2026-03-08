@@ -18,12 +18,22 @@ typedef struct {
 static bridged_device_t device_table[MAX_ENDPOINTS];
 static int device_count = 0;
 
+static void matter_bridge_periodic_task(void* arg) {
+    while(1) {
+        // Here we could simulate periodic attribute reporting or check stack health
+        vTaskDelay(pdMS_TO_TICKS(60000)); // once per minute
+        ESP_LOGI(TAG, "Matter Bridge Heartbeat: %d devices bridged.", device_count);
+    }
+}
+
 void matter_bridge_init() {
     ESP_LOGI(TAG, "Initializing Matter Bridge Logic...");
     memset(device_table, 0, sizeof(device_table));
     
     // Initialize the underlying Matter stack (or simulation)
     matter_interface_init();
+
+    xTaskCreate(matter_bridge_periodic_task, "matter_bridge_task", 2048, NULL, 5, NULL);
 }
 
 void matter_bridge_report_event(const char* id, matter_device_type_t type, float value) {
