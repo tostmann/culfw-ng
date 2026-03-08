@@ -91,6 +91,13 @@ static void matter_bridge_command_cb(uint16_t endpoint_id, float value) {
     else if (strcmp(proto, "Oregon") == 0) {
         cc1101_send_oregon(rf_id);
     }
+    else if (strcmp(proto, "TEST_SW") == 0) {
+        ESP_LOGI(TAG, "TEST_SW TX: ID %s, Value %.1f", rf_id, value);
+        // Simulate sending by printing to console
+        char msg[64];
+        int mlen = snprintf(msg, sizeof(msg), "TX_TEST_SW: %s VAL: %.1f\r\n", rf_id, value);
+        usb_serial_jtag_write_bytes(msg, mlen, 0);
+    }
     else if (strcmp(proto, "Somfy") == 0) {
         // ID format: Somfy_ADDR (ADDR is 3 bytes hex)
         char* addr_str = strchr(rf_id, '_');
