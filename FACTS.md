@@ -5,11 +5,9 @@ nutze Quellen von culfw oder SignalDunio und erzeuge eine Implementierung als RT
 Bedenke die spätere erweiterbarkeit auf andere culfw Protokolle.
 Bedenke die spätere nutzung als Thread oder/und Matter Gateway für diese Protokolle. 
 
-*PLATFORMIO*
+*PLATFORM*
 
-oder nutze idf
-
-is in $HOME/.platformio/penv/bin
+nutze das native ESP-IDF Buildsystem insbesondere für offizielles Matter SDK und Thread
 
 *TESTING*
 
