@@ -12,8 +12,45 @@ static const char *TAG = "MATTER_BRIDGE";
 // Callback for commands from Matter side
 static void matter_bridge_command_cb(uint16_t endpoint_id, float value) {
     ESP_LOGI(TAG, "Command received from Matter: EP %d -> %.1f", endpoint_id, value);
+    
     // Find device in our table
-    // (This part will be implemented to send RF)
+    int idx = -1;
+    for (int i = 0; i < device_count; i++) {
+        if (device_table[i].matter_ep_id == endpoint_id) {
+            idx = i;
+            break;
+        }
+    }
+
+    if (idx == -1) {
+        ESP_LOGW(TAG, "No RF device found for EP %d", endpoint_id);
+        return;
+    }
+
+    char* rf_id = device_table[idx].rf_id;
+    ESP_LOGI(TAG, "Translating Matter command to RF for device: %s", rf_id);
+
+    // Basic translation logic for Demo
+    if (strncmp(rf_id, "FS20_", 5) == 0) {
+        // FS20_HHHHAA -> HHHH AA <CMD>
+        char hc[5], ad[3];
+        strncpy(hc, rf_id + 5, 4); hc[4] = 0;
+        strncpy(ad, rf_id + 9, 2); ad[2] = 0;
+        const char* cmd = (value > 0) ? "11" : "00"; // ON/OFF
+        cc1101_send_fs20(hc, ad, cmd);
+    } 
+    else if (strncmp(rf_id, "IT_V1_", 6) == 0) {
+        // IT_V1_XXXX -> 12 chars
+        // Placeholder for real mapping, for now we assume rf_id is the code
+        // and we toggle the last bit for ON/OFF
+        cc1101_send_it_v1(rf_id + 6);
+    }
+    else if (strncmp(rf_id, "Nexa_", 5) == 0 || strncmp(rf_id, "Intertechno_V3_", 15) == 0) {
+        // Nexa/ITV3 usually uses 32 bits. 
+        // We'd need to reconstruct the full 32bit frame here.
+        // For simulation, we just log it.
+        ESP_LOGI(TAG, "TX for %s not fully implemented yet", rf_id);
+    }
 }
 
 typedef struct {
