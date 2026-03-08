@@ -136,10 +136,17 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Identifizierung einer Konfigurations-Inkonsistenz (aktivierte Thread-Cluster auf Wi-Fi-Gerät) als wahrscheinliche Ursache.
 *   **[DONE]** **Build-Umgebung gehärtet:** Probleme mit der ESP-IDF-Toolchain (fehlendes `cmake` im PATH) behoben und einen stabilen Build-Prozess mit `idf.py` sichergestellt.
 *   **[DONE]** **Fehlerbehebung Matter-Commissioning:** Alle Thread-spezifischen Matter-Cluster (`CONFIG_ESP_MATTER_ENABLE_OPENTHREAD` etc.) in der `sdkconfig` für das reine Wi-Fi-Gerät deaktiviert, um Konflikte während des Interviews zu beheben.
-*   **[DONE]** **Release-Management:** Firmware-Version für den Commissioning-Fix auf **v1.1.0 (Build 7)** aktualisiert.
+*   **[DONE]** **Release-Management:** Firmware-Version für den Commissioning-Fix auf **v1.1.0-NG (Build 7)** aktualisiert.
+*   **[DONE]** **Validierung des Commissioning-Fixes:** Erfolgreiches Anlernen des Geräts an Home Assistant nach Deaktivierung der Thread-Cluster und Neustart des Matter-Servers.
 
 ## 4. Neue Erkenntnisse / Probleme
 
+*   **Erkenntnis: Fehlerursache Matter-Commissioning – Thread-Cluster auf Wi-Fi-Gerät.**
+    *   **Analyse:** Der Commissioning-Prozess scheiterte, weil in der `sdkconfig` fälschlicherweise Thread-spezifische Matter-Cluster (z.B. für `Network Diagnostics`) für ein reines Wi-Fi-Gerät aktiviert waren. Der Matter-Controller versuchte, diese nicht vorhandenen Endpunkte abzufragen, was zu Timeouts führte.
+    *   **Konsequenz:** Strikte Trennung der Konfiguration für Wi-Fi- und Thread-Geräte ist zwingend erforderlich. Alle `CONFIG_ESP_MATTER_ENABLE_OPENTHREAD` Optionen wurden deaktiviert.
+*   **Erkenntnis: Notwendigkeit des Matter-Server-Resets ("Stale Session"-Problem).**
+    *   **Analyse:** Nach fehlgeschlagenen Commissioning-Versuchen behält der Matter-Server (z.B. in Home Assistant) gecachte Informationen über das Gerät. Selbst nach einem Firmware-Update kann ein erneuter Versuch scheitern, da der Server von veralteten Daten ausgeht.
+    *   **Konsequenz:** Eine zuverlässige Testprozedur muss das Löschen des alten Geräts aus dem Controller UND einen Neustart des Matter-Server-Dienstes beinhalten, um einen sauberen Zustand zu garantieren.
 *   **Erkenntnis: Unzuverlässigkeit von Legacy-Hardware als Test-Sender.**
     *   **Analyse:** Wiederholte Versuche, komplexe Protokolle wie HMS oder FHT von einem Legacy-CUL zu senden, schlugen fehl. Dies deutet auf Timing-Probleme oder Inkompatibilitäten in der alten CUL-Firmware hin.
     *   **Konsequenz:** Für die zuverlässige Validierung von Decodern wurde auf die direkte Puls-Injektion (`mi`-Kommando) umgestiegen. Dies entkoppelt die Decoder-Entwicklung von der unzuverlässigen Sender-Hardware und ermöglicht präzise, wiederholbare Tests.
@@ -149,9 +156,9 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **Verifikation des Commissioning-Fixes (Höchste Priorität):** Durchführung eines vollständigen Commissioning-Prozesses mit Home Assistant. Dies beinhaltet das Löschen des alten, fehlerhaften Geräts und einen Neustart des Matter-Server-Containers, um "Stale Session"-Fehler durch gecachte Daten zu vermeiden.
-*   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien, sobald das Commissioning stabil ist.
-*   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (**v1.1.0**) und Finalisierung der Endbenutzer-Dokumentation.
+*   **End-to-End-Validierung der Matter-Bridge (Höchste Priorität):** Systematischer Test der bidirektionalen Funktionalität: (A) Empfang von SlowRF-Signalen (z.B. Intertechno-Sensor) und deren korrekte Darstellung in Home Assistant; (B) Senden von Befehlen aus Home Assistant (z.B. Schalten von Somfy/FS20) und Verifikation des gesendeten Funksignals.
+*   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
+*   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (**v1.1.0-NG**) und Finalisierung der Endbenutzer-Dokumentation.
 *   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.
 
 ## 6. Hardware-Konfiguration (Pinout)
