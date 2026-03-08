@@ -20,7 +20,9 @@ void cc1101_send_it_v3(const char* data);
 void cc1101_send_hms(const char* hex_data);
 void cc1101_send_fht(const char* hex_data);
 void cc1101_send_oregon(const char* hex_data);
+void cc1101_send_somfy(const char* hex_data);
 void cc1101_send_raw_slowrf(const char* hex_data);
+void cc1101_set_frequency_raw(uint32_t freq_hz);
 bool cc1101_is_433();
 
 #define CC1101_WRITE_BURST  0x40
