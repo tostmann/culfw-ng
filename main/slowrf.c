@@ -363,12 +363,12 @@ void slowrf_task(void *pvParameters) {
                         // FHT reporting - we use the value byte as state for now
                         matter_bridge_report_event(id, "FHT", DEVICE_TYPE_TEMP_SENSOR, (float)fht_dec.data[4] / 2.0f);
                     }
-                    if (rtl_dec.bit_cnt >= 24) {
+                    /* if (rtl_dec.bit_cnt >= 24) {
                         char d[32];
                         snprintf(d, sizeof(d), "%08X", (unsigned int)rtl_dec.bit_buffer);
                         slowrf_output_packet("r", d, rssi);
                         matter_bridge_report_event(d, "Generic", DEVICE_TYPE_CONTACT_SENSOR, 1.0);
-                    }
+                    } */
                 }
                 reset_fs20(&fs_dec);
                 reset_fht(&fht_dec);
