@@ -56,10 +56,29 @@ static void matter_bridge_command_cb(uint16_t endpoint_id, float value) {
         cc1101_send_it_v1(rf_id);
     }
     else if (strcmp(proto, "IT_V3") == 0 || strcmp(proto, "Nexa") == 0) {
-        // Send ITV3/Nexa command
-        // For now using a hardcoded sequence or logic to toggle state
-        // Reconstruct from ID would be better.
-        cc1101_send_it_v3("00010101010101010101010101000110");
+        // ID is Nexa_HHHHHH or IT_V3_HHHHHH
+        // We need to convert HHHHHH back to bits and append the command bit
+        char* hex_start = strchr(rf_id, '_');
+        if (hex_start) {
+            hex_start++; // Skip '_'
+            char bits[33];
+            memset(bits, '0', 32);
+            bits[32] = 0;
+            
+            // Convert hex to bits (first 24-26 bits)
+            uint32_t val = strtoul(hex_start, NULL, 16);
+            for(int i=0; i<24; i++) {
+                bits[23-i] = ((val >> i) & 1) ? '1' : '0';
+            }
+            
+            // Bit 26 is Group, Bit 27 is On/Off
+            bits[26] = '0'; 
+            bits[27] = (value > 0) ? '1' : '0';
+            
+            // Bits 28-31 are Unit (0000)
+            ESP_LOGI(TAG, "Nexa TX Bits: %s", bits);
+            cc1101_send_it_v3(bits);
+        }
     }
     else if (strcmp(proto, "Oregon") == 0) {
         cc1101_send_oregon(rf_id);
