@@ -105,7 +105,8 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Integration von Somfy RTS in den bidirektionalen Matter-Bridge TX-Pfad.
 *   **[DONE]** Erweiterung des Web-Dashboards um Anzeige des Duty-Cycle-Status und der eindeutigen Chip-ID.
 *   **[DONE]** End-to-End-Test: Vollständiger RX->Matter->TX-Zyklus für Schalter- (Nexa) und Aktor-Protokolle (Somfy RTS) validiert.
-*   **[DONE]** IP-Schutz: Tooling zur hardwaregebundenen Verschlüsselung der Protokolldatenbank (`encrypt_protocols.py`) erfolgreich eingesetzt.
+*   **[DONE]** End-to-End-Test (Generic): Validierung des vollständigen Pfades für tabellengesteuerte Protokolle (Generic Decoder -> Matter Bridge -> TX-Translation).
+*   **[DONE]** IP-Schutz: Tooling zur hardwaregebundenen Verschlüsselung der Protokolldatenbank (`encrypt_protocols.py`) erfolgreich eingesetzt und im Feld validiert (Hardware-MAC Bindung).
 *   **[DONE]** Test-Infrastruktur: Python-Script (`test_matter_bridge.py`) zur automatisierten Validierung der Bridge-Logik erstellt.
 *   **[DONE]** Code-Bereinigung und Finalisierung der Dokumentation (`COMMANDS.md`).
 
