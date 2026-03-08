@@ -14,6 +14,7 @@
 #include "config_loader.h"
 #include "wifi_manager.h"
 #include "web_server.h"
+#include "culfw_duty_cycle.h"
 
 static const char *TAG = "CUL32-C6";
 
