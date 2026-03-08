@@ -57,12 +57,32 @@ bool config_loader_init() {
     return true;
 }
 
+static void config_loader_xor_decrypt(char* data, size_t len) {
+    const char key[] = "CULFW-NG-IP-PROTECT-2024";
+    size_t key_len = strlen(key);
+    for (size_t i = 0; i < len; i++) {
+        data[i] ^= key[i % key_len];
+    }
+}
+
 bool config_loader_load_protocols() {
-    FILE* f = fopen("/data/protocols.json", "r");
+    if (!config_loader_check_auth()) {
+        ESP_LOGE(TAG, "Authorization failed! IP protection active.");
+        return false;
+    }
+
+    // Try encrypted file first
+    bool encrypted = false;
+    FILE* f = fopen("/data/protocols.enc", "rb");
+    if (f) {
+        encrypted = true;
+        ESP_LOGI(TAG, "Found encrypted protocol database.");
+    } else {
+        f = fopen("/data/protocols.json", "r");
+    }
+
     if (f == NULL) {
-        ESP_LOGW(TAG, "Failed to open protocols.json, using default fallback.");
-        // Fallback: Use minimal JSON or return false
-        // For development, we return a hardcoded simple string if file missing
+        ESP_LOGW(TAG, "Failed to open protocols, using default fallback.");
         const char* fallback_json = "{\"protocols\":[{\"name\":\"Fallback_Test\",\"freq\":433}]}";
         return generic_decoder_load_from_json(fallback_json);
     }
@@ -85,10 +105,14 @@ bool config_loader_load_protocols() {
     }
 
     fread(buffer, 1, size, f);
-    buffer[size] = 0; // Null terminate
+    buffer[size] = 0; 
     fclose(f);
 
-    ESP_LOGI(TAG, "Loaded JSON (%ld bytes)", size);
+    if (encrypted) {
+        config_loader_xor_decrypt(buffer, size);
+    }
+
+    ESP_LOGI(TAG, "Processing %s protocol database (%ld bytes)", encrypted ? "encrypted" : "plain", size);
     bool result = generic_decoder_load_from_json(buffer);
     
     free(buffer);
