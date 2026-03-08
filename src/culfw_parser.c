@@ -162,6 +162,14 @@ void handle_command(char *cmd) {
         usb_serial_jtag_write_bytes(out, len, portMAX_DELAY);
         vTaskDelay(pdMS_TO_TICKS(500));
         esp_restart();
+    } else if (cmd[0] == 'l') { // LED control
+        if (cmd[1] == '0' && cmd[2] == '1') {
+            gpio_set_level(GPIO_LED, 0); // Low active
+            len = snprintf(out, sizeof(out), "l01 OK\r\n");
+        } else if (cmd[1] == '0' && cmd[2] == '0') {
+            gpio_set_level(GPIO_LED, 1);
+            len = snprintf(out, sizeof(out), "l00 OK\r\n");
+        }
     } else if (cmd[0] == 'M' && cmd[1] == 'T') { // MT <ID> <VAL> - Matter Test
         char mid[17];
         float mval = 0;
