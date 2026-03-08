@@ -166,6 +166,15 @@ static void handle_command(char *cmd) {
     } else if (cmd[0] == 'M' && cmd[1] == 'L') { // ML - Matter List
         matter_bridge_list_endpoints();
         len = snprintf(out, sizeof(out), "ML DONE\r\n");
+    } else if (cmd[0] == 'M' && cmd[1] == 'C') { // MC <EP> <VAL> - Matter Command Simulation
+        uint16_t ep;
+        float val;
+        if (sscanf(cmd + 3, "%hu %f", &ep, &val) == 2) {
+            matter_interface_simulate_command(ep, val);
+            len = snprintf(out, sizeof(out), "MC OK\r\n");
+        } else {
+            len = snprintf(out, sizeof(out), "MC ERR\r\n");
+        }
     } else if (cmd[0] == 'G' && cmd[1] == 'L') { // GL - Generic List
         generic_decoder_list_protocols();
         len = snprintf(out, sizeof(out), "GL DONE\r\n");
