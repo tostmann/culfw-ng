@@ -19,10 +19,10 @@ idf_component_register(SRCS ${srcs}
                        PRIV_REQUIRES ${priv_req})
 
 if(CONFIG_ESP_INSIGHTS_TRANSPORT_MQTT)
-    #target_add_binary_data(${COMPONENT_TARGET} "server_certs/mqtt_server.crt" TEXT)
+    target_add_binary_data(${COMPONENT_TARGET} "server_certs/mqtt_server.crt" TEXT)
     target_sources(${COMPONENT_LIB} PRIVATE "src/transport/esp_insights_mqtt.c")
 else()
-    #target_add_binary_data(${COMPONENT_TARGET} "server_certs/https_server.crt" TEXT)
+    target_add_binary_data(${COMPONENT_TARGET} "server_certs/https_server.crt" TEXT)
     idf_component_get_property(http_client_lib esp_http_client COMPONENT_LIB)
     target_link_libraries(${COMPONENT_LIB} PRIVATE ${http_client_lib})
     target_sources(${COMPONENT_LIB} PRIVATE "src/transport/esp_insights_https.c")

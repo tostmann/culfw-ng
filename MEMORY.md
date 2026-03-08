@@ -114,11 +114,12 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** End-to-End-Test: Vollständiger RX->Matter->TX-Zyklus für Schalter- (Nexa), Sensor- (HMS) und Aktor-Protokolle (Somfy RTS, FHT) validiert.
 *   **[DONE]** End-to-End-Test (Generic): Validierung des vollständigen Pfades für tabellengesteuerte Protokolle (Generic Decoder -> Matter Bridge -> TX-Translation).
 *   **[DONE]** Release Management: Finaler Code-Stand als **Release v1.0.7 (Build 7)** und Binaries (`binaries/`) auf GitHub vorbereitet.
-*   **[DONE]** **Finale Matter SDK-Integration:** Projektstruktur auf ESP-IDF-Standard (`main/`) umgestellt, Abhängigkeiten (`idf_component.yml`) deklariert und Build-Prozess erfolgreich durchgeführt.
-*   **[DONE]** **C/C++ Interoperabilität:** C-Wrapper (`matter_interface.cpp`) für Matter SDK implementiert und mit `extern "C"` für die Einbindung in das restliche C-Projekt kompatibel gemacht.
+*   **[DONE]** Finale Matter SDK-Integration: Projektstruktur auf ESP-IDF-Standard (`main/`) umgestellt, Abhängigkeiten (`idf_component.yml`) deklariert.
+*   **[DONE]** C/C++ Interoperabilität: C-Wrapper (`matter_interface.cpp`) für Matter SDK implementiert und mit `extern "C"` für die Einbindung in das restliche C-Projekt kompatibel gemacht.
 
 ## 4. Neue Erkenntnisse / Probleme
 
+*   **Problem (Build-System):** Eine transitive Abhängigkeit des Matter-SDK (`espressif/esp_matter` $\rightarrow$ `espressif/esp_insights`) führt zu einem Build-Fehler. Die `esp_insights`-Komponente verwendet die CMake-Funktion `target_add_binary_data`, um ein SSL-Zertifikat einzubetten. Der PlatformIO-Build-Prozess kann die daraus resultierende, automatisch generierte Assembly-Datei (`.S`) nicht korrekt verarbeiten, was zum Abbruch des Builds führt (`Source ... not found`).
 *   **Architektur-Anpassung (ESP-IDF-Kompatibilität):** Für die Integration des Matter-SDKs musste die Projektstruktur vom PlatformIO-Standard (`src/`) auf eine ESP-IDF-kompatible Struktur mit einem `main`-Komponentenverzeichnis umgestellt werden. Dies war notwendig, da das Build-System des SDKs eine Komponente namens `main` erwartet.
 *   **Erkenntnis (C/C++ Interoperabilität bei SDKs):** Das ESP-Matter SDK ist in C++ implementiert. Die Integration in ein bestehendes C-Projekt erfordert die Umstellung der Schnittstellen-Module (z.B. `matter_interface.c`) auf C++ (`.cpp`) und die Sicherstellung der C-Linkage für den Rest des Projekts über `extern "C"` im Header, um Linker-Fehler zu vermeiden.
 *   **Erkenntnis (Neue SDK-Abhängigkeiten):** Das Matter-SDK erfordert die Aktivierung und Konfiguration zusätzlicher Systemkomponenten, insbesondere Bluetooth LE (für die Inbetriebnahme), IPv6 und mDNS, die in den `sdkconfig.defaults` explizit aktiviert werden müssen.
@@ -132,6 +133,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
+*   **Behebung des Build-Blockers:** Lösung des Build-Fehlers, der durch die transitive `esp_insights`-Abhängigkeit verursacht wird. Wahrscheinlicher Lösungsansatz: Deaktivierung der Komponente über Build-Flags in `platformio.ini` (`-D CONFIG_ESP_INSIGHTS_ENABLED=n`), da sie für die Kernfunktionalität nicht erforderlich ist.
 *   **Aktivierung der Matter-Funktionalität:** Umstellung des Codes im `matter_interface.cpp` vom Simulations-Modus auf die echten SDK-Funktionsaufrufe für die Endpoint-Erstellung und Attribut-Updates.
 *   **IP-Schutz Härtung:** Aktivierung der ESP32-C6 Hardware-Sicherheitsfeatures **Secure Boot V2** und **Flash Encryption**, um die 3-Säulen-Strategie zu vervollständigen.
 *   **System-Validierung:** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
