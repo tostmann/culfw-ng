@@ -247,6 +247,8 @@ static void handle_command(char *cmd) {
     }
 }
 
+static char cmd_buf[2048];
+
 void culfw_parser_task(void *pvParameters) {
     reporting_enabled = load_reporting_state();
     slowrf_set_reporting(reporting_enabled);
@@ -262,8 +264,7 @@ void culfw_parser_task(void *pvParameters) {
         usb_serial_jtag_driver_install(&usb_serial_jtag_config);
     }
 
-    uint8_t buf[512];
-    char cmd_buf[2048]; // Larger command buffer for long 'mi' sequences
+    uint8_t buf[256];
     int cmd_pos = 0;
 
     while (1) {
