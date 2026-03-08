@@ -133,17 +133,22 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Automatisierte Test-Skripte für Factory-Reset (`factory_reset.py`) und Commissioning-Versuche (`commission_script.py`) entwickelt.
 *   **[DONE]** Entwicklung einer Prozedur zum simultanen Reset von Gerät (Factory Reset) und Matter-Server (Docker-Neustart) zur Behebung von "Stale Session"-Fehlern.
 *   **[DONE]** Tiefenanalyse des Matter-Commissioning-Fehlers via serieller Logs und Netzwerk-Diagnose.
-*   **[DONE]** Identifizierung einer Konfigurations-Inkonsistenz (aktivierte Thread-Cluster auf Wi-Fi-Gerät) als wahrscheinliche Ursache.
 *   **[DONE]** **Build-Umgebung gehärtet:** Probleme mit der ESP-IDF-Toolchain (fehlendes `cmake` im PATH) behoben und einen stabilen Build-Prozess mit `idf.py` sichergestellt.
-*   **[DONE]** **Fehlerbehebung Matter-Commissioning:** Alle Thread-spezifischen Matter-Cluster (`CONFIG_ESP_MATTER_ENABLE_OPENTHREAD` etc.) in der `sdkconfig` für das reine Wi-Fi-Gerät deaktiviert, um Konflikte während des Interviews zu beheben.
-*   **[DONE]** **Release-Management:** Firmware-Version für den Commissioning-Fix auf **v1.1.0-NG (Build 7)** aktualisiert.
-*   **[DONE]** **Validierung des Commissioning-Fixes:** Erfolgreiches Anlernen des Geräts an Home Assistant nach Deaktivierung der Thread-Cluster und Neustart des Matter-Servers.
+*   **[DONE]** **Fehlerbehebung Matter-Commissioning (Runde 1):** Alle Thread-spezifischen Matter-Cluster (`CONFIG_ESP_MATTER_ENABLE_OPENTHREAD` etc.) in der `sdkconfig` für das reine Wi-Fi-Gerät deaktiviert.
+*   **[DONE]** Tiefenanalyse des neuen Matter-Pairing-Fehlers (ungültige Codes).
+*   **[DONE]** Fehlerbehebung Pairing-Parameter: Explizite Festlegung von Passcode (`20202021`) und Discriminator (`3840`) in `sdkconfig` für deterministisches Verhalten.
+*   **[DONE]** Fehlerbehebung Konsolen-Routing: Umleitung der ESP-Systemkonsole auf USB-JTAG zur besseren Sichtbarkeit von Matter-Logs.
+*   **[DONE]** Härtung der Konfiguration: Erneute Deaktivierung von `CHIP_DEVICE_CONFIG_ENABLE_THREAD` in `CHIPProjectConfig.h` zur Vermeidung von Konflikten.
+*   **[DONE]** **Release-Management:** Firmware-Version für den Pairing-Fix auf **v1.1.0-NG (Build 7)** aktualisiert.
 
 ## 4. Neue Erkenntnisse / Probleme
 
-*   **Erkenntnis: Fehlerursache Matter-Commissioning – Thread-Cluster auf Wi-Fi-Gerät.**
-    *   **Analyse:** Der Commissioning-Prozess scheiterte, weil in der `sdkconfig` fälschlicherweise Thread-spezifische Matter-Cluster (z.B. für `Network Diagnostics`) für ein reines Wi-Fi-Gerät aktiviert waren. Der Matter-Controller versuchte, diese nicht vorhandenen Endpunkte abzufragen, was zu Timeouts führte.
-    *   **Konsequenz:** Strikte Trennung der Konfiguration für Wi-Fi- und Thread-Geräte ist zwingend erforderlich. Alle `CONFIG_ESP_MATTER_ENABLE_OPENTHREAD` Optionen wurden deaktiviert.
+*   **Erkenntnis: Fehlerursache Matter-Pairing-Fehler - Inplizite vs. explizite Parameter.**
+    *   **Analyse:** Der Commissioning-Prozess schlug mit Standard-Testcodes fehl, weil die Firmware keine expliziten Pairing-Parameter (Passcode, Discriminator) in der `sdkconfig` gesetzt hatte. Dies führte zu einem nicht-deterministischen oder abweichenden Setup-Code, der nicht mit den Eingaben des Nutzers übereinstimmte.
+    *   **Konsequenz:** Der Passcode (`20202021`) und der Discriminator (`3840`) wurden fest in der `sdkconfig` verankert, um einen stabilen, dokumentierbaren Manual-Pairing-Code (`34905722491`) zu erzeugen.
+*   **Erkenntnis: Kritische Konfigurations-Redundanz (Thread-Feature).**
+    *   **Analyse:** Obwohl Thread-Cluster in der `sdkconfig` deaktiviert waren, war das Feature in der `CHIPProjectConfig.h` noch aktiv. Diese Inkonsistenz kann je nach SDK-Version zu unvorhersehbaren Fehlern während des Commissioning-Interviews führen.
+    *   **Konsequenz:** Alle Konfigurationsdateien müssen konsistent sein. Das Thread-Feature wurde nun an allen relevanten Stellen deaktiviert.
 *   **Erkenntnis: Notwendigkeit des Matter-Server-Resets ("Stale Session"-Problem).**
     *   **Analyse:** Nach fehlgeschlagenen Commissioning-Versuchen behält der Matter-Server (z.B. in Home Assistant) gecachte Informationen über das Gerät. Selbst nach einem Firmware-Update kann ein erneuter Versuch scheitern, da der Server von veralteten Daten ausgeht.
     *   **Konsequenz:** Eine zuverlässige Testprozedur muss das Löschen des alten Geräts aus dem Controller UND einen Neustart des Matter-Server-Dienstes beinhalten, um einen sauberen Zustand zu garantieren.
@@ -156,7 +161,8 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **End-to-End-Validierung der Matter-Bridge (Höchste Priorität):** Systematischer Test der bidirektionalen Funktionalität: (A) Empfang von SlowRF-Signalen (z.B. Intertechno-Sensor) und deren korrekte Darstellung in Home Assistant; (B) Senden von Befehlen aus Home Assistant (z.B. Schalten von Somfy/FS20) und Verifikation des gesendeten Funksignals.
+*   **Validierung des Pairing-Fixes & Commissioning (Höchste Priorität):** Erneutes Anlernen des Geräts an Home Assistant unter Verwendung des deterministischen Manual-Codes (`34905722491`) und Verifikation, dass das Gerät als "online" und "bereit" erscheint.
+*   **End-to-End-Validierung der Matter-Bridge:** Systematischer Test der bidirektionalen Funktionalität: (A) Empfang von SlowRF-Signalen (z.B. Intertechno-Sensor) und deren korrekte Darstellung in Home Assistant; (B) Senden von Befehlen aus Home Assistant (z.B. Schalten von Somfy/FS20) und Verifikation des gesendeten Funksignals.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
 *   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (**v1.1.0-NG**) und Finalisierung der Endbenutzer-Dokumentation.
 *   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.
