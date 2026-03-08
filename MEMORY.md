@@ -32,7 +32,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
     *   **Multi-Protokoll-Gateway:** Die Firmware agiert als "Staubsauger" für alle unterstützten OOK-Protokolle auf der aktiven Frequenz. Alle Decoder laufen parallel.
 *   **Zukünftige Architektur: On-Board Intelligence & Matter**
     *   **Dateisystem:** Integration eines **SPIFFS-Dateisystems** zur Speicherung einer flexiblen Protokoll-Datenbank (`protocols.json`). Ein Fallback-Mechanismus lädt einen hartcodierten Default, falls die Datei fehlt.
-    *   **Table-Driven Decoding Engine:** Anstelle von fest einkompilierten Decodern wird eine generische Engine die Pulsfolgen mit den in `protocols.json` definierten Mustern abgleichen. Das JSON-Format nutzt ein `timing`-Objekt mit Multiplikatoren für eine kompakte und flexible Definition. Die Protokolldatenbank kann zur Laufzeit über das `GR`-Kommando (Generic Reload) neu geladen werden.
+    *   **Table-Driven Decoding Engine:** Anstelle von fest einkompilierten Decodern wird eine generische Engine die Pulsfolgen mit den in `protocols.json` definierten Mustern abgleichen. Das JSON-Format nutzt ein `timing`-Objekt mit Multiplikatoren für eine kompakte und flexible Definition sowie ein **`"type"`-Feld** (`"switch"`, `"sensor"`) zur korrekten Zuordnung im Matter-Gateway. Die Protokolldatenbank kann zur Laufzeit über das `GR`-Kommando (Generic Reload) neu geladen werden.
     *   **Matter-Architektur:** Der Stick wird als **Matter Aggregator (Bridge)** implementiert. Nur das Gateway wird einmalig gepaired. Erkannte SlowRF-Geräte werden als dynamische **Endpoints** (z.B. Temperatursensor, Schalter) im Matter-Netzwerk on-the-fly angelegt und über eine **"Dynamic Endpoint Registry"** (`matter_bridge.c`) verwaltet. Die Anwendungslogik ist gegen eine **API-Interface-Schicht** (`matter_interface.h`) entwickelt, um die Kompilierbarkeit ohne das vollständige SDK zu gewährleisten (Simulations-Modus).
     *   **Matter Endpoint ID-Masking:** Um die Proliferation von Endpoints zu verhindern (z.B. ON/OFF-Befehle derselben Fernbedienung), wird eine ID-Maskierung verwendet. Statusbits im RF-Code werden bei der Generierung der Endpoint-ID durch ein 'X' ersetzt, sodass ein physisches Gerät immer demselben Matter-Endpoint zugeordnet wird.
 *   **Bivalenter Betriebsmodus (Hybride Intelligenz):** Die Firmware ist umschaltbar gestaltet, um die Stärken von CUL und SIGNALduino zu vereinen.
@@ -51,7 +51,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
     *   **Rausch-Unterdrückung:** `GDO2` ist als **Carrier Sense** konfiguriert (`IOCFG2=0x0E`).
 *   **Signal-Aussendung (TX):**
     *   Der `GDO0_PIN` wird dynamisch als Output konfiguriert, um Sendesequenzen per Bit-Banging zu erzeugen.
-*   **Versionierung:** Automatisierter Build-Nummer und detaillierter, culfw-kompatibler Versions-String, der nun Chip-ID und die **aktuelle IP-Adresse** enthält (`V`-Kommando).
+*   **Versionierung:** Automatisierter Build-Nummer und detaillierter, culfw-kompatibler Versions-String, der nun Chip-ID, die **aktuelle IP-Adresse**, den **Betriebsmodus** sowie den **Matter-Status** enthält (`V`-Kommando).
 
 ## 3. Implementierungsstatus
 
@@ -85,7 +85,6 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Implementierung der vollständigen Bit-Matching-Logik in `generic_decoder.c` (Sync- und Bit-Reading State Machine).
 *   **[DONE]** Implementierung des bivalenten Betriebsmodus (CUL vs. SIGNALduino). Umschaltung via `X21`/`X25`, NVS-Persistenz und adaptive Output-Formate (`MS;`, `MU;`) sind aktiv.
 *   **[DONE]** Erweiterung der Matter-Bridge um automatische Registrierung und Reporting für alle unterstützten Protokolle (FS20, IT, HMS, S300TH, Oregon, Generic).
-*   **[DONE]** Implementierung von Diagnose-Kommandos für Matter (`ML` zum Auflisten der Endpunkte).
 *   **[DONE]** SIGNALduino `MU;` Logik verfeinert: Rohdaten-Ausgabe wird unterdrückt, wenn ein Decoder (fest oder generisch) gematcht hat.
 *   **[DONE]** WiFi-Konnektivität implementiert (Verbindung zu "PalmBeach WiFi").
 *   **[DONE]** Web-Interface: Implementierung eines einfachen HTTP-Servers zur Anzeige von Live-Funk-Events und Systemstatus (mit Reverse-Chronological Log).
@@ -99,7 +98,6 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Validierung des JSON-Parsers und der Protokoll-Lade-Logik aus SPIFFS.
 *   **[DONE]** Anbindung des Generic Decoders an die SIGNALduino MU-Unterdrückungslogik.
 *   **[DONE]** Validierung der *Sync-Detektion* in der Generic Decoder State Machine mit injizierten Test-Signalen (Nexa).
-*   **[DONE]** Protokoll-Datenbank (`protocols.json`) um Intertechno_V1 erweitert.
 *   **[DONE]** Fehlerbehebung in der Generic Decoder Bit-Matching-Logik (`STATE_READ_BITS`).
 *   **[DONE]** Implementierung und Validierung eines Test-Kommandos (`mi`) zur Injektion von Puls-Sequenzen.
 *   **[DONE]** Anpassung des `mi`-Kommandos auf 16-Bit-Werte (`mi<HEX4>`) für lange Pulse (>2.55ms).
@@ -109,20 +107,22 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Absicherung der seriellen Ausgabe (`usb_serial_jtag_write_bytes`) gegen Datenverlust durch `portMAX_DELAY`.
 *   **[DONE]** Erweiterung der Matter-Bridge Logik um ID-Maskierung zur Gruppierung von physischen Geräten.
 *   **[DONE]** Erweiterung von `protocols.json` um ein `"type"`-Feld (`switch`/`sensor`) zur korrekten Matter-Endpoint-Erstellung.
+*   **[DONE]** Protokoll-Datenbank (`protocols.json`) um Bresser_Temp und X10_RF erweitert.
+*   **[DONE]** Implementierung von Diagnose-Kommandos für Matter (`ML` zum Auflisten der Endpunkte, inkl. Uptime).
+*   **[DONE]** Erweiterung des `V`-Kommandos um Modus-Anzeige und Matter-Status.
+*   **[DONE]** Implementierung eines Matter-Bridge Heartbeat-Tasks zur Überwachung.
 
 ## 4. Neue Erkenntnisse / Probleme
 
 *   **Architektur-Korrektur (Single-Core):** Der ESP32-C6 ist ein **Single-Core Prozessor (RISC-V)**. Die RTOS-Architektur wurde auf ein Single-Core-Modell mit **Task-Priorisierung** als primäres Steuerungsinstrument umgestellt, um die Echtzeitfähigkeit zu gewährleisten.
 *   **Architektur-Verfeinerung (Initialisierung):** Die Initialisierungs-Sequenz wurde angepasst. `config_loader_load_protocols()` wird nun in `app_main` ausgeführt, *bevor* die `slowrf_task` startet. Die `generic_decoder_init()`-Funktion innerhalb des Tasks wurde modifiziert, sodass sie nur noch die Decoder-*Zustände* zurücksetzt, aber nicht die bereits geladenen Protokoll-Definitionen, um eine Race Condition zu vermeiden.
-*   **Architektur-Verfeinerung (JSON-Format):** Das `protocols.json`-Format wurde optimiert. Anstatt starrer Timing-Werte werden Multiplikatoren der Basis-Pulsbreite (`short`) verwendet (z.B. `"sync": [{"h": 1, "l": 10}]`). Zusätzlich wurde ein `"type"`-Feld (z.B. `"switch"`) eingeführt, um die korrekte Zuordnung im Matter-Gateway zu ermöglichen.
-*   **Architektur-Verfeinerung (Matter-Gruppierung):** Um zu verhindern, dass für jeden Befehl (z.B. ON/OFF) ein neues Matter-Gerät angelegt wird, wurde eine **ID-Maskierungslogik** in der Matter-Bridge implementiert. Diese ersetzt Status-Bits in der RF-ID durch ein 'X', um eine stabile, gerätespezifische ID für die Endpoint-Registrierung zu schaffen.
 *   **Erkenntnis (Test-Infrastruktur):** Die Validierung des Generic Decoders erforderte ein neues Diagnosekommando (`mi<HEX>`), um exakte Pulsfolgen in die RX-Pipeline einzuspeisen. Dieses Kommando musste auf 16-Bit-Werte erweitert werden, um lange Sync-Pulse (z.B. > 2.55ms) abbilden zu können. Die Stabilität der seriellen Schnittstelle musste durch größere Puffer und blockierende Schreibvorgänge gehärtet werden, um die langen Test-Kommandos zuverlässig zu verarbeiten.
 
 ## 5. Nächste Schritte
 
 *   **Stabilitätstests:** Durchführung von Langzeittests im hybriden Matter-Gateway-Betrieb mit aktiver WiFi-Verbindung, Web-Interface und realen (verrauschten) Funksignalen.
 *   **SIGNALduino Kompatibilität:** Endgültige Verifizierung der `MS;`-Ausgabeformate mit einem realen Host-System (z.B. FHEM).
-*   **Protokoll-DB Erweiterung:** Hinzufügen weiterer OOK-Protokolle zur `protocols.json`, insbesondere eines Sensor-Protokolls (z.B. Oregon V2/V3), um den Sensor-Pfad der Matter-Bridge zu validieren.
+*   **Validierung des Sensor-Pfads:** End-to-End-Test des Matter-Bridge-Sensor-Pfads durch Tests mit realen Sensor-Protokollen (z.B. Bresser_Temp).
 *   **Code-Bereinigung:** Entfernen von überflüssigen Debug-Logs aus dem `generic_decoder` für eine saubere Release-Version.
 *   **Matter SDK-Integration:** Vorbereitung des Wechsels vom Simulations-Modus (`matter_interface.c`) zur echten ESP-Matter SDK-Implementierung.
 
