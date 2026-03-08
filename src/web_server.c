@@ -7,6 +7,7 @@
 #include "generic_decoder.h"
 #include "culfw_duty_cycle.h"
 #include <string.h>
+#include "esp_mac.h"
 
 static const char *TAG = "WEB_SERVER";
 
