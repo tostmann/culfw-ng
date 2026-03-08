@@ -158,7 +158,7 @@ static void handle_command(char *cmd) {
         char mid[17];
         float mval = 0;
         if(sscanf(cmd + 3, "%s %f", mid, &mval) == 2) {
-             matter_bridge_report_event(mid, DEVICE_TYPE_TEMP_SENSOR, mval);
+             matter_bridge_report_event(mid, "Test", DEVICE_TYPE_TEMP_SENSOR, mval);
              len = snprintf(out, sizeof(out), "MT OK: %s -> %.1f\r\n", mid, mval);
         } else {
              len = snprintf(out, sizeof(out), "MT ERR\r\n");
