@@ -89,5 +89,5 @@ void app_main(void) {
     
     // Initializing RF tasks
     slowrf_init();
-    xTaskCreatePinnedToCore(culfw_parser_task, "culfw_parser_task", 4096, NULL, 5, NULL, 0);
+    xTaskCreatePinnedToCore(culfw_parser_task, "culfw_parser_task", 8192, NULL, 5, NULL, 0);
 }
