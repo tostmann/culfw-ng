@@ -31,8 +31,8 @@ static https_data_t s_https_data;
 static const char *TAG = "tport_https";
 #define HTTPS_URL_PATH "prod/node/data"
 
-extern const uint8_t insights_https_server_crt_start[] asm("_binary_https_server_crt_start");
-extern const uint8_t insights_https_server_crt_end[] asm("_binary_https_server_crt_end");
+static const uint8_t insights_https_server_crt_start[] = {0};
+static const uint8_t insights_https_server_crt_end[] = {0};
 
 static esp_err_t esp_insights_https_init(void *userdata)
 {
