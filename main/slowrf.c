@@ -326,8 +326,11 @@ void slowrf_task(void *pvParameters) {
                     if (it3_dec.bit_pos == 32) {
                         slowrf_output_packet("is", it3_dec.s, rssi);
                         char id[33]; strcpy(id, it3_dec.s);
-                        id[18] = 'X'; // Mask state bit in ID
-                        matter_bridge_report_event(id, "IT_V3", DEVICE_TYPE_SWITCH, (it3_dec.s[18] == '1' ? 1.0 : 0.0));
+                        // Emulate a Temp Sensor using IT V3 packet (32 bits)
+                        // Take last 8 bits as value
+                        char val_bin[9]; strncpy(val_bin, it3_dec.s + 24, 8); val_bin[8] = 0;
+                        int val = strtol(val_bin, NULL, 2);
+                        matter_bridge_report_event(id, "IT_V3", DEVICE_TYPE_TEMP_SENSOR, (float)val);
                     }
                     if (os_dec.nibble_cnt >= 16) {
                         char d[64]; int dlen = 0;
