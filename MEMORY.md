@@ -110,8 +110,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Erweiterung des Web-Dashboards um Echtzeit-RSSI, RF-Injection-Tool und Factory-Reset-Button.
 *   **[DONE]** Implementierung der Diagnose-Kommandos `MA` (Matter Add) und `rssi`.
 *   **[DONE]** Version-String (`V`) um verbleibende Duty-Cycle-Sendezeit (`DC_Rem`) erweitert.
-*   **[DONE]** End-to-End-Test: Vollständiger RX->Matter->TX-Zyklus für Schalter- (Nexa), Sensor- (HMS) und Aktor-Protokolle (Somfy RTS, FHT) validiert.
-*   **[DONE]** End-to-End-Test (Generic): Validierung des vollständigen Pfades für tabellengesteuerte Protokolle (Generic Decoder -> Matter Bridge -> TX-Translation).
+*   **[DONE]** End-to-End Test (Generic): Validierung des vollständigen Pfades für tabellengesteuerte Protokolle (Generic Decoder -> Matter Bridge -> TX-Translation).
 *   **[DONE]** Release Management: Finaler Code-Stand als **Release v1.0.7 (Build 7)** und Binaries (`binaries/`) auf GitHub vorbereitet.
 *   **[DONE]** Finale Matter SDK-Integration: Projektstruktur auf ESP-IDF-Standard (`main/`) umgestellt, Abhängigkeiten (`idf_component.yml`) deklariert.
 *   **[DONE]** C/C++ Interoperabilität: C-Wrapper (`matter_interface.cpp`) für Matter SDK implementiert und mit `extern "C"` für die Einbindung in das restliche C-Projekt kompatibel gemacht.
@@ -126,15 +125,19 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Entfernung der seriellen `CUL-TICK` Heartbeat-Meldung zur Verbesserung der Lesbarkeit der Konsole.
 *   **[DONE]** Fehlerbehebung Timing-Inkompatibilität: Toleranzen im Intertechno-Decoder an Legacy-CULs angepasst und Logikfehler (ITv1/ITv3 Sync-Konflikt) behoben.
 *   **[DONE]** Test-Infrastruktur gehärtet (automatischer Factory-Reset des Sender-CULs).
-*   **[DONE]** End-to-End Test (Sensor Emulation) via IT_V1 und Matter Bridge validiert.
+*   **[DONE]** End-to-End-Test (Sensor-Pfad): Emulation eines Temperatursensors via Intertechno V1 Protokoll erfolgreich validiert.
+*   **[DONE]** Decoder-Validierung (FS20): Erfolgreicher Test des FS20-Decoders und der Matter-Bridge-Anbindung mittels direkter Puls-Injektion (`mi`-Kommando).
 
 ## 4. Neue Erkenntnisse / Probleme
 
 *   **Problem: Matter Endpoint-Erstellung schlägt sporadisch fehl.**
     *   **Analyse:** Trotz Erhöhung von `CHIP_DEVICE_CONFIG_DYNAMIC_ENDPOINT_COUNT` wird der Fehler `E (...) esp_matter_endpoint: Failed to create endpoint` im Log angezeigt. Die genauere Meldung `E (...) data_model: Node cannot be NULL` deutet auf ein tieferliegendes Problem im Matter SDK oder dessen Initialisierung hin.
-    *   **Konsequenz:** Dies beeinträchtigt nicht die RF-Funktion oder den erfolgreichen Abschluss der automatisierten Tests, muss aber für die volle Matter-Funktionalität (z.B. Sichtbarkeit in Apple Home) priorisiert untersucht werden.
+    *   **Konsequenz:** Dies beeinträchtigt nicht die RF-Funktion oder die erfolgreiche Registrierung in der Bridge-Logik, muss aber für die volle Matter-Funktionalität (z.B. Sichtbarkeit in Apple Home) priorisiert untersucht werden.
 *   **Erkenntnis: Erfolgreiche Validierung des Sensor-Pfads.**
-    *   Durch die Emulation eines Temperatursensors über das robuste Intertechno-V1-Protokoll wurde der komplette Pfad "RF-Empfang -> Sensor-Dekodierung -> Matter Bridge -> Erstellung eines Sensor-Endpoints" erfolgreich End-to-End validiert. Die Architektur ist somit in der Lage, Sensordaten korrekt an Matter zu übergeben.
+    *   Durch die Emulation eines Temperatursensors über das robuste Intertechno-V1-Protokoll (gesendet von einem Legacy-CUL) wurde der komplette Pfad "RF-Empfang -> Sensor-Dekodierung -> Matter Bridge -> Erstellung eines Sensor-Endpoints" erfolgreich End-to-End validiert. Die Architektur ist somit grundsätzlich in der Lage, Sensordaten korrekt an Matter zu übergeben.
+*   **Erkenntnis: Unzuverlässigkeit von Legacy-Hardware als Test-Sender.**
+    *   **Analyse:** Wiederholte Versuche, komplexe Protokolle wie HMS oder FHT von einem Legacy-CUL zu senden, schlugen fehl. Dies deutet auf Timing-Probleme oder Inkompatibilitäten in der alten CUL-Firmware hin.
+    *   **Konsequenz:** Für die zuverlässige Validierung von Decodern wurde auf die direkte Puls-Injektion (`mi`-Kommando) umgestiegen. Dies entkoppelt die Decoder-Entwicklung von der unzuverlässigen Sender-Hardware und ermöglicht präzise, wiederholbare Tests.
 *   **Erkenntnis: Verbesserte Kompatibilität mit Legacy-Hardware.**
     *   Ein von einem Legacy CUL gesendeter langer Sync-Puls (~10ms) wurde fälschlicherweise als ITv3-Sync interpretiert, was die parallele ITv1-Dekodierung blockierte. Die Entfernung der `it3_last_sync`-Abhängigkeit im ITv1-Decoder hat dieses Kompatibilitätsproblem gelöst und die Zuverlässigkeit des Empfangs erhöht.
 *   **Erkenntnis: Irreversibilität von eFuses – Praxistest mit Konsequenzen.**
