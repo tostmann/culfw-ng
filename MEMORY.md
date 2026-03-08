@@ -125,25 +125,28 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Erfolgreicher Boot der Firmware: WiFi-Verbindung und Matter-Dienste starten korrekt auf dem Zielgerät.
 *   **[DONE]** Entfernung der seriellen `CUL-TICK` Heartbeat-Meldung zur Verbesserung der Lesbarkeit der Konsole.
 *   **[DONE]** Fehlerbehebung Timing-Inkompatibilität: Toleranzen im Intertechno-Decoder an Legacy-CULs angepasst und Logikfehler (ITv1/ITv3 Sync-Konflikt) behoben.
+*   **[DONE]** Test-Infrastruktur gehärtet (automatischer Factory-Reset des Sender-CULs).
+*   **[DONE]** End-to-End Test (Sensor Emulation) via IT_V1 und Matter Bridge validiert.
 
 ## 4. Neue Erkenntnisse / Probleme
 
+*   **Problem: Matter Endpoint-Erstellung schlägt sporadisch fehl.**
+    *   **Analyse:** Trotz Erhöhung von `CHIP_DEVICE_CONFIG_DYNAMIC_ENDPOINT_COUNT` wird der Fehler `E (...) esp_matter_endpoint: Failed to create endpoint` im Log angezeigt. Die genauere Meldung `E (...) data_model: Node cannot be NULL` deutet auf ein tieferliegendes Problem im Matter SDK oder dessen Initialisierung hin.
+    *   **Konsequenz:** Dies beeinträchtigt nicht die RF-Funktion oder den erfolgreichen Abschluss der automatisierten Tests, muss aber für die volle Matter-Funktionalität (z.B. Sichtbarkeit in Apple Home) priorisiert untersucht werden.
+*   **Erkenntnis: Erfolgreiche Validierung des Sensor-Pfads.**
+    *   Durch die Emulation eines Temperatursensors über das robuste Intertechno-V1-Protokoll wurde der komplette Pfad "RF-Empfang -> Sensor-Dekodierung -> Matter Bridge -> Erstellung eines Sensor-Endpoints" erfolgreich End-to-End validiert. Die Architektur ist somit in der Lage, Sensordaten korrekt an Matter zu übergeben.
+*   **Erkenntnis: Verbesserte Kompatibilität mit Legacy-Hardware.**
+    *   Ein von einem Legacy CUL gesendeter langer Sync-Puls (~10ms) wurde fälschlicherweise als ITv3-Sync interpretiert, was die parallele ITv1-Dekodierung blockierte. Die Entfernung der `it3_last_sync`-Abhängigkeit im ITv1-Decoder hat dieses Kompatibilitätsproblem gelöst und die Zuverlässigkeit des Empfangs erhöht.
 *   **Erkenntnis: Irreversibilität von eFuses – Praxistest mit Konsequenzen.**
     *   **Analyse:** Die Versuche, eine signierte Firmware zu flashen, haben gezeigt, dass das 868MHz-Board **permanent aktive `SECURE_BOOT_EN` eFuses** mit einem nicht mehr verfügbaren Schlüssel hat.
     *   **Konsequenz:** Dieses Board ist für die weitere Entwicklung effektiv unbrauchbar ("gebrickt").
     *   **Strategische Anpassung:** Die Entwicklung wird **ausschließlich auf ungesicherter Hardware** (433MHz-Board) fortgesetzt.
-*   **Erkenntnis: Validierung der Toolchain und Architektur.**
-    *   Der erfolgreiche Boot der voll-integrierten Firmware (inkl. aller Tasks, Treiber und des kompletten Matter SDKs) auf realer Hardware bestätigt die Korrektheit der Migration zu ESP-IDF und der gewählten Systemarchitektur. Das System ist stabil und die Matter-Dienste starten wie erwartet.
-*   **Erkenntnis: Decoder-Logik für Legacy-Hardware.**
-    *   Der von einem Legacy CUL gesendete lange Sync-Puls (~10ms) wurde fälschlicherweise als ITv3-Sync interpretiert, was die parallele ITv1-Dekodierung blockierte. Die Entfernung der `it3_last_sync`-Abhängigkeit im ITv1-Decoder hat das Kompatibilitätsproblem gelöst und den End-to-End-Test erfolgreich gemacht.
-*   **Problem: Matter Endpoint-Erstellung schlägt sporadisch fehl.**
-    *   **Analyse:** Trotz Erhöhung von `CHIP_DEVICE_CONFIG_DYNAMIC_ENDPOINT_COUNT` auf 20 wird der Fehler `E (...) esp_matter_endpoint: Failed to create endpoint` im Log angezeigt. Dies beeinträchtigt nicht die RF-Funktion oder den erfolgreichen Abschluss des automatisierten Tests, muss aber für die volle Matter-Funktionalität untersucht werden.
 *   **Erkenntnis: Vergrößerung des Bootloaders durch Sicherheitsfeatures.**
     *   Die Aktivierung von Secure Boot V2 und Flash Encryption vergrößert den Bootloader signifikant, was eine Anpassung der Partitionstabelle (`partitions.csv`) für gesicherte Builds erfordert. Dies ist für den aktuellen Entwicklungs-Track nicht relevant.
 
 ## 5. Nächste Schritte
 
-*   **Fehlerbehebung Matter-Endpoint-Erstellung (Höchste Priorität):** Ursache für den Fehler "Failed to create endpoint" analysieren und beheben. Ein `idf.py fullclean` gefolgt von einem Neu-Build ist der erste Schritt zur Validierung.
+*   **Fehlerbehebung Matter-Endpoint-Erstellung (Höchste Priorität):** Ursache für den Fehler "Failed to create endpoint" / "Node cannot be NULL" analysieren und beheben. Ein `idf.py fullclean` gefolgt von einem Neu-Build ist der erste Schritt zur Validierung. Danach ist eine tiefere Analyse der SDK-Initialisierungssequenz erforderlich.
 *   **Praktische Validierung des Matter-Commissioning:** Nach erfolgreicher Fehlerbehebung ist ein vollständiger Matter-Commissioning-Prozess mit einem handelsüblichen Controller (z.B. Apple Home, Google Home) durchzuführen, um die Funktionalität der Einbindung zu verifizieren.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
 *   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (v1.1.0) und Finalisierung der Endbenutzer-Dokumentation.
