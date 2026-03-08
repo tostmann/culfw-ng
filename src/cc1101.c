@@ -437,6 +437,7 @@ static void os_manchester(int bit) {
 }
 
 void cc1101_send_somfy(const char* hex_data) {
+    if (!duty_cycle_add_tx(200)) return;
     uint8_t data[10];
     int len = 0;
     for (int i = 0; i < (int)strlen(hex_data) && i < 20; i += 2) {
