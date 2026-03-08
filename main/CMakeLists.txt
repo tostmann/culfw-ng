@@ -1,4 +1,4 @@
-set(include_dirs "include")
+set(include_dirs "../include" "include")
 
 file(GLOB_RECURSE app_sources *.c *.cpp)
 
