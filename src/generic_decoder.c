@@ -300,7 +300,6 @@ void generic_decoder_process_pulse(uint16_t duration, uint8_t level) {
                     // Found Bit 0
                     s->bit_buffer = (s->bit_buffer << 1) | 0;
                     s->bit_cnt++;
-                    ESP_LOGI(TAG, "%s: Bit 0 decoded (%d bits total)", p->name, s->bit_cnt);
                     
                     // Reset bit matchers for next bit
                     s->bit0_match_idx = 0; s->bit1_match_idx = 0;
@@ -310,7 +309,6 @@ void generic_decoder_process_pulse(uint16_t duration, uint8_t level) {
                     // Found Bit 1
                     s->bit_buffer = (s->bit_buffer << 1) | 1;
                     s->bit_cnt++;
-                    ESP_LOGI(TAG, "%s: Bit 1 decoded (%d bits total)", p->name, s->bit_cnt);
                     
                     // Reset bit matchers
                     s->bit0_match_idx = 0; s->bit1_match_idx = 0;
