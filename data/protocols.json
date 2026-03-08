@@ -36,6 +36,24 @@
         "min": 12,
         "max": 12
       }
+    },
+    {
+      "name": "Intertechno_V3",
+      "freq": 433,
+      "timing": {
+        "short": 250,
+        "long": 1250,
+        "tolerance": 150
+      },
+      "definitions": {
+        "bit0": [ {"h": 1, "l": 5}, {"h": 1, "l": 5} ],
+        "bit1": [ {"h": 1, "l": 5}, {"h": 1, "l": 1} ],
+        "sync": [ {"h": 1, "l": 10} ]
+      },
+      "len": {
+        "min": 32,
+        "max": 32
+      }
     }
   ]
 }
