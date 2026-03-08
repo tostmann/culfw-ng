@@ -260,30 +260,23 @@ void generic_decoder_process_pulse(uint16_t duration, uint8_t level) {
             
             // Check Bit 0
             if (possible0) {
-                if (s->bit0_match_idx < p->bit0_len) {
-                    pulse_def_t *tgt0 = &p->bit0[s->bit0_match_idx];
-                    if (level != tgt0->level || !match_pulse(duration, tgt0->duration, p->tolerance_us)) {
-                        s->match_bit0 = false;
-                    } else {
-                        s->bit0_match_idx++;
-                    }
+                pulse_def_t *tgt0 = &p->bit0[s->bit0_match_idx];
+                if (level != tgt0->level || !match_pulse(duration, tgt0->duration, p->tolerance_us)) {
+                    s->match_bit0 = false;
+                    ESP_LOGD(TAG, "%s: Bit0 mismatch at idx %d (L:%d vs %d, D:%d vs %d)", p->name, s->bit0_match_idx, level, tgt0->level, duration, tgt0->duration);
                 } else {
-                    // Index overflow (should have been caught)
-                    s->match_bit0 = false; 
+                    s->bit0_match_idx++;
                 }
             }
             
             // Check Bit 1
             if (possible1) {
-                if (s->bit1_match_idx < p->bit1_len) {
-                    pulse_def_t *tgt1 = &p->bit1[s->bit1_match_idx];
-                    if (level != tgt1->level || !match_pulse(duration, tgt1->duration, p->tolerance_us)) {
-                        s->match_bit1 = false;
-                    } else {
-                        s->bit1_match_idx++;
-                    }
+                pulse_def_t *tgt1 = &p->bit1[s->bit1_match_idx];
+                if (level != tgt1->level || !match_pulse(duration, tgt1->duration, p->tolerance_us)) {
+                    s->match_bit1 = false;
+                    ESP_LOGD(TAG, "%s: Bit1 mismatch at idx %d (L:%d vs %d, D:%d vs %d)", p->name, s->bit1_match_idx, level, tgt1->level, duration, tgt1->duration);
                 } else {
-                     s->match_bit1 = false;
+                    s->bit1_match_idx++;
                 }
             }
             
