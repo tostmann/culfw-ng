@@ -320,8 +320,13 @@ void slowrf_task(void *pvParameters) {
                     if (it1_dec.pos == 12) {
                         slowrf_output_packet("is", it1_dec.s, rssi);
                         char id[17]; strcpy(id, it1_dec.s);
-                        id[11] = 'X'; // Mask state bit in ID
-                        matter_bridge_report_event(id, "IT_V1", DEVICE_TYPE_SWITCH, (it1_dec.s[11] == '0' ? 0.0 : 1.0));
+                        // Emulate Sensor using IT_V1 (last 4 trits as value)
+                        int val = 0;
+                        for(int k=8; k<12; k++) {
+                            val <<= 1;
+                            if(it1_dec.s[k] == '1') val |= 1;
+                        }
+                        matter_bridge_report_event(id, "IT_V1", DEVICE_TYPE_TEMP_SENSOR, (float)(val * 10.0));
                     }
                     if (it3_dec.bit_pos == 32) {
                         slowrf_output_packet("is", it3_dec.s, rssi);
