@@ -10,7 +10,14 @@ void duty_cycle_init() {
     last_reset_time = esp_timer_get_time();
 }
 
+#include "cc1101.h"
+
 bool duty_cycle_add_tx(uint32_t duration_ms) {
+    // Duty cycle only mandatory for 868 MHz in many regions (1%)
+    // 433 MHz often has higher limits (10%) or LBT
+    bool is_433 = cc1101_is_433();
+    uint32_t limit = is_433 ? 360000 : 36000; // 10% vs 1%
+
     int64_t now = esp_timer_get_time();
     // 1 hour is 3600 * 1000 * 1000 us
     if (now - last_reset_time > 3600ULL * 1000 * 1000) {
@@ -18,14 +25,13 @@ bool duty_cycle_add_tx(uint32_t duration_ms) {
         last_reset_time = now;
     }
 
-    // 1% rule: 36000 ms per hour max
-    if (airtime_ms_1h + duration_ms > 36000) {
-        ESP_LOGE(TAG, "Duty cycle exceeded! Blocking TX.");
+    if (airtime_ms_1h + duration_ms > limit) {
+        ESP_LOGE(TAG, "Duty cycle (%s) exceeded! Blocking TX.", is_433 ? "10%" : "1%");
         return false;
     }
 
     airtime_ms_1h += duration_ms;
-    ESP_LOGI(TAG, "Current Airtime: %lu ms / 36000 ms", airtime_ms_1h);
+    ESP_LOGI(TAG, "Current Airtime: %lu ms / %lu ms", airtime_ms_1h, limit);
     return true;
 }
 
