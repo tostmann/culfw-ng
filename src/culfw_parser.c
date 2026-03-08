@@ -156,6 +156,9 @@ void handle_command(char *cmd) {
             cc1101_set_frequency(false);
             len = snprintf(out, sizeof(out), "f868 OK\r\n");
         }
+    } else if (strcmp(cmd, "rssi") == 0) {
+        uint8_t r = cc1101_read_rssi();
+        len = snprintf(out, sizeof(out), "RSSI: %d\r\n", r);
     } else if (cmd[0] == 'e') { // Factory reset (erase NVS)
         nvs_flash_erase();
         len = snprintf(out, sizeof(out), "e OK - Restarting...\r\n");
