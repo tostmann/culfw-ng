@@ -76,7 +76,7 @@ void matter_interface_update_attribute(uint16_t endpoint_id, float value) {
     // This part requires mapping the type to the correct cluster/attribute ID
     // simplified example:
     esp_matter_attr_val_t val = esp_matter_bool(value > 0);
-    attribute::update(endpoint_id, CLUSTER_ON_OFF_ID, ATTRIBUTE_ON_OFF_ID, &val);
+    attribute::update(endpoint_id, chip::app::Clusters::OnOff::Id, chip::app::Clusters::OnOff::Attributes::OnOff::Id, &val);
 #else
     ESP_LOGI(TAG, "[SIMULATION] Updated Endpoint %d to value %.2f", endpoint_id, value);
 #endif
