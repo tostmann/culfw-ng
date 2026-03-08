@@ -58,6 +58,7 @@ static esp_err_t index_get_handler(httpd_req_t *req) {
         "</style></head><body>"
         "<h1>CUL32-C6 Gateway <span style='font-size: 0.5em; vertical-align: middle;'>Build %d</span></h1>"
         "<div class='card'><h3>System Control</h3>"
+        "<p><b>IP Address:</b> %s &nbsp; <b>MAC:</b> %s</p>"
         "<p><b>Frequency:</b> <span style='color: #e67e22;'>%s MHz</span> &nbsp; <a href='/cmd?c=f433'>Switch 433</a> <a href='/cmd?c=f868'>Switch 868</a></p>"
         "<p><b>Mode:</b> <span style='color: #e67e22;'>X%02X (%s)</span> &nbsp; <a href='/cmd?c=X21'>CUL Mode</a> <a href='/cmd?c=X25'>SIGduino Mode</a></p>"
         "<p><b>Duty Cycle (1h):</b> %lu / 36000 ms used</p></div>"
