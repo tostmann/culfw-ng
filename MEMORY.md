@@ -35,18 +35,18 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
     *   **Dateisystem:** Integration eines **SPIFFS-Dateisystems** zur Speicherung einer flexiblen Protokoll-Datenbank (`protocols.json`). Ein Fallback-Mechanismus lädt einen hartcodierten Default, falls die Datei fehlt.
     *   **Table-Driven Decoding Engine:** Anstelle von fest einkompilierten Decodern wird eine generische Engine die Pulsfolgen mit den in `protocols.json` definierten Mustern abgleichen. Das JSON-Format nutzt ein `timing`-Objekt mit Multiplikatoren für eine kompakte und flexible Definition sowie ein **`"type"`-Feld** (`"switch"`, `"sensor"`) zur korrekten Zuordnung im Matter-Gateway. Die Protokolldatenbank kann zur Laufzeit über das `GR`-Kommando (Generic Reload) neu geladen werden.
     *   **Matter-Architektur (Bidirektional):** Der Stick wird als **Matter Aggregator (Bridge)** implementiert. Die Bridge arbeitet in beide Richtungen:
-        *   **RX (RF $\rightarrow$ Matter):** Erkannte SlowRF-Geräte werden als dynamische **Endpoints** (z.B. Temperatursensor, Schalter) im Matter-Netzwerk on-the-fly angelegt und über eine **"Dynamic Endpoint Registry"** (`matter_bridge.c`) verwaltet.
-        *   **TX (Matter $\rightarrow$ RF):** Eingehende Matter-Befehle werden über einen **Callback-Mechanismus** (`matter_bridge_command_cb`) verarbeitet. Die Bridge-Logik übersetzt diese Befehle in die entsprechenden SlowRF-Funkkommandos und sendet sie über das CC1101-Modul aus.
+        *   **RX (RF $\rightarrow$ Matter):** Erkannte SlowRF-Geräte werden als dynamische **Endpoints** (z.B. Temperatursensor, Schalter) im Matter-Netzwerk on-the-fly angelegt und über eine **"Dynamic Endpoint Registry"** (`matter_bridge.c`) verwaltet. Der Name des dekodierenden Protokolls (z.B. "Nexa") wird pro Endpunkt gespeichert.
+        *   **TX (Matter $\rightarrow$ RF):** Eingehende Matter-Befehle werden über einen **Callback-Mechanismus** (`matter_bridge_command_cb`) verarbeitet. Die Bridge-Logik identifiziert den Ziel-Endpunkt, liest den gespeicherten Protokoll-Namen aus und ruft den passenden Encoder auf, um den Befehl in ein SlowRF-Funkkommando zu übersetzen und über den CC1101 zu senden.
         *   Die Anwendungslogik ist gegen eine **API-Interface-Schicht** (`matter_interface.h`) entwickelt, um die Kompilierbarkeit ohne das vollständige SDK zu gewährleisten (Simulations-Modus).
     *   **Matter Endpoint ID-Masking:** Um die Proliferation von Endpoints zu verhindern (z.B. ON/OFF-Befehle derselben Fernbedienung), wird eine ID-Maskierung verwendet. Statusbits im RF-Code werden bei der Generierung der Endpoint-ID durch ein 'X' ersetzt, sodass ein physisches Gerät immer demselben Matter-Endpoint zugeordnet wird. Für generische Protokolle wird die ID aus dem Protokollnamen und den oberen Bits des RF-Codes gebildet (z.B. `Nexa_FFFFFF`).
 *   **Bivalenter Betriebsmodus (Hybride Intelligenz):** Die Firmware ist umschaltbar gestaltet, um die Stärken von CUL und SIGNALduino zu vereinen.
     *   **CUL-Modus (`X21`):** 100%ige Kompatibilität zum etablierten CUL-Protokoll. Ausgabe generischer Protokolle mit neuem `G`-Präfix (`G<Name><Daten>...`).
     *   **SIGNALduino-Modus (`X25`):** Vollständige Emulation eines SIGNALduino mit Rohdaten-Ausgabe (`MU;...` für unbekannte, `MS;...` für bekannte Protokolle). Die Ausgabe erfolgt über eine zentrale `slowrf_output_packet`-Funktion. Die `MU`-Ausgabe wird unterdrückt, wenn ein Decoder (fest oder generisch) das Signal erfolgreich verarbeitet hat.
-*   **WiFi & Web-Dashboard:** Ein integrierter HTTP-Server (Port 80) bietet ein **Diagnose-Dashboard** mit Auto-Refresh. Es zeigt:
-    *   **System-Stammdaten:** Frequenz, Betriebsmodus.
+*   **WiFi & Web-Dashboard:** Ein integrierter HTTP-Server (Port 80) bietet ein **vollwertiges Diagnose-Dashboard** mit Auto-Refresh. Es zeigt:
+    *   **System-Stammdaten:** Frequenz, Betriebsmodus, Uptime.
     *   **Geladene Protokolle:** Liste der Generic Protocols aus `protocols.json` inkl. der Anzahl dekodierter Pakete.
-    *   **Matter Bridge Status:** Liste aller dynamisch erstellten Endpunkte mit ihren RF-IDs.
-    *   **Live-Log:** Die letzten empfangenen Funk-Events (Reverse-Chronological Order).
+    *   **Matter Bridge Status:** Liste aller dynamisch erstellten Endpunkte mit ihren RF-IDs, Protokollen und Typen.
+    *   **Live-Log:** Die letzten empfangenen Funk-Events in umgekehrt chronologischer Reihenfolge.
 *   **Intellectual Property (IP) / Kopierschutz (3-Säulen-Strategie):**
     *   **1. Kommerzieller Schutz ("Matter-Schild"):** Die Bindung an den Matter-Standard erfordert ein offizielles **Device Attestation Certificate (DAC)**. Clones ohne dieses Zertifikat werden von Systemen wie Apple/Google Home als "nicht verifiziert" markiert.
     *   **2. Technischer Schutz (Hardware-Verschlüsselung):** Nutzung der ESP32-C6 Hardware-Features wie **Flash Encryption** (bindet die Firmware an den individuellen Chip) und **Secure Boot V2** (erlaubt nur vom Hersteller signierte Firmware-Updates).
@@ -94,9 +94,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Implementierung des bivalenten Betriebsmodus (CUL vs. SIGNALduino). Umschaltung via `X21`/`X25`, NVS-Persistenz und adaptive Output-Formate (`MS;`, `MU;`) sind aktiv.
 *   **[DONE]** Erweiterung der Matter-Bridge um automatische Registrierung und Reporting für alle unterstützten Protokolle (FS20, IT, HMS, S300TH, Oregon, Generic).
 *   **[DONE]** SIGNALduino `MU;` Logik verfeinert: Rohdaten-Ausgabe wird unterdrückt, wenn ein Decoder (fest oder generisch) gematcht hat.
-*   **[DONE]** WiFi-Konnektivität implementiert (Verbindung zu "PalmBeach WiFi").
-*   **[DONE]** Erweitertes Web-Interface: Ausbau der Weboberfläche zu einem vollwertigen Diagnose-Dashboard mit Auto-Refresh, System-Status, Protokoll-Liste und Matter-Endpunkt-Anzeige.
-*   **[DONE]** Integration der RF-Decoder mit dem Web-Log für Live-Event-Anzeige.
+*   **[DONE]** WiFi-Konnektivität implementiert.
 *   **[DONE]** Chip-Unique-ID (MAC) Auslesung als Basis für Kopierschutz implementiert.
 *   **[DONE]** Behebung des Flash-Partition-Konflikts (Overlap-Fehler bei 0x10000).
 *   **[DONE]** Anpassung der RTOS-Architektur an Single-Core-Betrieb (ESP32-C6).
@@ -127,6 +125,9 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** API-Erweiterung: Anpassung von `matter_interface.h` um einen Command-Callback für den TX-Pfad.
 *   **[DONE]** Bidirektionale Matter-Bridge (TX-Pfad): Implementierung der Callback-Logik zur Weiterleitung von Matter-Befehlen an die RF-Sendefunktionen.
 *   **[DONE]** Puffer-Vergrößerung: Erhöhung der RF-ID-Puffer in der Matter-Bridge für lange Identifikatoren.
+*   **[DONE]** Erweiterung des Web-Interfaces zu einem vollwertigen Diagnose-Dashboard (System-Status, Protokoll-Liste, Matter-Endpunkte, Live-Log).
+*   **[DONE]** Implementierung von Auto-Refresh für das Web-Dashboard.
+*   **[DONE]** Implementierung eines seriellen Test-Kommandos (`MC <EP_ID> <Value>`) zur Validierung des Matter-TX-Pfads.
 
 ## 4. Neue Erkenntnisse / Probleme
 
@@ -136,11 +137,11 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **Erkenntnis (System-Stabilität):** Die Verarbeitung sehr langer serieller Kommandos (>1000 Bytes) für die Signal-Injektion führte zu Stack-Overflow-Crashes. Dies erforderte eine signifikante Erhöhung des Stacks für den `culfw_parser_task` (auf 8KB) und der Größe des seriellen RX-Puffers.
 *   **Erkenntnis (Decoder-Robustheit):** Die Generic Decoder Logik muss in der Lage sein, ein gültiges Paket auch dann abzuschließen, wenn die Bit-Anzahl im `min`/`max`-Bereich liegt und der nächste Puls *nicht* mehr zu einem validen Bit passt. Diese "early exit"-Logik ist entscheidend für die Unterstützung von Protokollen mit variabler Länge.
 *   **Erkenntnis (Diagnose-Fähigkeit):** Ein vollumfängliches Web-Dashboard, das Protokolle, Matter-Endpunkte und Live-Logs kombiniert, ist für die Validierung des komplexen Brückensystems unerlässlich und beschleunigt die Fehlersuche erheblich.
+*   **Erkenntnis (TX-Architektur):** Damit die bidirektionale Bridge einen von Matter empfangenen Befehl (z. B. "an") in das korrekte Funkprotokoll übersetzen kann, muss beim erstmaligen Empfang eines Signals (RX-Pfad) der Name des dekodierenden Protokolls (z.B. "Nexa") zusammen mit der Funk-ID in der Endpoint Registry gespeichert werden.
 
 ## 5. Nächste Schritte
 
-*   **Validierung des TX-Pfads:** Implementierung eines seriellen Test-Kommandos (z.B. `MC <EP_ID> <Value>`), um den Matter-Command-Callback und den gesamten Matter-to-RF-Sendeprozess im Simulationsmodus zu testen.
-*   **Matter SDK-Integration:** Wechsel vom Simulations-Modus (`matter_interface.c`) zur echten ESP-Matter SDK-Implementierung, um die Bridge-Funktionalität in realen Matter-Ökosystemen zu testen.
+*   **Matter SDK-Integration:** Wechsel vom Simulations-Modus (`matter_interface.c`) zur echten ESP-Matter SDK-Implementierung, um die Bridge-Funktionalität in realen Matter-Ökosystemen (Apple Home, Google Home) zu testen.
 *   **Reichweiten- & Störfestigkeitstests:** Durchführung von Tests mit realen Sendern/Sensoren über größere Distanzen und in Umgebungen mit potentiellen Störquellen (z.B. WLAN, andere Funkprotokolle).
 *   **IP-Schutz Implementierung:** Aktivierung und Konfiguration von **Secure Boot V2** und **Flash Encryption** in der finalen Hardware.
 *   **Dokumentation & Release:** Finalisierung der `COMMANDS.md` und Vorbereitung eines stabilen Release-Kandidaten (v1.1.0).
