@@ -64,6 +64,9 @@ void app_main(void) {
     // Initialize Matter Bridge Foundation
     matter_bridge_init();
 
+    // Initialize Duty Cycle Monitor
+    duty_cycle_init();
+
     // Install USB Serial JTAG early
     if (!usb_serial_jtag_is_driver_installed()) {
         usb_serial_jtag_driver_config_t config = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();
