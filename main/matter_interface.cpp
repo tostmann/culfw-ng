@@ -13,6 +13,7 @@ static matter_command_cb_t cmd_cb = NULL;
     #include <setup_payload/SetupPayload.h>
     #include <setup_payload/QRCodeSetupPayloadGenerator.h>
     #include <setup_payload/ManualSetupPayloadGenerator.h>
+    #include <setup_payload/QRCodeSetupPayloadGenerator.h>
     
     using namespace esp_matter;
     using namespace esp_matter::attribute;
@@ -20,7 +21,7 @@ static matter_command_cb_t cmd_cb = NULL;
 
     // SDK-specific static functions would go here
     static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg) {
-        // Handle Matter events (commissioning, etc.)
+        ESP_LOGI("MATTER_IF", "Matter Event: %d", event->Type);
     }
 
     static esp_err_t app_attribute_update_cb(attribute::callback_type_t type, uint16_t endpoint_id, uint32_t cluster_id, uint32_t attribute_id, esp_matter_attr_val_t *val, void *priv_data) {
