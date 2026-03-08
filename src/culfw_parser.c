@@ -156,6 +156,12 @@ void handle_command(char *cmd) {
             cc1101_set_frequency(false);
             len = snprintf(out, sizeof(out), "f868 OK\r\n");
         }
+    } else if (cmd[0] == 'e') { // Factory reset (erase NVS)
+        nvs_flash_erase();
+        len = snprintf(out, sizeof(out), "e OK - Restarting...\r\n");
+        usb_serial_jtag_write_bytes(out, len, portMAX_DELAY);
+        vTaskDelay(pdMS_TO_TICKS(500));
+        esp_restart();
     } else if (cmd[0] == 'M' && cmd[1] == 'T') { // MT <ID> <VAL> - Matter Test
         char mid[17];
         float mval = 0;
