@@ -12,6 +12,7 @@ static const char *TAG = "MATTER_BRIDGE";
 
 typedef struct {
     char rf_id[64];
+    char proto_name[16];
     uint16_t matter_ep_id;
     matter_device_type_t type;
 } bridged_device_t;
