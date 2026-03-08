@@ -135,15 +135,15 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** **Build-Umgebung gehärtet:** Probleme mit der ESP-IDF-Toolchain (fehlendes `cmake` im PATH) behoben und einen stabilen Build-Prozess mit `idf.py` sichergestellt.
 *   **[DONE]** **Release-Management:** Firmware-Version für den Pairing-Fix auf **v1.1.0-NG (Build 8)** aktualisiert.
 *   **[DONE]** **Fehlerbehebung Matter-Pairing:** Thread-Funktionalität in allen Konfigurationsdateien konsistent deaktiviert, Pairing-Parameter (Passcode/Discriminator) fixiert und Konsolen-Logs auf USB-JTAG umgeleitet, um deterministisches Verhalten sicherzustellen.
+*   **[DONE]** Fehlgeschlagenen Pairing-Versuch mit festem Code (`34905722491`) analysiert.
+*   **[DONE]** Netzwerkkonnektivität und mDNS-Advertising des Geräts als Fehlerquelle ausgeschlossen.
+*   **[DONE]** Implementierung zur **dynamischen Generierung des Pairing-Codes** durch das Matter-SDK in `matter_interface.cpp` zur Sicherstellung der Korrektheit.
 
 ## 4. Erkenntnisse & Gelöste Probleme
 
-*   **Erkenntnis: Fehlerursache Matter-Pairing-Fehler - Inplizite vs. explizite Parameter.**
-    *   **Analyse:** Der Commissioning-Prozess schlug mit Standard-Testcodes fehl, weil die Firmware keine expliziten Pairing-Parameter (Passcode, Discriminator) in der `sdkconfig` gesetzt hatte. Dies führte zu einem nicht-deterministischen oder abweichenden Setup-Code, der nicht mit den Eingaben des Nutzers übereinstimmte.
-    *   **Konsequenz:** Der Passcode (`20202021`) und der Discriminator (`3840`) wurden fest in der `sdkconfig` verankert, um einen stabilen, dokumentierbaren Manual-Pairing-Code (`34905722491`) zu erzeugen.
-*   **Erkenntnis: Kritische Konfigurations-Redundanz (Thread-Feature).**
-    *   **Analyse:** Obwohl Thread-Cluster in der `sdkconfig` deaktiviert waren, war das Feature in der `CHIPProjectConfig.h` noch aktiv. Diese Inkonsistenz kann je nach SDK-Version zu unvorhersehbaren Fehlern während des Commissioning-Interviews führen.
-    *   **Konsequenz:** Alle Konfigurationsdateien müssen konsistent sein. Das Thread-Feature wurde nun an allen relevanten Stellen deaktiviert.
+*   **Erkenntnis: Der fest definierte manuelle Pairing-Code ist unzuverlässig.**
+    *   **Analyse:** Der Commissioning-Prozess schlug fehl, obwohl Passcode (`20202021`) und Discriminator (`3840`) fest in der `sdkconfig` verankert waren. Die finale Berechnung des manuellen Codes durch das SDK scheint zusätzliche Parameter (z.B. Vendor ID, Product ID, Commissioning Flow) zu berücksichtigen, was zu einem abweichenden Code führt.
+    *   **Konsequenz:** Statt einen Code manuell zu berechnen und zu dokumentieren, muss der **tatsächliche Code zur Laufzeit vom SDK generiert** und im seriellen Log ausgegeben werden. Die Firmware wurde entsprechend angepasst.
 *   **Erkenntnis: Kritische Debugging-Informationen durch Konsolen-Routing.**
     *   **Analyse:** Wichtige Debug-Ausgaben des Matter-SDK, inklusive der generierten Pairing-Codes und Fehlermeldungen, wurden standardmäßig auf eine physische UART-Schnittstelle statt auf den für den Entwickler zugänglichen USB-JTAG-Port geroutet. Dies machte eine Fehleranalyse ohne physischen UART-Adapter unmöglich.
     *   **Konsequenz:** Die primäre Systemkonsole wurde in der `sdkconfig` fest auf den USB-JTAG-Port umgeleitet, um vollständige Transparenz während des Boot- und Pairing-Vorgangs zu gewährleisten.
@@ -159,7 +159,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **Validierung des Pairing-Fixes & Commissioning (Höchste Priorität):** Erneutes Anlernen des Geräts an Home Assistant unter Verwendung des nun stabilen, deterministischen Manual-Codes (**`34905722491`**) und Verifikation, dass das Gerät als "online" und "bereit" erscheint.
+*   **Firmware flashen und dynamisch generierten Code verwenden (Höchste Priorität):** Den Build mit der korrigierten `matter_interface.cpp` abschließen, die Firmware flashen und den im seriellen Log **vom SDK generierten** Pairing-Code für den Commissioning-Versuch in Home Assistant nutzen.
 *   **End-to-End-Validierung der Matter-Bridge:** Systematischer Test der bidirektionalen Funktionalität: (A) Empfang von SlowRF-Signalen (z.B. Intertechno-Sensor) und deren korrekte Darstellung in Home Assistant; (B) Senden von Befehlen aus Home Assistant (z.B. Schalten von Somfy/FS20) und Verifikation des gesendeten Funksignals.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
 *   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (**v1.1.0-NG**) und Finalisierung der Endbenutzer-Dokumentation.
