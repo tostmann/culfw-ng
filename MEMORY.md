@@ -131,17 +131,15 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Docker-Umgebung für Home Assistant und Matter-Server aufgesetzt und validiert.
 *   **[DONE]** Erfolgreiche Verifikation der mDNS-Sichtbarkeit des Matter-Gerätes (`_matterc._udp`).
 *   **[DONE]** Automatisierte Test-Skripte für Factory-Reset (`factory_reset.py`) und Commissioning-Versuche (`commission_script.py`) entwickelt.
+*   **[DONE]** Entwicklung einer Prozedur zum simultanen Reset von Gerät (Factory Reset) und Matter-Server (Docker-Neustart) zur Behebung von "Stale Session"-Fehlern.
 
 ## 4. Neue Erkenntnisse / Probleme
 
-*   **Problem: Manuelles Commissioning via App hängt.**
-    *   **Analyse:** Der Versuch, das Gerät manuell über die Home Assistant Companion App zu koppeln, führt zu einem "endlosen" Lade-Dialog. Obwohl das Gerät im Netzwerk sichtbar ist (mDNS) und für die Kopplung bereitsteht, schlägt der finale Handshake fehl.
-    *   **Hypothese:** Die Ursache ist eine "stale session" (veralteter Zustand) entweder auf dem Gerät oder im Matter-Server-Container, die durch vorherige fehlgeschlagene Versuche verursacht wurde.
-    *   **Konsequenz/Nächster Schritt:** Vor dem nächsten Kopplungsversuch müssen sowohl das Gerät (via `e`-Kommando) als auch der `matter-server` (via `docker restart`) vollständig zurückgesetzt werden, um einen sauberen Zustand zu gewährleisten.
-*   **Erkenntnis: Commissioning-Hürden und Test-Anpassung.**
-    *   **Problem:** Automatisierte Commissioning-Versuche über die `matter-server` Websocket-API schlagen wiederholt mit `Secure Pairing Failed` und `PASESession timed out` fehl. Die genaue Ursache (Timing, falscher Setup-Code) ist unklar.
-    *   **Erkenntnis:** Die offizielle Weboberfläche von Home Assistant leitet für das Hinzufügen von Matter-Geräten explizit zur mobilen Companion-App weiter. Dies legt nahe, dass der interaktive, App-gesteuerte Prozess der vorgesehene und robusteste Weg für das Pairing ist.
-    *   **Konsequenz:** Die Teststrategie wurde angepasst. Statt auf ein fehleranfälliges, vollautomatisches CLI-Pairing zu setzen, wird der Fokus auf die Validierung über den offiziellen User-Flow (Home Assistant UI/App) gelegt.
+*   **Problem: Commissioning-Prozess hängt in der Attribut-Abfragephase.**
+    *   **Analyse:** Obwohl das Gerät nach einem Werksreset (`e`) und Neustart des Matter-Servers (`docker restart`) eine saubere Kopplungssitzung startet, hängt der Prozess in der Home Assistant App weiterhin. Die Analyse der seriellen Logs des ESP32-C6 während des Kopplungsversuchs zeigt das Kernproblem: Nach einem erfolgreichen PASE-Handshake (Sicherheits-Setup) beginnt der Matter-Controller (Home Assistant) die Fähigkeiten (Endpoints, Cluster, Attribute) des Geräts abzufragen. Hierbei treten zahlreiche `Fail to retrieve data, roll back and encode status` Fehler auf, insbesondere bei Standard-Clustern wie "Thread Network Diagnostics" (`0x0000_0035`).
+    *   **Technische Details:** Die Fehler (`err = 2d`) deuten darauf hin, dass die Firmware auf eine Attribut-Leseanforderung nicht korrekt antworten kann. Dies führt dazu, dass der Controller die Konfiguration des Geräts nicht vollständig ermitteln kann und der gesamte Prozess scheinbar endlos wartet.
+    *   **Netzwerkdiagnose:** Port-Scans bestätigen, dass der für die Kopplung (PASE) nötige TCP-Port 5540 nur während des aktiven Kopplungsfensters offen ist. Ein `Connection refused` außerhalb dieses Fensters ist normal. Der operative UDP-Port 5540 ist hingegen erreichbar. Das Problem liegt also nicht in der grundlegenden Netzwerkerreichbarkeit, sondern in der Applikationslogik nach dem Verbindungsaufbau.
+    *   **Konsequenz/Nächster Schritt:** Die Ursache ist kein reines "Stale Session"-Problem mehr, sondern ein Implementierungsfehler in der Firmware. Der Fokus muss auf die Behebung der Attribut-Reporting-Logik im ESP-Matter SDK-Interface gelegt werden.
 *   **Erkenntnis: Testumgebung mit Container-Runtime (Docker) erweitert.**
     *   **Status:** Docker und Docker Compose wurden auf dem Raspberry Pi 5 installiert.
     *   **Test-Setup:** Ein Home Assistant Container (`ghcr.io/home-assistant/home-assistant:stable`) und der Python Matter Server (`ghcr.io/home-assistant-libs/python-matter-server:stable`) laufen im `host`-Netzwerkmodus.
@@ -163,8 +161,11 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **Endgültige Validierung des Matter-Commissioning (Höchste Priorität):** Erneuter Versuch des manuellen Commissioning-Prozesses über die **Home Assistant Companion App**. Dies muss zwingend nach einem **simultanen Reset** des Geräts (Factory Reset via `e`) und des `matter-server` (Docker-Neustart) erfolgen, um "Stale Session"-Fehler auszuschließen. Ziel ist die erfolgreiche Einbindung des Geräts in Home Assistant.
-*   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
+*   **Firmware-Debug: Behebung der Attribut-Abfragefehler (Höchste Priorität):** Analyse und Behebung der `Fail to retrieve data` Fehler, die im seriellen Log des Geräts während des Commissioning auftreten. Dies erfordert:
+    *   Untersuchung der Implementierung der problematischen Cluster (z.B. `0x0000_0035` - Thread Network Diagnostics) in der Firmware.
+    *   Sicherstellen, dass alle Standard-Cluster, die vom ESP-Matter-SDK standardmäßig aktiviert werden, korrekte Daten-Callbacks implementiert haben oder, falls nicht unterstützt, korrekt aus dem Data Model entfernt werden.
+    *   Nachschlagen des Fehlercodes `2d` in der Matter-Spezifikation zur genauen Ursachenbestimmung.
+*   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien, sobald das Commissioning stabil ist.
 *   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (v1.1.0) und Finalisierung der Endbenutzer-Dokumentation.
 *   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.
 
