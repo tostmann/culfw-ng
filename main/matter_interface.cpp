@@ -17,9 +17,7 @@ static matter_command_cb_t cmd_cb = NULL;
 
     // SDK-specific static functions would go here
     static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg) {
-        if (event->Type == chip::DeviceLayer::DeviceEventType::kPublicEventTypes) {
-             // Handle public events
-        }
+        // Handle Matter events (commissioning, etc.)
     }
 
     static esp_err_t app_attribute_update_cb(attribute::callback_type_t type, uint16_t endpoint_id, uint32_t cluster_id, uint32_t attribute_id, esp_matter_attr_val_t *val, void *priv_data) {
