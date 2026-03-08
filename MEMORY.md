@@ -134,15 +134,19 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 4. Neue Erkenntnisse / Probleme
 
+*   **Problem: Manuelles Commissioning via App hängt.**
+    *   **Analyse:** Der Versuch, das Gerät manuell über die Home Assistant Companion App zu koppeln, führt zu einem "endlosen" Lade-Dialog. Obwohl das Gerät im Netzwerk sichtbar ist (mDNS) und für die Kopplung bereitsteht, schlägt der finale Handshake fehl.
+    *   **Hypothese:** Die Ursache ist eine "stale session" (veralteter Zustand) entweder auf dem Gerät oder im Matter-Server-Container, die durch vorherige fehlgeschlagene Versuche verursacht wurde.
+    *   **Konsequenz/Nächster Schritt:** Vor dem nächsten Kopplungsversuch müssen sowohl das Gerät (via `e`-Kommando) als auch der `matter-server` (via `docker restart`) vollständig zurückgesetzt werden, um einen sauberen Zustand zu gewährleisten.
 *   **Erkenntnis: Commissioning-Hürden und Test-Anpassung.**
     *   **Problem:** Automatisierte Commissioning-Versuche über die `matter-server` Websocket-API schlagen wiederholt mit `Secure Pairing Failed` und `PASESession timed out` fehl. Die genaue Ursache (Timing, falscher Setup-Code) ist unklar.
     *   **Erkenntnis:** Die offizielle Weboberfläche von Home Assistant leitet für das Hinzufügen von Matter-Geräten explizit zur mobilen Companion-App weiter. Dies legt nahe, dass der interaktive, App-gesteuerte Prozess der vorgesehene und robusteste Weg für das Pairing ist.
-    *   **Konsequenz:** Die Teststrategie wird angepasst. Statt auf ein fehleranfälliges, vollautomatisches CLI-Pairing zu setzen, wird der Fokus auf die Validierung über den offiziellen User-Flow (Home Assistant UI/App) gelegt.
+    *   **Konsequenz:** Die Teststrategie wurde angepasst. Statt auf ein fehleranfälliges, vollautomatisches CLI-Pairing zu setzen, wird der Fokus auf die Validierung über den offiziellen User-Flow (Home Assistant UI/App) gelegt.
 *   **Erkenntnis: Testumgebung mit Container-Runtime (Docker) erweitert.**
     *   **Status:** Docker und Docker Compose wurden auf dem Raspberry Pi 5 installiert.
     *   **Test-Setup:** Ein Home Assistant Container (`ghcr.io/home-assistant/home-assistant:stable`) und der Python Matter Server (`ghcr.io/home-assistant-libs/python-matter-server:stable`) laufen im `host`-Netzwerkmodus.
     *   **Verifikation:** Die mDNS-Discovery (`avahi-browse`) bestätigt, dass der ESP32-C6 (`_matterc._udp`) korrekt im Netzwerk sichtbar ist und Parameter wie Discriminator (`3840`) und Vendor-ID (`0xFFF1`) publiziert.
-    *   **Konsequenz:** Die Firmware ist bereit für das Pairing mit Home Assistant. Die technische Hürde der fehlenden Runtime wurde beseitigt. Das Pairing kann nun über die HASS-Weboberfläche (Port 8123) erfolgen.
+    *   **Konsequenz:** Die Firmware ist bereit für das Pairing mit Home Assistant. Die technische Hürde der fehlenden Runtime wurde beseitigt.
 *   **Erkenntnis: Erfolgreiche Validierung des Sensor-Pfads.**
     *   Durch die Emulation eines Temperatursensors über das robuste Intertechno-V1-Protokoll (gesendet von einem Legacy-CUL) wurde der komplette Pfad "RF-Empfang -> Sensor-Dekodierung -> Matter Bridge -> Erstellung eines Sensor-Endpoints" erfolgreich End-to-End validiert. Die Architektur ist somit grundsätzlich in der Lage, Sensordaten korrekt an Matter zu übergeben.
 *   **Erkenntnis: Unzuverlässigkeit von Legacy-Hardware als Test-Sender.**
@@ -159,7 +163,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **Praktische Validierung des Matter-Commissioning (Höchste Priorität):** Durchführung eines vollständigen Matter-Commissioning-Prozesses unter Verwendung der offiziellen **Home Assistant UI (und/oder Companion App)** in der vorbereiteten Docker-Umgebung. Ziel ist es, die Funktionalität der Einbindung und die Sichtbarkeit der dynamisch erstellten Endpoints zu verifizieren.
+*   **Endgültige Validierung des Matter-Commissioning (Höchste Priorität):** Erneuter Versuch des manuellen Commissioning-Prozesses über die **Home Assistant Companion App**. Dies muss zwingend nach einem **simultanen Reset** des Geräts (Factory Reset via `e`) und des `matter-server` (Docker-Neustart) erfolgen, um "Stale Session"-Fehler auszuschließen. Ziel ist die erfolgreiche Einbindung des Geräts in Home Assistant.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
 *   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (v1.1.0) und Finalisierung der Endbenutzer-Dokumentation.
 *   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.
