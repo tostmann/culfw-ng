@@ -15,5 +15,6 @@ typedef struct {
 void matter_bridge_init();
 void matter_bridge_report_event(const char* id, matter_device_type_t type, float value);
 void matter_bridge_list_endpoints();
+int matter_bridge_get_web_list(char* buf, int max_len);
 
 #endif
