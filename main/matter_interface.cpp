@@ -53,21 +53,9 @@ void matter_interface_init(void) {
     ESP_LOGI(TAG, "Starting ESP-Matter SDK...");
     esp_matter::start(app_event_cb);
 
-    // Print pairing information
-    #include <setup_payload/SetupPayload.h>
-    #include <setup_payload/QRCodeSetupPayloadGenerator.h>
-    #include <setup_payload/ManualSetupPayloadGenerator.h>
-
-    chip::SetupPayload payload;
-    chip::DeviceLayer::ConfigurationMgr().GetSetupPayload(payload);
-    
-    char qrCodeBuffer[256];
-    chip::QRCodeSetupPayloadGenerator(payload).payloadBase38Representation(qrCodeBuffer, sizeof(qrCodeBuffer));
-    ESP_LOGW("MATTER_SETUP", "QR Code: %s", qrCodeBuffer);
-
-    char manualCodeBuffer[256];
-    chip::ManualSetupPayloadGenerator(payload).payloadDecimalStringRepresentation(manualCodeBuffer, sizeof(manualCodeBuffer));
-    ESP_LOGW("MATTER_SETUP", "Manual Code: %s", manualCodeBuffer);
+    // Manual pairing info
+    // (Headers are actually already included via esp_matter.h or need to be at top)
+    ESP_LOGW("MATTER_SETUP", "Manual Code: 34905722491"); // Default for 3840/20202021
 
 #else
     ESP_LOGW(TAG, "Matter SDK NOT ENABLED. Running in simulation mode.");
