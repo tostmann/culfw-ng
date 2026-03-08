@@ -14,6 +14,7 @@ void cc1101_set_tx_mode();
 void cc1101_set_idle_mode();
 void cc1101_set_frequency(bool is_433);
 uint8_t cc1101_read_rssi();
+void cc1101_get_register_dump(char* buf, size_t max_len);
 void cc1101_send_fs20(const char* housecode, const char* addr, const char* cmd);
 void cc1101_send_it_v1(const char* data);
 void cc1101_send_it_v3(const char* data);
