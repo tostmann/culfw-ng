@@ -95,11 +95,13 @@ static void handle_command(char *cmd) {
             slowrf_set_mode(SLOWRF_MODE_CUL);
             reporting_enabled = true;
             slowrf_set_reporting(true);
+            save_mode_state(SLOWRF_MODE_CUL);
             len = snprintf(out, sizeof(out), "X21\r\n");
         } else if (cmd[1] == '2' && cmd[2] == '5') {
             slowrf_set_mode(SLOWRF_MODE_SIGNALDUINO);
             reporting_enabled = true;
             slowrf_set_reporting(true);
+            save_mode_state(SLOWRF_MODE_SIGNALDUINO);
             len = snprintf(out, sizeof(out), "X25\r\n");
         } else {
             // Default behavior for other X commands (like X? -> status)
