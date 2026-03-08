@@ -5,6 +5,7 @@
 #include "cc1101.h"
 #include "matter_bridge.h"
 #include "generic_decoder.h"
+#include "culfw_duty_cycle.h"
 #include <string.h>
 
 static const char *TAG = "WEB_SERVER";
