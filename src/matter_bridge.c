@@ -6,6 +6,7 @@
 #include "matter_interface.h"
 #include "slowrf.h"
 #include "cc1101.h"
+#include "rolling_code.h"
 
 static const char *TAG = "MATTER_BRIDGE";
 #define MAX_ENDPOINTS 20
