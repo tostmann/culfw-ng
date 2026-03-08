@@ -7,7 +7,7 @@ idf_component_register(SRCS ${app_sources}
                        PRIV_INCLUDE_DIRS ".")
 target_compile_definitions(${COMPONENT_LIB} PUBLIC 
     FW_VERSION="1.1.0-NG"
-    BUILD_NUMBER=7
+    BUILD_NUMBER=8
     GPIO_GDO0=2
     GPIO_GDO2=3
     GPIO_SS=18
