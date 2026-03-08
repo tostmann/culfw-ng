@@ -261,12 +261,12 @@ void culfw_parser_task(void *pvParameters) {
         usb_serial_jtag_driver_install(&usb_serial_jtag_config);
     }
 
-    uint8_t buf[256];
-    char cmd_buf[1024];
+    uint8_t buf[512];
+    char cmd_buf[2048]; // Larger command buffer for long 'mi' sequences
     int cmd_pos = 0;
 
     while (1) {
-        int n = usb_serial_jtag_read_bytes(buf, sizeof(buf), pdMS_TO_TICKS(50));
+        int n = usb_serial_jtag_read_bytes(buf, sizeof(buf), pdMS_TO_TICKS(10));
         if (n > 0) {
             for (int i = 0; i < n; i++) {
                 char c = (char)buf[i];
@@ -278,9 +278,14 @@ void culfw_parser_task(void *pvParameters) {
                     }
                 } else if (cmd_pos < sizeof(cmd_buf) - 1) {
                     cmd_buf[cmd_pos++] = c;
+                } else {
+                    // Overflow!
+                    ESP_LOGE(TAG, "Command buffer overflow! Resetting.");
+                    cmd_pos = 0;
                 }
             }
+        } else {
+            vTaskDelay(pdMS_TO_TICKS(10));
         }
-        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
