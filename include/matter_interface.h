@@ -7,7 +7,10 @@ typedef enum {
     DEVICE_TYPE_SWITCH = 0,
     DEVICE_TYPE_TEMP_SENSOR,
     DEVICE_TYPE_CONTACT_SENSOR,
-    DEVICE_TYPE_DIMMER
+    DEVICE_TYPE_DIMMER,
+    DEVICE_TYPE_OUTLET,
+    DEVICE_TYPE_LIGHT,
+    DEVICE_TYPE_COVER
 } matter_device_type_t;
 
 typedef void (*matter_command_cb_t)(uint16_t endpoint_id, float value);
