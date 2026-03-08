@@ -17,7 +17,7 @@ static void matter_bridge_command_cb(uint16_t endpoint_id, float value) {
 }
 
 typedef struct {
-    char rf_id[16];
+    char rf_id[64]; // Increased to 64 for IT V3 or generic names
     uint16_t matter_ep_id;
     matter_device_type_t type;
 } bridged_device_t;
