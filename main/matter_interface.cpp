@@ -17,12 +17,41 @@ static matter_command_cb_t cmd_cb = NULL;
 
     // SDK-specific static functions would go here
     static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg) {
-        // Handle Matter events (commissioning, etc.)
+        if (event->Type == chip::DeviceLayer::DeviceEventType::kPublicEventTypes) {
+             // Handle public events
+        }
+    }
+
+    static esp_err_t app_attribute_update_cb(attribute::callback_type_t type, uint16_t endpoint_id, uint32_t cluster_id, uint32_t attribute_id, esp_matter_attr_val_t *val, void *priv_data) {
+        if (type == attribute::PRE_UPDATE) {
+            ESP_LOGI(TAG, "Attribute Update: EP %d Cluster %lX Attr %lX Val %d", endpoint_id, cluster_id, attribute_id, val->val.b);
+            if (cluster_id == chip::app::Clusters::OnOff::Id && attribute_id == chip::app::Clusters::OnOff::Attributes::OnOff::Id) {
+                 matter_interface_simulate_command(endpoint_id, val->val.b ? 1.0f : 0.0f);
+            }
+        }
+        return ESP_OK;
+    }
+
+    static esp_err_t app_identification_cb(identification::callback_type_t type, uint16_t endpoint_id, uint8_t effect_id, uint8_t effect_variant, void *priv_data) {
+        return ESP_OK;
     }
 #endif
 
 void matter_interface_init(void) {
 #ifdef CONFIG_ESP_MATTER_ENABLE
+    ESP_LOGI(TAG, "Initializing ESP-Matter Node...");
+    
+    node::config_t node_config;
+    node_t *node = node::create(&node_config, app_attribute_update_cb, app_identification_cb);
+    
+    if (node) {
+        endpoint::aggregator::config_t aggregator_config;
+        endpoint::aggregator::create(node, &aggregator_config, ENDPOINT_FLAG_NONE, NULL);
+        ESP_LOGI(TAG, "Node and Aggregator created.");
+    } else {
+        ESP_LOGE(TAG, "Failed to create Node!");
+    }
+
     ESP_LOGI(TAG, "Starting ESP-Matter SDK...");
     esp_matter::start(app_event_cb);
 #else
