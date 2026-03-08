@@ -15,7 +15,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 | **S300TH / ESA** | Ja | Nein | `K...` | 868.30 MHz |
 | **FHT80b** | Ja | Ja | `T...` | 868.30 MHz |
 | **Oregon Scientific** | Ja | Ja | `To...` (Test) | 433.92 MHz |
-| **Somfy RTS** | Nein | Ja | `Y...` / Matter | 433.42 MHz |
+| **Somfy RTS** | Nein | Ja | `Ys...` / Matter | 433.42 MHz |
 | **Generische Sensoren** | Ja | Nein | `r...` | 433/868 MHz |
 
 ## 2. Architektur & Design-Entscheidungen
@@ -36,7 +36,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
     *   **Table-Driven Decoding Engine:** Anstelle von fest einkompilierten Decodern wird eine generische Engine (`generic_decoder.c`) die Pulsfolgen mit den in der Protokolldatenbank definierten Mustern abgleichen. Die JSON-Definition unterstützt Schlüsselfelder wie `"type"` (`"switch"`, `"sensor"`) zur korrekten Zuordnung im Gateway, `id_ignore_bits` zur Trennung von Geräte-ID und Statuswert sowie `scale`/`offset` zur Konvertierung von Sensor-Rohdaten in physikalische Einheiten. Die Datenbank kann zur Laufzeit über `GR` (Generic Reload) neu geladen werden.
     *   **Matter-Architektur (Bidirektional):** Der Stick wird als **Matter Aggregator (Bridge)** implementiert. Die Bridge arbeitet in beide Richtungen:
         *   **RX (RF $\rightarrow$ Matter):** Erkannte SlowRF-Geräte werden als dynamische **Endpoints** (z.B. Temperatursensor, Schalter) im Matter-Netzwerk on-the-fly angelegt und über eine **"Dynamic Endpoint Registry"** (`matter_bridge.c`) verwaltet. Der Name des dekodierenden Protokolls (z.B. "Nexa") wird pro Endpunkt gespeichert.
-        *   **TX (Matter $\rightarrow$ RF):** Eingehende Matter-Befehle werden über einen **Callback-Mechanismus** (`matter_bridge_command_cb`) verarbeitet. Die Bridge-Logik identifiziert den Ziel-Endpunkt, liest den bei der Endpoint-Erstellung gespeicherten Protokoll-Namen (z.B. "Nexa") und die RF-ID aus und ruft den passenden Encoder auf, um den Befehl in ein SlowRF-Funkkommando zu übersetzen und über den CC1101 zu senden.
+        *   **TX (Matter $\rightarrow$ RF):** Eingehende Matter-Befehle werden über einen **Callback-Mechanismus** (`matter_bridge_command_cb`) verarbeitet. Die Bridge-Logik identifiziert den Ziel-Endpunkt, liest den bei der Endpoint-Erstellung gespeicherten Protokoll-Namen (z.B. "Somfy") und die RF-ID aus und ruft den passenden Encoder auf, um den Befehl in ein SlowRF-Funkkommando zu übersetzen und über den CC1101 zu senden.
         *   Die Anwendungslogik ist gegen eine **API-Interface-Schicht** (`matter_interface.h`) entwickelt, um die Kompilierbarkeit ohne das vollständige SDK zu gewährleisten (Simulations-Modus).
     *   **Matter Endpoint ID-Masking:** Um die Proliferation von Endpoints zu verhindern (z.B. ON/OFF-Befehle derselben Fernbedienung), wird eine ID-Maskierung via `id_ignore_bits` in der Protokolldefinition verwendet. Dies stellt sicher, dass ein physisches Gerät immer demselben Matter-Endpoint zugeordnet wird.
 *   **Zustandsbehaftete Protokolle (Rolling Codes):** Für Protokolle wie **Somfy RTS** wurde ein dedizierter **Rolling-Code-Manager** (`rolling_code.c`) implementiert. Dieser speichert die Zählerstände für jedes Gerät persistent im NVS, um eine De-Synchronisation mit Original-Fernbedienungen zu verhindern.
@@ -44,11 +44,11 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
     *   **CUL-Modus (`X21`):** 100%ige Kompatibilität zum etablierten CUL-Protokoll. Ausgabe generischer Protokolle mit neuem `G`-Präfix (`G<Name><Daten>...`).
     *   **SIGNALduino-Modus (`X25`):** Vollständige Emulation eines SIGNALduino mit Rohdaten-Ausgabe (`MU;...` für unbekannte, `MS;...` für bekannte Protokolle). Die Ausgabe erfolgt über eine zentrale `slowrf_output_packet`-Funktion. Die `MU`-Ausgabe wird unterdrückt, wenn ein Decoder (fest oder generisch) das Signal erfolgreich verarbeitet hat.
 *   **WiFi & Web-Dashboard:** Ein integrierter HTTP-Server (Port 80) bietet ein **vollwertiges, interaktives Diagnose-Dashboard** mit modernem CSS-Styling und Auto-Refresh. Es zeigt nicht nur Systemdaten, Protokolle und den Matter-Status, sondern ermöglicht auch die **direkte Steuerung** von Frequenz und Betriebsmodus, die **Anzeige des Duty-Cycle-Status** sowie die **Simulation von Matter-TX-Befehlen** über ein Web-Formular.
-*   **Regulatorische Konformität (Duty Cycle):** Implementierung einer **1%-Duty-Cycle-Überwachung** (`culfw_duty_cycle.c`) für das 868-MHz-Band. Das Modul akkumuliert die Sendezeit über eine gleitende Stunde und blockiert weitere Sendeanfragen, wenn das Limit von 36.000 ms überschritten wird, um die Funkzulassung nicht zu gefährden.
+*   **Regulatorische Konformität (Duty Cycle):** Eine implementierte **1%-Duty-Cycle-Überwachung** (`culfw_duty_cycle.c`) für das 868-MHz-Band akkumuliert die Sendezeit über eine gleitende Stunde und blockiert weitere Sendeanfragen, wenn das Limit von 36.000 ms überschritten wird, um die Funkzulassung nicht zu gefährden.
 *   **Intellectual Property (IP) / Kopierschutz (3-Säulen-Strategie):**
     *   **1. Kommerzieller Schutz ("Matter-Schild"):** Die Bindung an den Matter-Standard erfordert ein offizielles **Device Attestation Certificate (DAC)**. Clones ohne dieses Zertifikat werden von Systemen wie Apple/Google Home als "nicht verifiziert" markiert.
     *   **2. Technischer Schutz (Hardware-Verschlüsselung):** Nutzung der ESP32-C6 Hardware-Features wie **Flash Encryption** (bindet die Firmware an den individuellen Chip) und **Secure Boot V2** (erlaubt nur vom Hersteller signierte Firmware-Updates).
-    *   **3. Software-Bindung (IP-Schutz):** Die Protokoll-Datenbank (`protocols.json`) wird als verschlüsselte Datei (`protocols.enc`) auf dem SPIFFS abgelegt. Die Entschlüsselung im `config_loader` ist direkt an die **eindeutige Chip-ID (MAC-Adresse)** des ESP32 gebunden, was die Extraktion und Portierung der IP auf nicht autorisierte Hardware wirksam verhindert.
+    *   **3. Software-Bindung (IP-Schutz):** Die Protokoll-Datenbank (`protocols.json`) wird als verschlüsselte Datei (`protocols.enc`) auf dem SPIFFS abgelegt. Die Entschlüsselung im `config_loader` ist direkt an die **eindeutige Chip-ID (MAC-Adresse)** des ESP32 gebunden, was die Extraktion und Portierung der IP auf nicht autorisierte Hardware wirksam verhindert. Ein Python-Tool (`encrypt_protocols.py`) dient zur Erstellung der verschlüsselten Datei für eine spezifische Hardware.
 *   **Frequenzerkennung und -management:**
     *   **Hardware-Default:** Die Modulfrequenz (433/868 MHz) wird initial über einen GPIO-Pin (`GPIO_433MARKER`) erkannt.
     *   **Software-Override:** Ein Benutzer kann die Frequenz zur Laufzeit per Kommando (`f433` oder `f868`) umschalten. Diese Einstellung wird **permanent im NVS gespeichert**.
@@ -104,7 +104,9 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Implementierung des Sende-Protokolls (TX) für Somfy RTS inkl. Rolling-Code-Management und präziser Frequenzabstimmung.
 *   **[DONE]** Integration von Somfy RTS in den bidirektionalen Matter-Bridge TX-Pfad.
 *   **[DONE]** Erweiterung des Web-Dashboards um Anzeige des Duty-Cycle-Status und der eindeutigen Chip-ID.
-*   **[DONE]** End-to-End-Test: Vollständiger RX->Matter->TX-Zyklus für Schalter- (Nexa) und Sensor-Protokolle (OOK_Temp) validiert.
+*   **[DONE]** End-to-End-Test: Vollständiger RX->Matter->TX-Zyklus für Schalter- (Nexa) und Aktor-Protokolle (Somfy RTS) validiert.
+*   **[DONE]** IP-Schutz: Tooling zur hardwaregebundenen Verschlüsselung der Protokolldatenbank (`encrypt_protocols.py`) erfolgreich eingesetzt.
+*   **[DONE]** Test-Infrastruktur: Python-Script (`test_matter_bridge.py`) zur automatisierten Validierung der Bridge-Logik erstellt.
 *   **[DONE]** Code-Bereinigung und Finalisierung der Dokumentation (`COMMANDS.md`).
 
 ## 4. Neue Erkenntnisse / Probleme
@@ -112,16 +114,17 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **Architektur-Korrektur (Single-Core):** Der ESP32-C6 ist ein **Single-Core Prozessor (RISC-V)**. Die RTOS-Architektur wurde auf ein Single-Core-Modell mit **Task-Priorisierung** als primäres Steuerungsinstrument umgestellt, um die Echtzeitfähigkeit zu gewährleisten.
 *   **Architektur-Verfeinerung (Initialisierung):** Die gesamte Initialisierungssequenz in `app_main` wurde optimiert, um eine stabile System-Startup-Logik sicherzustellen: NVS -> SPIFFS/Config -> WiFi -> Web Server -> Matter Bridge -> CC1101 Radio -> Start der RTOS-Tasks. Dies verhindert Race Conditions zwischen abhängigen Komponenten.
 *   **Erkenntnis (Komplexität zustandsbehafteter Protokolle):** Die Implementierung von Protokollen wie **Somfy RTS** erfordert mehr als nur einen Encoder. Ein persistenter **Rolling-Code-Manager**, der die Zählerstände im NVS speichert, ist unerlässlich, um die Synchronisation mit dem Empfänger aufrechtzuerhalten und eine zuverlässige Funktion zu gewährleisten.
-*   **Erkenntnis (Regulatorische Notwendigkeit):** Für ein kommerziell tragfähiges Produkt, insbesondere im 868-MHz-Band, ist eine serverseitige **Duty-Cycle-Überwachung** zwingend erforderlich, um die gesetzliche 1%-Regel einzuhalten. Eine rein clientseitige Logik ist nicht ausreichend.
+*   **Erkenntnis (Implementierung regulatorischer Notwendigkeit):** Die Implementierung einer serverseitigen **Duty-Cycle-Überwachung** ist für ein kommerziell tragfähiges Produkt im 868-MHz-Band unerlässlich, um die gesetzliche 1%-Regel einzuhalten. Die Realisierung (`culfw_duty_cycle.c`) sichert die Konformität ab.
 *   **Erkenntnis (Diagnose-Fähigkeit):** Ein vollumfängliches, **interaktives** Web-Dashboard, das nicht nur Live-Daten anzeigt, sondern auch die direkte Steuerung (Frequenz, Modus) und die Simulation von Ereignissen (Matter-TX) ermöglicht, ist für die Validierung des komplexen Brückensystems unerlässlich und beschleunigt die Fehlersuche erheblich.
+*   **Erkenntnis (Matter SDK Komplexität):** Die direkte Integration des ESP-Matter SDK in eine bestehende PlatformIO/ESP-IDF-Umgebung ist aufwändig. Die gewählte Architektur mit einer Abstraktionsschicht (`matter_interface.h`) und einem **Simulations-Modus** hat sich als entscheidend erwiesen, um die Gateway-Logik unabhängig vom schweren SDK entwickeln und testen zu können. Dies ermöglicht eine Parallelentwicklung und reduziert die Build-Komplexität.
 
 ## 5. Nächste Schritte
 
-*   **Matter SDK-Integration:** Wechsel vom Simulations-Modus (`matter_interface.c`) zur echten ESP-Matter SDK-Implementierung, um die Bridge-Funktionalität in realen Matter-Ökosystemen (Apple Home, Google Home) zu testen.
-*   **IP-Schutz Finalisierung:** Aktivierung der Hardware-Sicherheitsfeatures **Secure Boot V2** und **Flash Encryption**, um die 3-Säulen-Strategie zu vervollständigen.
-*   **Vervollständigung des TX-Pfads:** Ausbau der Rekonstruktionslogik für Matter-Befehle auf alle relevanten Protokolle (insbesondere HMS, FHT).
-*   **Reichweiten- & Störfestigkeitstests:** Durchführung von Tests mit realen Sendern/Sensoren über größere Distanzen und in Umgebungen mit potentiellen Störquellen (z.B. WLAN, andere Funkprotokolle).
-*   **Dokumentation & Release:** Finalisierung der Benutzerdokumentation und Vorbereitung eines stabilen Release-Kandidaten (v1.1.0).
+*   **Finale Matter SDK-Integration:** Einrichten der dedizierten Build-Umgebung (ESP-IDF 5.x mit esp-matter), um vom Simulations-Modus auf die echte Implementierung umzuschalten und Tests in realen Matter-Ökosystemen (Apple Home, Google Home) durchzuführen.
+*   **IP-Schutz Härtung:** Aktivierung der ESP32-C6 Hardware-Sicherheitsfeatures **Secure Boot V2** und **Flash Encryption**, um die 3-Säulen-Strategie zu vervollständigen.
+*   **Erweiterung der Protokoll-Unterstützung (TX):** Ausbau der Matter-TX-Logik für weitere Protokolle wie HMS und FHT80b.
+*   **System-Validierung:** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
+*   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (v1.1.0) und Finalisierung der Endbenutzer-Dokumentation.
 
 ## 6. Hardware-Konfiguration (Pinout)
 

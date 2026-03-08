@@ -1,0 +1,30 @@
+{
+  "protocols": [
+    {
+      "name": "TEST_SW",
+      "freq": 433,
+      "type": "switch",
+      "timing": { "short": 500, "long": 1000, "tolerance": 100 },
+      "definitions": {
+        "sync": [ { "h": 1, "l": 1 } ],
+        "bit0": [ { "h": 1, "l": 2 } ],
+        "bit1": [ { "h": 2, "l": 1 } ]
+      },
+      "len": { "min": 8, "max": 8, "ignore": 4 }
+    },
+    {
+      "name": "TEST_SN",
+      "freq": 433,
+      "type": "sensor",
+      "scale": 0.1,
+      "offset": 0.0,
+      "timing": { "short": 400, "long": 800, "tolerance": 80 },
+      "definitions": {
+        "sync": [ { "h": 1, "l": 1 } ],
+        "bit0": [ { "h": 1, "l": 2 } ],
+        "bit1": [ { "h": 2, "l": 1 } ]
+      },
+      "len": { "min": 12, "max": 12, "ignore": 4 }
+    }
+  ]
+}
