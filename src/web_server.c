@@ -73,6 +73,17 @@ static esp_err_t index_get_handler(httpd_req_t *req) {
         "<input type='hidden' name='c'>"
         "</form></div>"
         "<div class='card'><h3>Live Activity</h3><div class='log'>%s</div></div>"
+        "<div class='card'><h3>Advanced Tools</h3>"
+        "<h4>RF Injection (RX Simulation)</h4>"
+        "<p>Format: Hex-Durations (10us units), 4 digits per pulse. e.g. 00320032 = 500us High, 500us Low</p>"
+        "<form action='/cmd' method='get'>"
+        "<input type='text' name='c' size='50' value='mi00320032'>"
+        "<button type='submit'>Inject</button>"
+        "</form>"
+        "<h4>Factory Reset</h4>"
+        "<p style='color: #e74c3c;'>Caution: This will erase all settings!</p>"
+        "<a href='/cmd?c=e' style='background: #e74c3c;'>Wipe and Restart</a>"
+        "</div>"
         "</body></html>",
         mac_str,
         BUILD_NUMBER,
