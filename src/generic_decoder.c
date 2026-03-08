@@ -99,7 +99,7 @@ static void generic_decoder_output_packet(rf_proto_internal_t *p, uint64_t data,
     char id_str[64];
     // Heuristic: Use name + upper bits as ID, last 8 bits as value
     snprintf(id_str, sizeof(id_str), "%s_%llX", p->name, (data >> 8));
-    matter_bridge_report_event(id_str, p->matter_type == 1 ? DEVICE_TYPE_TEMP_SENSOR : DEVICE_TYPE_SWITCH, (float)(data & 0xFF));
+    matter_bridge_report_event(id_str, p->name, p->matter_type == 1 ? DEVICE_TYPE_TEMP_SENSOR : DEVICE_TYPE_SWITCH, (float)(data & 0xFF));
 }
 
 // Helper to flatten JSON pairs into sequence
