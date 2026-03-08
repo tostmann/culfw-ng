@@ -53,7 +53,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **Frequenzerkennung und -management:**
     *   **Hardware-Default:** Die Modulfrequenz (433/868 MHz) wird initial über einen GPIO-Pin (`GPIO_433MARKER`) erkannt.
     *   **Software-Override:** Ein Benutzer kann die Frequenz zur Laufzeit per Kommando (`f433` oder `f868`) umschalten. Diese Einstellung wird **permanent im NVS gespeichert**.
-    *   **Präzise Frequenzsteuerung:** Eine `cc1101_set_frequency_raw()` Funktion erlaubt die exakte Einstellung spezifischer Frequenzen (z.B. **433.42 MHz** für Somfy RTS), die von den Standardbändern abweichen.
+    *   **Präzise Frequenzsteuerung:** Eine `cc1101_set_frequency_raw()` Funktion erlaubt die exakte Einstellung spezifischer Frequenzen (z.B. **433.92 MHz** für Intertechno), die von den Standardbändern abweichen. Die Registerwerte hierfür wurden präzisiert.
 *   **Versionierung:** Automatisierter Build-Nummer und detaillierter, culfw-kompatibler Versions-String, der nun Chip-ID, die **aktuelle IP-Adresse**, den **Betriebsmodus**, den **Matter-Status** sowie die **verbleibende Duty-Cycle-Sendezeit** enthält (`V`-Kommando).
 
 ## 3. Implementierungsstatus
@@ -71,7 +71,6 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Konfigurations-Management im Non-Volatile Storage (NVS).
 *   **[DONE]** RSSI-Reporting an alle empfangenen Pakete angehängt.
 *   **[DONE]** Remote-Diagnose-Befehle (`R`, `W`, `X99`, `m`) implementiert.
-*   **[DONE]** Periodischer "CUL-TICK" als Heartbeat implementiert.
 *   **[DONE]** Laufzeit-Frequenzumschaltung (`f433`/`f868`) implementiert.
 *   **[DONE]** RTOS-Architektur gehärtet (Task-Priorisierung, rekursiver SPI-Mutex).
 *   **[DONE]** End-to-End Validierung aller implementierten Protokolle.
@@ -129,31 +128,31 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 ## 4. Neue Erkenntnisse / Probleme
 
 *   **Problem: End-to-End RX-Test (Legacy CUL $\rightarrow$ CULFW-NG) schlägt fehl.**
-    *   **Analyse:** Ein automatisierter Test, bei dem ein Legacy-CUL einen Intertechno-Befehl sendet, führt zu keiner Reaktion der Matter-Bridge. Im Debug-Modus (`X25`/SignalDuino) empfängt der CULFW-NG jedoch erfolgreich Rohdaten (`MU;...`), was bestätigt, dass der RF-Empfang grundsätzlich funktioniert.
-    *   **Hypothese:** Die Ursache ist eine subtile Frequenz- oder Modulations-Abweichung zwischen dem Sender (Legacy-CUL) und dem Empfänger (CULFW-NG). Der Intertechno-Decoder im CUL-Modus (`X21`) wird daher nicht getriggert. Erschwerend kommt hinzu, dass sich der Legacy-CUL fälschlicherweise als 868MHz-Gerät identifiziert, was eine manuelle Frequenzkorrektur im Testskript erforderte.
+    *   **Analyse:** Ein automatisierter Python-Test, bei dem ein Legacy-CUL einen Intertechno-Befehl sendet, führt zu keiner dekodierten Nachricht.
+    *   **Diagnose:** Durch Umschalten des CULFW-NG in den Debug-Modus (`X25`/SignalDuino) wurde bestätigt, dass der RF-Empfang grundsätzlich funktioniert, da Rohdaten (`MU;...`) empfangen werden.
+    *   **Ursachenforschung:**
+        1.  Der Legacy-CUL identifiziert sich initial fälschlicherweise als 868MHz-Gerät. Ein Factory-Reset (`e`-Kommando) vor dem Test behebt dieses Problem und der CUL meldet korrekt 433MHz.
+        2.  Trotz korrekter Frequenz wird das Signal im CUL-Modus (`X21`) nicht vom Intertechno-Decoder erkannt.
+    *   **Hypothese:** Die Ursache ist eine **Timing-Inkompatibilität**. Die Pulsbreiten, die der Legacy-CUL sendet, liegen außerhalb des Toleranzbereichs des Decoders in `slowrf.c` auf dem CULFW-NG.
 *   **Erkenntnis: Irreversibilität von eFuses – Praxistest mit Konsequenzen.**
-    *   **Analyse:** Die Versuche, eine signierte Firmware zu flashen, sowie die anschließende Diagnose mit `espefuse.py` haben die Annahmen bestätigt und vertieft. Das 868MHz-Board hat **permanent aktive `SECURE_BOOT_EN` eFuses** und einen fest eingebrannten, nicht mehr verfügbaren Schlüssel.
-    *   **Konsequenz:** Dieses Board akzeptiert **nur** noch Firmware, die mit dem originalen, verlorenen Schlüssel signiert ist. Nachdem wir den Flash-Speicher mit einer neu signierten (und damit für dieses Board ungültigen) Firmware überschrieben haben, ist es für die weitere Entwicklung effektiv unbrauchbar ("gebrickt") und kann nicht mehr geflasht werden.
-    *   **Strategische Anpassung:** Die Entwicklung wird **ausschließlich auf ungesicherter Hardware** (433MHz-Board ohne aktive Security-eFuses) und mit deaktivierten Secure-Boot/Encryption-Features im Build fortgesetzt.
-*   **Erkenntnis: Boot-Warnung `Node does not exist...` ist unkritisch.**
-    *   Die Analyse des ESP-Matter-SDK-Codes zeigt, dass diese Warnung auftritt, wenn versucht wird, auf den Matter-Node zuzugreifen, bevor der `esp_matter::start()`-Prozess vollständig abgeschlossen ist. Da der Matter-Stack kurz darauf erfolgreich initialisiert und in den Commissioning-Modus wechselt, handelt es sich um ein unkritisches Timing-Problem während des Boot-Vorgangs.
-*   **Erkenntnis: Vergrößerung des Bootloaders durch Sicherheitsfeatures.**
-    *   **Problem:** Die Aktivierung von Secure Boot V2 und Flash Encryption fügt dem Bootloader erhebliche Mengen an Code für Signaturverifizierung und Entschlüsselungsroutinen hinzu. Dies führte dazu, dass der Bootloader die im Standard-Partitionsschema vorgesehene Größe von 32 KB (`0x8000`) überschritt.
-    *   **Konsequenz:** Der Build-Prozess für eine gesicherte Firmware schlägt ohne Anpassungen fehl.
-    *   **Lösung (nur für gesicherten Build relevant):** Die `partitions.csv` musste angepasst werden, um den Start-Offset der App-Partition (z.B. auf `0x20000`) zu verschieben. Für den aktuellen ungesicherten Entwicklungs-Track wurde diese Änderung zurückgenommen.
+    *   **Analyse:** Die Versuche, eine signierte Firmware zu flashen, haben gezeigt, dass das 868MHz-Board **permanent aktive `SECURE_BOOT_EN` eFuses** mit einem nicht mehr verfügbaren Schlüssel hat.
+    *   **Konsequenz:** Dieses Board ist für die weitere Entwicklung effektiv unbrauchbar ("gebrickt").
+    *   **Strategische Anpassung:** Die Entwicklung wird **ausschließlich auf ungesicherter Hardware** (433MHz-Board) fortgesetzt.
 *   **Erkenntnis: Validierung der Toolchain und Architektur.**
     *   Der erfolgreiche Boot der voll-integrierten Firmware (inkl. aller Tasks, Treiber und des kompletten Matter SDKs) auf realer Hardware bestätigt die Korrektheit der Migration zu ESP-IDF und der gewählten Systemarchitektur. Das System ist stabil und die Matter-Dienste starten wie erwartet.
+*   **Erkenntnis: Vergrößerung des Bootloaders durch Sicherheitsfeatures.**
+    *   Die Aktivierung von Secure Boot V2 und Flash Encryption vergrößert den Bootloader signifikant, was eine Anpassung der Partitionstabelle (`partitions.csv`) für gesicherte Builds erfordert. Dies ist für den aktuellen Entwicklungs-Track nicht relevant.
 
 ## 5. Nächste Schritte
 
-*   **Fehlerbehebung End-to-End Test (RX-Pfad):** Systematische Analyse des fehlgeschlagenen Intertechno-Tests mit folgenden Schritten:
-    *   **Frequenz-Validierung:** Sicherstellen, dass der Legacy-CUL als Sender zuverlässig und präzise auf 433.92 MHz sendet.
-    *   **Decoder-Toleranz-Prüfung:** Überprüfen und ggf. anpassen der Timing-Toleranzen im Intertechno-Decoder (`slowrf.c`) auf dem CULFW-NG, um robustere Erkennung zu gewährleisten.
-    *   **Test-Wiederholung:** Erneute Durchführung des automatisierten Python-Tests bis die Erkennung (`Registered new device...`) im CUL-Modus (`X21`) erfolgreich ist.
-*   **Praktische Validierung des Matter-Commissioning:** Nach dem erfolgreichen End-to-End-Test ist ein vollständiger Matter-Commissioning-Prozess mit einem handelsüblichen Controller (z.B. Apple Home, Google Home) durchzuführen, um die Funktionalität der Einbindung zu verifizieren.
+*   **Fehlerbehebung Decoder-Toleranz (Höchste Priorität):**
+    *   **Analyse:** Auswertung der im `X25`-Modus aufgezeichneten Rohdaten (`MU;...`), um die exakten Puls-Timings des Legacy-CUL-Senders zu ermitteln.
+    *   **Anpassung:** Justierung der Timing-Konstanten und Toleranzfenster im Intertechno-Decoder (`slowrf.c`) auf dem CULFW-NG.
+    *   **Validierung:** Erneute Durchführung des automatisierten Python-Tests bis die Erkennung (`is...`) im CUL-Modus (`X21`) und die Registrierung in der Matter Bridge (`Registered new device...`) zuverlässig erfolgreich sind.
+*   **Praktische Validierung des Matter-Commissioning:** Nach erfolgreichem End-to-End-Test ist ein vollständiger Matter-Commissioning-Prozess mit einem handelsüblichen Controller (z.B. Apple Home, Google Home) durchzuführen, um die Funktionalität der Einbindung zu verifizieren.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
-*   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.
 *   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (v1.1.0) und Finalisierung der Endbenutzer-Dokumentation.
+*   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.
 
 ## 6. Hardware-Konfiguration (Pinout)
 
