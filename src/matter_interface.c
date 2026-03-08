@@ -3,6 +3,7 @@
 #include <string.h>
 
 static const char *TAG = "MATTER_IF";
+static matter_command_cb_t cmd_cb = NULL;
 
 // If the SDK is available, include it here
 #ifdef CONFIG_ESP_MATTER_ENABLE
