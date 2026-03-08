@@ -33,3 +33,4 @@ CONFIG_CHIP_PROJECT_CONFIG="main/include/CHIPProjectConfig.h"
 
 # Device Identification (Default)
 CONFIG_DEVICE_TYPE_ESP32_C6=y
+CONFIG_ESP_INSIGHTS_ENABLED=n
