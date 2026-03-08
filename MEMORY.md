@@ -132,39 +132,33 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Erfolgreiche Verifikation der mDNS-Sichtbarkeit des Matter-Gerätes (`_matterc._udp`).
 *   **[DONE]** Automatisierte Test-Skripte für Factory-Reset (`factory_reset.py`) und Commissioning-Versuche (`commission_script.py`) entwickelt.
 *   **[DONE]** Entwicklung einer Prozedur zum simultanen Reset von Gerät (Factory Reset) und Matter-Server (Docker-Neustart) zur Behebung von "Stale Session"-Fehlern.
+*   **[DONE]** Tiefenanalyse des Matter-Commissioning-Fehlers via serieller Logs und Netzwerk-Diagnose.
+*   **[DONE]** Identifizierung einer Konfigurations-Inkonsistenz (aktivierte Thread-Cluster auf Wi-Fi-Gerät) als wahrscheinliche Ursache.
 
 ## 4. Neue Erkenntnisse / Probleme
 
-*   **Problem: Commissioning-Prozess hängt in der Attribut-Abfragephase.**
-    *   **Analyse:** Obwohl das Gerät nach einem Werksreset (`e`) und Neustart des Matter-Servers (`docker restart`) eine saubere Kopplungssitzung startet, hängt der Prozess in der Home Assistant App weiterhin. Die Analyse der seriellen Logs des ESP32-C6 während des Kopplungsversuchs zeigt das Kernproblem: Nach einem erfolgreichen PASE-Handshake (Sicherheits-Setup) beginnt der Matter-Controller (Home Assistant) die Fähigkeiten (Endpoints, Cluster, Attribute) des Geräts abzufragen. Hierbei treten zahlreiche `Fail to retrieve data, roll back and encode status` Fehler auf, insbesondere bei Standard-Clustern wie "Thread Network Diagnostics" (`0x0000_0035`).
-    *   **Technische Details:** Die Fehler (`err = 2d`) deuten darauf hin, dass die Firmware auf eine Attribut-Leseanforderung nicht korrekt antworten kann. Dies führt dazu, dass der Controller die Konfiguration des Geräts nicht vollständig ermitteln kann und der gesamte Prozess scheinbar endlos wartet.
-    *   **Netzwerkdiagnose:** Port-Scans bestätigen, dass der für die Kopplung (PASE) nötige TCP-Port 5540 nur während des aktiven Kopplungsfensters offen ist. Ein `Connection refused` außerhalb dieses Fensters ist normal. Der operative UDP-Port 5540 ist hingegen erreichbar. Das Problem liegt also nicht in der grundlegenden Netzwerkerreichbarkeit, sondern in der Applikationslogik nach dem Verbindungsaufbau.
-    *   **Konsequenz/Nächster Schritt:** Die Ursache ist kein reines "Stale Session"-Problem mehr, sondern ein Implementierungsfehler in der Firmware. Der Fokus muss auf die Behebung der Attribut-Reporting-Logik im ESP-Matter SDK-Interface gelegt werden.
-*   **Erkenntnis: Testumgebung mit Container-Runtime (Docker) erweitert.**
-    *   **Status:** Docker und Docker Compose wurden auf dem Raspberry Pi 5 installiert.
-    *   **Test-Setup:** Ein Home Assistant Container (`ghcr.io/home-assistant/home-assistant:stable`) und der Python Matter Server (`ghcr.io/home-assistant-libs/python-matter-server:stable`) laufen im `host`-Netzwerkmodus.
-    *   **Verifikation:** Die mDNS-Discovery (`avahi-browse`) bestätigt, dass der ESP32-C6 (`_matterc._udp`) korrekt im Netzwerk sichtbar ist und Parameter wie Discriminator (`3840`) und Vendor-ID (`0xFFF1`) publiziert.
-    *   **Konsequenz:** Die Firmware ist bereit für das Pairing mit Home Assistant. Die technische Hürde der fehlenden Runtime wurde beseitigt.
-*   **Erkenntnis: Erfolgreiche Validierung des Sensor-Pfads.**
-    *   Durch die Emulation eines Temperatursensors über das robuste Intertechno-V1-Protokoll (gesendet von einem Legacy-CUL) wurde der komplette Pfad "RF-Empfang -> Sensor-Dekodierung -> Matter Bridge -> Erstellung eines Sensor-Endpoints" erfolgreich End-to-End validiert. Die Architektur ist somit grundsätzlich in der Lage, Sensordaten korrekt an Matter zu übergeben.
+*   **Problem: Commissioning scheitert nach erfolgreichem Handshake in der Attribut-Abfrage.**
+    *   **Symptom:** Der Commissioning-Prozess in Home Assistant hängt. Das Gerät erscheint zwar teilweise in Home Assistant (als `TEST_PRODUCT`), ist aber nicht erreichbar.
+    *   **Analyse der Logs:** Die seriellen Logs des ESP32 zeigen, dass nach einem erfolgreichen PASE-Handshake (Sicherheits-Setup) der Matter-Controller beginnt, die Gerätefähigkeiten abzufragen. Dabei kommt es zu massiven Fehlern: `E (5615) chip[DMG]: Fail to retrieve data, roll back and encode status on clusterId: 0x0000_0035, attributeId: 0x0000_0000err = 2d`.
+    *   **Ursache identifiziert:** Die Fehler treten spezifisch beim Abfragen des **Thread Network Diagnostics Clusters (`0x0000_0035`)** auf. Eine Überprüfung der `sdkconfig` hat ergeben, dass diverse Thread-spezifische Cluster (`CONFIG_ESP_MATTER_ENABLE_OPENTHREAD`, `CONFIG_SUPPORT_THREAD_NETWORK_DIAGNOSTICS_CLUSTER`) fälschlicherweise für dieses reine **Wi-Fi-Gerät** aktiviert sind. Die Firmware kann die Anfragen zu diesen nicht implementierten Clustern nicht beantworten, was zum Abbruch der Konfigurationsphase führt.
+    *   **Konsequenz:** Das Problem ist kein Netzwerk- oder Session-Problem, sondern eine **Fehlkonfiguration im Build-System**, die zu einer falschen Deklaration von Gerätefähigkeiten führt.
 *   **Erkenntnis: Unzuverlässigkeit von Legacy-Hardware als Test-Sender.**
     *   **Analyse:** Wiederholte Versuche, komplexe Protokolle wie HMS oder FHT von einem Legacy-CUL zu senden, schlugen fehl. Dies deutet auf Timing-Probleme oder Inkompatibilitäten in der alten CUL-Firmware hin.
     *   **Konsequenz:** Für die zuverlässige Validierung von Decodern wurde auf die direkte Puls-Injektion (`mi`-Kommando) umgestiegen. Dies entkoppelt die Decoder-Entwicklung von der unzuverlässigen Sender-Hardware und ermöglicht präzise, wiederholbare Tests.
-*   **Erkenntnis: Verbesserte Kompatibilität mit Legacy-Hardware.**
-    *   Ein von einem Legacy CUL gesendeter langer Sync-Puls (~10ms) wurde fälschlicherweise als ITv3-Sync interpretiert, was die parallele ITv1-Dekodierung blockierte. Die Entfernung der `it3_last_sync`-Abhängigkeit im ITv1-Decoder hat dieses Kompatibilitätsproblem gelöst und die Zuverlässigkeit des Empfangs erhöht.
 *   **Erkenntnis: Irreversibilität von eFuses – Praxistest mit Konsequenzen.**
     *   **Analyse:** Die Versuche, eine signierte Firmware zu flashen, haben gezeigt, dass das 868MHz-Board **permanent aktive `SECURE_BOOT_EN` eFuses** mit einem nicht mehr verfügbaren Schlüssel hat.
-    *   **Konsequenz:** Dieses Board ist für die weitere Entwicklung effektiv unbrauchbar ("gebrickt").
-    *   **Strategische Anpassung:** Die Entwicklung wird **ausschließlich auf ungesicherter Hardware** (433MHz-Board) fortgesetzt.
-*   **Erkenntnis: Vergrößerung des Bootloaders durch Sicherheitsfeatures.**
-    *   Die Aktivierung von Secure Boot V2 und Flash Encryption vergrößert den Bootloader signifikant, was eine Anpassung der Partitionstabelle (`partitions.csv`) für gesicherte Builds erfordert. Dies ist für den aktuellen Entwicklungs-Track nicht relevant.
+    *   **Konsequenz:** Dieses Board ist für die weitere Entwicklung effektiv unbrauchbar ("gebrickt"). Die Entwicklung wird **ausschließlich auf ungesicherter Hardware** (433MHz-Board) fortgesetzt.
 
 ## 5. Nächste Schritte
 
-*   **Firmware-Debug: Behebung der Attribut-Abfragefehler (Höchste Priorität):** Analyse und Behebung der `Fail to retrieve data` Fehler, die im seriellen Log des Geräts während des Commissioning auftreten. Dies erfordert:
-    *   Untersuchung der Implementierung der problematischen Cluster (z.B. `0x0000_0035` - Thread Network Diagnostics) in der Firmware.
-    *   Sicherstellen, dass alle Standard-Cluster, die vom ESP-Matter-SDK standardmäßig aktiviert werden, korrekte Daten-Callbacks implementiert haben oder, falls nicht unterstützt, korrekt aus dem Data Model entfernt werden.
-    *   Nachschlagen des Fehlercodes `2d` in der Matter-Spezifikation zur genauen Ursachenbestimmung.
+*   **Firmware-Fix: Bereinigung der Matter-Konfiguration (Höchste Priorität):**
+    *   Deaktivieren aller Thread-spezifischen Optionen in der `sdkconfig`, insbesondere:
+        *   `CONFIG_ESP_MATTER_ENABLE_OPENTHREAD`
+        *   `CONFIG_SUPPORT_THREAD_NETWORK_DIAGNOSTICS_CLUSTER`
+        *   `CONFIG_SUPPORT_THREAD_BORDER_ROUTER_MANAGEMENT_CLUSTER`
+    *   Überprüfung der `sdkconfig` auf weitere unnötige, standardmäßig aktivierte Cluster und deren Deaktivierung, um die Firmware schlank und fehlerresistent zu halten.
+    *   Neukompilierung der Firmware und erneuter Commissioning-Test mit Home Assistant.
+*   **Build-Umgebung reparieren (Blocker):** Sicherstellen, dass die ESP-IDF Build-Umgebung voll funktionsfähig ist, indem `cmake` installiert und die `export.sh` korrekt in die Shell-Umgebung eingebunden wird.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien, sobald das Commissioning stabil ist.
 *   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (v1.1.0) und Finalisierung der Endbenutzer-Dokumentation.
 *   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.
@@ -189,11 +183,12 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 *   **Versionskontrolle:** Das Projekt wird auf GitHub verwaltet.
     *   **Repository:** `https://github.com/tostmann/culfw-ng`
-*   **Build-System:** Umgestellt auf natives **ESP-IDF (`idf.py`)** zur Lösung von Kompatibilitätsproblemen mit dem ESP-Matter SDK. Die `platformio.ini` wurde entfernt.
+*   **Build-System:** Umgestellt auf natives **ESP-IDF (`idf.py`)**.
+    *   **Anforderung:** Benötigt eine korrekt konfigurierte ESP-IDF-Toolchain, inklusive `cmake` und der `export.sh` Umgebungsvariablen.
 *   **Test-Umgebung (Systemebene):**
     *   **Technologie:** Docker und Docker Compose auf Raspberry Pi 5.
     *   **Services:**
         *   `homeassistant`: `ghcr.io/home-assistant/home-assistant:stable`
         *   `matter-server`: `ghcr.io/home-assistant-libs/python-matter-server:stable`
     *   **Konfiguration:** Beide Container laufen im `host`-Netzwerkmodus, um mDNS-Discovery und direkte Kommunikation mit dem ESP32-C6 zu ermöglichen.
-    *   **Test-Skripte:** Python-Skripte für automatisierte Tests, inkl. Factory-Reset (`factory_reset.py`) und Commissioning-Versuche (`commission_script.py`).
+    *   **Test-Skripte:** Python-Skripte für automatisierte Tests, inkl. Factory-Reset (`force_reset.py`) und Log-Erfassung (`capture_boot.py`).
