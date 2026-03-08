@@ -117,6 +117,10 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Finale Matter SDK-Integration: Projektstruktur auf ESP-IDF-Standard (`main/`) umgestellt, Abhängigkeiten (`idf_component.yml`) deklariert.
 *   **[DONE]** C/C++ Interoperabilität: C-Wrapper (`matter_interface.cpp`) für Matter SDK implementiert und mit `extern "C"` für die Einbindung in das restliche C-Projekt kompatibel gemacht.
 *   **[DONE]** Strategische Migration des Build-Systems von PlatformIO zu nativem ESP-IDF (`idf.py`) zur Behebung von SDK-Kompatibilitätsproblemen vollzogen.
+*   **[DONE]** Behebung von Build-Fehlern unter ESP-IDF: Korrektur von Include-Pfaden, Übernahme von Pin-Definitionen in `CMakeLists.txt` und Anpassung der Flash-Größe.
+*   **[DONE]** Behebung von Linker-Fehlern durch Aktivierung notwendiger SDK-Komponenten (`CONFIG_MBEDTLS_HKDF_C=y`).
+*   **[DONE]** Erfolgreiche Kompilierung des Projekts mit voll aktiviertem ESP-Matter SDK.
+*   **[DONE]** Konfiguration der Hardware-Sicherheitsfeatures (Secure Boot V2, Flash Encryption) in `sdkconfig.defaults` zur Härtung des IP-Schutzes.
 
 ## 4. Neue Erkenntnisse / Probleme
 
@@ -127,6 +131,8 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
         2.  **Ignorierte Quellcode-Ausschlüsse:** Anweisungen zum Ausschluss von fehlerhaften Quelldateien (z.B. `closure-control-cluster-logic.cpp`) in der `CMakeLists.txt` einer Komponente werden von PlatformIO ignoriert, was die Anwendung von Workarounds für SDK-Bugs verhindert.
     *   **Konsequenz:** Die Notwendigkeit, kontinuierlich fragile "Hacks" (z.B. Pre-Build-Skripte, manuelles Leeren von Quelldateien) zu implementieren, ist für die Entwicklung eines stabilen, kommerziellen Produkts nicht tragfähig.
     *   **Entscheidung:** Das Projekt wurde vollständig auf den nativen ESP-IDF-Toolchain (`idf.py`) umgestellt, um einen stabilen, vorhersagbaren und wartbaren Build-Prozess zu gewährleisten.
+*   **Erkenntnis (Migration von Build-Flags):** Wichtige projektweite Definitionen (insbesondere Hardware-Pin-Belegungen), die zuvor in der `platformio.ini` (`build_flags`) definiert waren, müssen sorgfältig in die `CMakeLists.txt` der `main`-Komponente als `target_compile_definitions` übertragen werden, um Compile-Fehler zu vermeiden.
+*   **Erkenntnis (Abhängigkeitsmanagement im ESP-IDF):** Die Migration zu nativem IDF zeigt, wie kritisch die `sdkconfig`-Konfiguration ist. Ein Linker-Fehler (`undefined reference to 'mbedtls_hkdf'`) innerhalb des Matter SDKs konnte nur durch die Aktivierung eines spezifischen Flags (`CONFIG_MBEDTLS_HKDF_C`) in der MbedTLS-Komponente behoben werden. Dies verdeutlicht, dass Build-Flags und Komponenteneinstellungen tiefgreifende Auswirkungen auf die gesamte Anwendung haben.
 *   **Architektur-Anpassung (ESP-IDF-Kompatibilität):** Für die Integration des Matter-SDKs musste die Projektstruktur vom PlatformIO-Standard (`src/`) auf eine ESP-IDF-kompatible Struktur mit einem `main`-Komponentenverzeichnis umgestellt werden. Dies war notwendig, da das Build-System des SDKs eine Komponente namens `main` erwartet.
 *   **Erkenntnis (C/C++ Interoperabilität bei SDKs):** Das ESP-Matter SDK ist in C++ implementiert. Die Integration in ein bestehendes C-Projekt erfordert die Umstellung der Schnittstellen-Module (z.B. `matter_interface.c`) auf C++ (`.cpp`) und die Sicherstellung der C-Linkage für den Rest des Projekts über `extern "C"` im Header, um Linker-Fehler zu vermeiden.
 *   **Erkenntnis (Neue SDK-Abhängigkeiten):** Das Matter-SDK erfordert die Aktivierung und Konfiguration zusätzlicher Systemkomponenten, insbesondere Bluetooth LE (für die Inbetriebnahme), IPv6 und mDNS, die in den `sdkconfig.defaults` explizit aktiviert werden müssen.
@@ -140,10 +146,9 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **Korrektur der Build-Konfiguration (CMake):** Anpassung der Include-Pfade in der `main/CMakeLists.txt`, um die "Header not found"-Fehler zu beheben und einen ersten erfolgreichen Build mit `idf.py` zu erreichen.
-*   **Aktivierung der Matter-Funktionalität:** Umstellung des Codes im `matter_interface.cpp` vom Simulations-Modus auf die echten SDK-Funktionsaufrufe für die Endpoint-Erstellung und Attribut-Updates.
-*   **IP-Schutz Härtung:** Aktivierung der ESP32-C6 Hardware-Sicherheitsfeatures **Secure Boot V2** und **Flash Encryption**, um die 3-Säulen-Strategie zu vervollständigen.
-*   **System-Validierung:** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
+*   **Validierung des Matter-Builds:** Flashen des finalen Binaries auf die Zielhardware und Durchführung eines vollständigen Matter-Commissioning-Prozesses mit einem handelsüblichen Controller (z.B. Apple Home), um die korrekte Funktion der Zertifikate (DAC) zu verifizieren.
+*   **System-Validierung (Security):** Testen der aktivierten Hardware-Sicherheitsfeatures. Überprüfen, ob das Flashen von nicht signierter Firmware durch Secure Boot V2 verhindert wird.
+*   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
 *   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (v1.1.0) und Finalisierung der Endbenutzer-Dokumentation.
 
 ## 6. Hardware-Konfiguration (Pinout)
