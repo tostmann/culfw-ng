@@ -134,14 +134,12 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Entwicklung einer Prozedur zum simultanen Reset von Gerät (Factory Reset) und Matter-Server (Docker-Neustart) zur Behebung von "Stale Session"-Fehlern.
 *   **[DONE]** Tiefenanalyse des Matter-Commissioning-Fehlers via serieller Logs und Netzwerk-Diagnose.
 *   **[DONE]** Identifizierung einer Konfigurations-Inkonsistenz (aktivierte Thread-Cluster auf Wi-Fi-Gerät) als wahrscheinliche Ursache.
+*   **[DONE]** **Build-Umgebung gehärtet:** Probleme mit der ESP-IDF-Toolchain (fehlendes `cmake` im PATH) behoben und einen stabilen Build-Prozess mit `idf.py` sichergestellt.
+*   **[DONE]** **Fehlerbehebung Matter-Commissioning:** Alle Thread-spezifischen Matter-Cluster (`CONFIG_ESP_MATTER_ENABLE_OPENTHREAD` etc.) in der `sdkconfig` für das reine Wi-Fi-Gerät deaktiviert, um Konflikte während des Interviews zu beheben.
+*   **[DONE]** **Release-Management:** Firmware-Version für den Commissioning-Fix auf **v1.1.0 (Build 7)** aktualisiert.
 
 ## 4. Neue Erkenntnisse / Probleme
 
-*   **Problem: Commissioning scheitert nach erfolgreichem Handshake in der Attribut-Abfrage.**
-    *   **Symptom:** Der Commissioning-Prozess in Home Assistant hängt. Das Gerät erscheint zwar teilweise in Home Assistant (als `TEST_PRODUCT`), ist aber nicht erreichbar.
-    *   **Analyse der Logs:** Die seriellen Logs des ESP32 zeigen, dass nach einem erfolgreichen PASE-Handshake (Sicherheits-Setup) der Matter-Controller beginnt, die Gerätefähigkeiten abzufragen. Dabei kommt es zu massiven Fehlern: `E (5615) chip[DMG]: Fail to retrieve data, roll back and encode status on clusterId: 0x0000_0035, attributeId: 0x0000_0000err = 2d`.
-    *   **Ursache identifiziert:** Die Fehler treten spezifisch beim Abfragen des **Thread Network Diagnostics Clusters (`0x0000_0035`)** auf. Eine Überprüfung der `sdkconfig` hat ergeben, dass diverse Thread-spezifische Cluster (`CONFIG_ESP_MATTER_ENABLE_OPENTHREAD`, `CONFIG_SUPPORT_THREAD_NETWORK_DIAGNOSTICS_CLUSTER`) fälschlicherweise für dieses reine **Wi-Fi-Gerät** aktiviert sind. Die Firmware kann die Anfragen zu diesen nicht implementierten Clustern nicht beantworten, was zum Abbruch der Konfigurationsphase führt.
-    *   **Konsequenz:** Das Problem ist kein Netzwerk- oder Session-Problem, sondern eine **Fehlkonfiguration im Build-System**, die zu einer falschen Deklaration von Gerätefähigkeiten führt.
 *   **Erkenntnis: Unzuverlässigkeit von Legacy-Hardware als Test-Sender.**
     *   **Analyse:** Wiederholte Versuche, komplexe Protokolle wie HMS oder FHT von einem Legacy-CUL zu senden, schlugen fehl. Dies deutet auf Timing-Probleme oder Inkompatibilitäten in der alten CUL-Firmware hin.
     *   **Konsequenz:** Für die zuverlässige Validierung von Decodern wurde auf die direkte Puls-Injektion (`mi`-Kommando) umgestiegen. Dies entkoppelt die Decoder-Entwicklung von der unzuverlässigen Sender-Hardware und ermöglicht präzise, wiederholbare Tests.
@@ -151,16 +149,9 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **Firmware-Fix: Bereinigung der Matter-Konfiguration (Höchste Priorität):**
-    *   Deaktivieren aller Thread-spezifischen Optionen in der `sdkconfig`, insbesondere:
-        *   `CONFIG_ESP_MATTER_ENABLE_OPENTHREAD`
-        *   `CONFIG_SUPPORT_THREAD_NETWORK_DIAGNOSTICS_CLUSTER`
-        *   `CONFIG_SUPPORT_THREAD_BORDER_ROUTER_MANAGEMENT_CLUSTER`
-    *   Überprüfung der `sdkconfig` auf weitere unnötige, standardmäßig aktivierte Cluster und deren Deaktivierung, um die Firmware schlank und fehlerresistent zu halten.
-    *   Neukompilierung der Firmware und erneuter Commissioning-Test mit Home Assistant.
-*   **Build-Umgebung reparieren (Blocker):** Sicherstellen, dass die ESP-IDF Build-Umgebung voll funktionsfähig ist, indem `cmake` installiert und die `export.sh` korrekt in die Shell-Umgebung eingebunden wird.
+*   **Verifikation des Commissioning-Fixes (Höchste Priorität):** Durchführung eines vollständigen Commissioning-Prozesses mit Home Assistant. Dies beinhaltet das Löschen des alten, fehlerhaften Geräts und einen Neustart des Matter-Server-Containers, um "Stale Session"-Fehler durch gecachte Daten zu vermeiden.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien, sobald das Commissioning stabil ist.
-*   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (v1.1.0) und Finalisierung der Endbenutzer-Dokumentation.
+*   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (**v1.1.0**) und Finalisierung der Endbenutzer-Dokumentation.
 *   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.
 
 ## 6. Hardware-Konfiguration (Pinout)
