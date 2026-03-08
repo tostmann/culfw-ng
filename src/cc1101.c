@@ -159,6 +159,20 @@ void cc1101_set_idle_mode() {
     cc1101_unlock();
 }
 
+void cc1101_set_frequency_raw(uint32_t freq_hz) {
+    // Freq = (F_osc / 2^16) * FREQ[23..0]
+    // FREQ[23..0] = Freq * 2^16 / F_osc
+    // F_osc = 26.000.000 Hz
+    uint64_t freq_reg = ((uint64_t)freq_hz << 16) / 26000000;
+    
+    cc1101_lock();
+    cc1101_cmd_strobe(CC1101_SIDLE);
+    cc1101_write_reg(0x0D, (freq_reg >> 16) & 0xFF);
+    cc1101_write_reg(0x0E, (freq_reg >> 8) & 0xFF);
+    cc1101_write_reg(0x0F, freq_reg & 0xFF);
+    cc1101_unlock();
+}
+
 void cc1101_set_frequency(bool is_433) {
     cc1101_is_433_flag = is_433;
     
@@ -169,18 +183,11 @@ void cc1101_set_frequency(bool is_433) {
         nvs_close(my_handle);
     }
 
-    cc1101_lock();
-    cc1101_cmd_strobe(CC1101_SIDLE);
     if (is_433) {
-        cc1101_write_reg(0x0D, 0x10); 
-        cc1101_write_reg(0x0E, 0xB3); 
-        cc1101_write_reg(0x0F, 0x3B); 
+        cc1101_set_frequency_raw(433920000);
     } else {
-        cc1101_write_reg(0x0D, 0x21); 
-        cc1101_write_reg(0x0E, 0x65); 
-        cc1101_write_reg(0x0F, 0x6A); 
+        cc1101_set_frequency_raw(868300000);
     }
-    cc1101_unlock();
     cc1101_set_rx_mode();
 }
 
