@@ -149,7 +149,8 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **Praktische Validierung des Matter-Commissioning:** Durchführung eines vollständigen Matter-Commissioning-Prozesses mit einem handelsüblichen Controller (z.B. Apple Home, Google Home) auf der jetzt laufenden ungesicherten Firmware, um die grundlegende Funktionalität der Einbindung in ein Smarthome-Ökosystem zu verifizieren.
+*   **Matter End-to-End Test (RX-Pfad):** Analyse der `Node does not exist...` Boot-Warnung. Anschließend Validierung des gesamten Empfangspfads durch Senden eines emulierten Sensorsignals (z.B. HMS) mit einem Legacy CUL und Überprüfung, ob das Gerät korrekt als Matter-Endpoint auf dem CULFW-NG erscheint.
+*   **Praktische Validierung des Matter-Commissioning:** Nach dem erfolgreichen End-to-End-Test ist ein vollständiger Matter-Commissioning-Prozess mit einem handelsüblichen Controller (z.B. Apple Home, Google Home) durchzuführen, um die Funktionalität der Einbindung zu verifizieren.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
 *   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.
 *   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (v1.1.0) und Finalisierung der Endbenutzer-Dokumentation.
