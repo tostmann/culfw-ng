@@ -317,14 +317,15 @@ void slowrf_task(void *pvParameters) {
                     }
                     if (it1_dec.pos == 12 && !it3_last_sync) {
                         slowrf_output_packet("is", it1_dec.s, rssi);
-                        // IT V1: last char 'F' or '0' usually means ON/OFF. 
-                        // Simplification for demo: treat as switch
-                        matter_bridge_report_event(it1_dec.s, DEVICE_TYPE_SWITCH, (it1_dec.s[11] == '0' ? 0.0 : 1.0));
+                        char id[17]; strcpy(id, it1_dec.s);
+                        id[11] = 'X'; // Mask state bit in ID
+                        matter_bridge_report_event(id, DEVICE_TYPE_SWITCH, (it1_dec.s[11] == '0' ? 0.0 : 1.0));
                     }
                     if (it3_dec.bit_pos == 32) {
                         slowrf_output_packet("is", it3_dec.s, rssi);
-                        // IT V3: Bit 18 is On/Off
-                        matter_bridge_report_event(it3_dec.s, DEVICE_TYPE_SWITCH, (it3_dec.s[18] == '1' ? 1.0 : 0.0));
+                        char id[33]; strcpy(id, it3_dec.s);
+                        id[18] = 'X'; // Mask state bit in ID
+                        matter_bridge_report_event(id, DEVICE_TYPE_SWITCH, (it3_dec.s[18] == '1' ? 1.0 : 0.0));
                     }
                     if (os_dec.nibble_cnt >= 16) {
                         char d[64]; int dlen = 0;
