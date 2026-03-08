@@ -18,6 +18,8 @@ Diese Firmware ist culfw-kompatibel und erweitert um ESP32-spezifische Funktione
 | `W<reg><val>` | Schreibt ein CC1101 Register (Hex) | `W0F3B` |
 | `TX1` | Schaltet den Sendeträger permanent EIN (Test) | `TX1` |
 | `TX0` | Schaltet den Sendeträger AUS | `TX0` |
+| `e` | Factory Reset (löscht NVS-Speicher und startet neu) | `e` |
+| `l00` / `l01`| LED Manuell aus- oder einschalten | `l01` |
 
 ## Protokoll-Kommandos (Senden)
 
