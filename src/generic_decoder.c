@@ -98,9 +98,12 @@ static void generic_decoder_output_packet(rf_proto_internal_t *p, uint64_t data,
     
     // Also notify Matter Bridge
     char id_str[64];
-    // Heuristic: Use name + upper bits as ID, last 8 bits as value
-    snprintf(id_str, sizeof(id_str), "%s_%llX", p->name, (data >> 8));
-    matter_bridge_report_event(id_str, p->name, p->matter_type == 1 ? DEVICE_TYPE_TEMP_SENSOR : DEVICE_TYPE_SWITCH, (float)(data & 0xFF));
+    uint8_t shift = (p->id_ignore_bits > 0) ? p->id_ignore_bits : 8;
+    uint64_t id_val = (data >> shift);
+    float val = (float)(data & ((1ULL << shift) - 1));
+
+    snprintf(id_str, sizeof(id_str), "%s_%llX", p->name, id_val);
+    matter_bridge_report_event(id_str, p->name, p->matter_type == 1 ? DEVICE_TYPE_TEMP_SENSOR : DEVICE_TYPE_SWITCH, val);
 }
 
 // Helper to flatten JSON pairs into sequence
