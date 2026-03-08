@@ -34,6 +34,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
     *   **Dateisystem:** Integration eines **SPIFFS-Dateisystems** zur Speicherung einer flexiblen Protokoll-Datenbank (`protocols.json`). Ein Fallback-Mechanismus lädt einen hartcodierten Default, falls die Datei fehlt.
     *   **Table-Driven Decoding Engine:** Anstelle von fest einkompilierten Decodern wird eine generische Engine die Pulsfolgen mit den in `protocols.json` definierten Mustern abgleichen. Das JSON-Format nutzt ein `timing`-Objekt mit Multiplikatoren für eine kompakte und flexible Definition. Die Protokolldatenbank kann zur Laufzeit über das `GR`-Kommando (Generic Reload) neu geladen werden.
     *   **Matter-Architektur:** Der Stick wird als **Matter Aggregator (Bridge)** implementiert. Nur das Gateway wird einmalig gepaired. Erkannte SlowRF-Geräte werden als dynamische **Endpoints** (z.B. Temperatursensor, Schalter) im Matter-Netzwerk on-the-fly angelegt und über eine **"Dynamic Endpoint Registry"** (`matter_bridge.c`) verwaltet. Die Anwendungslogik ist gegen eine **API-Interface-Schicht** (`matter_interface.h`) entwickelt, um die Kompilierbarkeit ohne das vollständige SDK zu gewährleisten (Simulations-Modus).
+    *   **Matter Endpoint ID-Masking:** Um die Proliferation von Endpoints zu verhindern (z.B. ON/OFF-Befehle derselben Fernbedienung), wird eine ID-Maskierung verwendet. Statusbits im RF-Code werden bei der Generierung der Endpoint-ID durch ein 'X' ersetzt, sodass ein physisches Gerät immer demselben Matter-Endpoint zugeordnet wird.
 *   **Bivalenter Betriebsmodus (Hybride Intelligenz):** Die Firmware ist umschaltbar gestaltet, um die Stärken von CUL und SIGNALduino zu vereinen.
     *   **CUL-Modus (`X21`):** 100%ige Kompatibilität zum etablierten CUL-Protokoll. Ausgabe generischer Protokolle mit neuem `G`-Präfix (`G<Name><Daten>...`).
     *   **SIGNALduino-Modus (`X25`):** Vollständige Emulation eines SIGNALduino mit Rohdaten-Ausgabe (`MU;...` für unbekannte, `MS;...` für bekannte Protokolle). Die Ausgabe erfolgt über eine zentrale `slowrf_output_packet`-Funktion. Die `MU`-Ausgabe wird unterdrückt, wenn ein Decoder (fest oder generisch) das Signal erfolgreich verarbeitet hat.
@@ -103,25 +104,27 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Implementierung und Validierung eines Test-Kommandos (`mi`) zur Injektion von Puls-Sequenzen.
 *   **[DONE]** Anpassung des `mi`-Kommandos auf 16-Bit-Werte (`mi<HEX4>`) für lange Pulse (>2.55ms).
 *   **[DONE]** Erfolgreiche Validierung des Generic Decoders mit injizierten Nexa- und Intertechno-V1-Signalen.
-*   **[DONE]** Erhöhung der Puffergrößen im Kommando-Parser zur Verarbeitung langer Test-Kommandos.
+*   **[DONE]** Erhöhung der Puffergrößen im Kommando-Parser (1024 Bytes) zur Verarbeitung langer Test-Kommandos.
 *   **[DONE]** Verfeinerung des SIGNALduino `MS;` Ausgabeformats für den Generic Decoder.
 *   **[DONE]** Absicherung der seriellen Ausgabe (`usb_serial_jtag_write_bytes`) gegen Datenverlust durch `portMAX_DELAY`.
+*   **[DONE]** Erweiterung der Matter-Bridge Logik um ID-Maskierung zur Gruppierung von physischen Geräten.
+*   **[DONE]** Erweiterung von `protocols.json` um ein `"type"`-Feld (`switch`/`sensor`) zur korrekten Matter-Endpoint-Erstellung.
 
 ## 4. Neue Erkenntnisse / Probleme
 
 *   **Architektur-Korrektur (Single-Core):** Der ESP32-C6 ist ein **Single-Core Prozessor (RISC-V)**. Die RTOS-Architektur wurde auf ein Single-Core-Modell mit **Task-Priorisierung** als primäres Steuerungsinstrument umgestellt, um die Echtzeitfähigkeit zu gewährleisten.
 *   **Architektur-Verfeinerung (Initialisierung):** Die Initialisierungs-Sequenz wurde angepasst. `config_loader_load_protocols()` wird nun in `app_main` ausgeführt, *bevor* die `slowrf_task` startet. Die `generic_decoder_init()`-Funktion innerhalb des Tasks wurde modifiziert, sodass sie nur noch die Decoder-*Zustände* zurücksetzt, aber nicht die bereits geladenen Protokoll-Definitionen, um eine Race Condition zu vermeiden.
-*   **Architektur-Verfeinerung (JSON-Format):** Das `protocols.json`-Format wurde optimiert. Anstatt starrer Timing-Werte wie `sync_low` werden nun Multiplikatoren der Basis-Pulsbreite (`short`) verwendet (z.B. `"sync": [{"h": 1, "l": 10}]`). Dies erhöht die Lesbarkeit und Flexibilität der Protokolldefinitionen.
-*   **Erkenntnis (Test-Infrastruktur):** Die Validierung des Generic Decoders erforderte ein neues Diagnosekommando (`mi<HEX>`), um exakte Pulsfolgen in die RX-Pipeline einzuspeisen. Dieses Kommando musste auf 16-Bit-Werte erweitert werden, um lange Sync-Pulse (z.B. > 2.55ms) abbilden zu können.
-*   **Problem (Injektionstest):** Bei langen Bit-Folgen (z.B. Nexa 32-Bit) kommt es im automatisierten Testskript zu Timeouts oder Dekodierungsfehlern. Dies deutet auf mögliche Timing- oder Pufferprobleme im Test-Host oder bei der seriellen Übertragung hin, da kürzere Sequenzen (IT-V1 12-Bit) stabil funktionieren.
+*   **Architektur-Verfeinerung (JSON-Format):** Das `protocols.json`-Format wurde optimiert. Anstatt starrer Timing-Werte werden Multiplikatoren der Basis-Pulsbreite (`short`) verwendet (z.B. `"sync": [{"h": 1, "l": 10}]`). Zusätzlich wurde ein `"type"`-Feld (z.B. `"switch"`) eingeführt, um die korrekte Zuordnung im Matter-Gateway zu ermöglichen.
+*   **Architektur-Verfeinerung (Matter-Gruppierung):** Um zu verhindern, dass für jeden Befehl (z.B. ON/OFF) ein neues Matter-Gerät angelegt wird, wurde eine **ID-Maskierungslogik** in der Matter-Bridge implementiert. Diese ersetzt Status-Bits in der RF-ID durch ein 'X', um eine stabile, gerätespezifische ID für die Endpoint-Registrierung zu schaffen.
+*   **Erkenntnis (Test-Infrastruktur):** Die Validierung des Generic Decoders erforderte ein neues Diagnosekommando (`mi<HEX>`), um exakte Pulsfolgen in die RX-Pipeline einzuspeisen. Dieses Kommando musste auf 16-Bit-Werte erweitert werden, um lange Sync-Pulse (z.B. > 2.55ms) abbilden zu können. Die Stabilität der seriellen Schnittstelle musste durch größere Puffer und blockierende Schreibvorgänge gehärtet werden, um die langen Test-Kommandos zuverlässig zu verarbeiten.
 
 ## 5. Nächste Schritte
 
-*   **Stabilitätstests:** Durchführung von Langzeittests im hybriden Matter-Gateway-Betrieb mit aktiver WiFi-Verbindung, Web-Interface und realen Funksignalen.
-*   **Test-Infrastruktur:** Analyse und Behebung der Instabilität bei der Injektion langer Puls-Sequenzen (32-Bit+).
+*   **Stabilitätstests:** Durchführung von Langzeittests im hybriden Matter-Gateway-Betrieb mit aktiver WiFi-Verbindung, Web-Interface und realen (verrauschten) Funksignalen.
 *   **SIGNALduino Kompatibilität:** Endgültige Verifizierung der `MS;`-Ausgabeformate mit einem realen Host-System (z.B. FHEM).
-*   **Protokoll-DB Erweiterung:** Hinzufügen weiterer OOK-Protokolle (z.B. Somfy RTS, Ambient Weather) zur `protocols.json`.
+*   **Protokoll-DB Erweiterung:** Hinzufügen weiterer OOK-Protokolle zur `protocols.json`, insbesondere eines Sensor-Protokolls (z.B. Oregon V2/V3), um den Sensor-Pfad der Matter-Bridge zu validieren.
 *   **Code-Bereinigung:** Entfernen von überflüssigen Debug-Logs aus dem `generic_decoder` für eine saubere Release-Version.
+*   **Matter SDK-Integration:** Vorbereitung des Wechsels vom Simulations-Modus (`matter_interface.c`) zur echten ESP-Matter SDK-Implementierung.
 
 ## 6. Hardware-Konfiguration (Pinout)
 
