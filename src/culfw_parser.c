@@ -215,6 +215,11 @@ void handle_command(char *cmd) {
         gpio_set_level(GPIO_LED, 1);
         cc1101_set_rx_mode();
         len = snprintf(out, sizeof(out), "m OK\r\n");
+    } else if (cmd[0] == 'Y') {
+        if (cmd[1] == 's') { // Ys<HEX> - Somfy
+            cc1101_send_somfy(cmd + 2);
+            len = snprintf(out, sizeof(out), "Ys OK\r\n");
+        }
     } else if (cmd[0] == 'T') {
         if (cmd[1] == 'r') {
             len = snprintf(out, sizeof(out), "Tr START\r\n");
