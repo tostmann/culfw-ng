@@ -121,18 +121,22 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Behebung von Linker-Fehlern durch Aktivierung notwendiger SDK-Komponenten (`CONFIG_MBEDTLS_HKDF_C=y`).
 *   **[DONE]** Erfolgreiche Kompilierung des Projekts mit voll aktiviertem ESP-Matter SDK.
 *   **[DONE]** Konfiguration der Hardware-Sicherheitsfeatures (Secure Boot V2, Flash Encryption) in `sdkconfig.defaults` zur Härtung des IP-Schutzes.
-*   **[DONE]** Erfolgreicher Boot und Start der Matter-Dienste auf ungesicherter Hardware nach Deaktivierung der Security-Features.
+*   **[DONE]** Erfolgreiche Diagnose des Hardware-Sicherheitsstatus mittels `espefuse.py` (Bestätigung: 1x Board "gebrickt", 1x Board offen).
+*   **[DONE]** Erfolgreicher Build und Flash einer **unverschlüsselten** Firmware auf offener Hardware.
+*   **[DONE]** Erfolgreicher Boot der Firmware: WiFi-Verbindung und Matter-Dienste starten korrekt auf dem Zielgerät.
 
 ## 4. Neue Erkenntnisse / Probleme
 
-*   **Erkenntnis: Irreversibilität von eFuses und Implikationen für den Entwicklungsprozess.**
-    *   **Analyse:** Eine Untersuchung der Hardware mit `espefuse.py` hat ergeben, dass die Entwicklungsboards unterschiedliche Sicherheitslevel aufweisen. Auf einem der Boards (868MHz-Variante) wurde das `SECURE_BOOT_EN` eFuse permanent aktiviert und mit einem **nicht mehr verfügbaren Schlüssel** verheiratet.
-    *   **Konsequenz:** Dieses Board akzeptiert **nur** noch Firmware, die mit dem originalen, verlorenen Schlüssel signiert ist. Auf diesem Board kann keine neue (oder unsignierte) Firmware mehr geflasht werden. Es ist für die flexible Entwicklung unbrauchbar ("gebrickt") und verhält sich wie ein Produktionsgerät.
-    *   **Strategische Anpassung:** Die Entwicklung wird vorerst **ausschließlich auf ungesicherter Hardware** (433MHz-Board ohne aktive Security-eFuses) und mit deaktivierten Secure-Boot/Encryption-Features im Build fortgesetzt.
+*   **Erkenntnis: Irreversibilität von eFuses – Praxistest mit Konsequenzen.**
+    *   **Analyse:** Die Versuche, eine signierte Firmware zu flashen, sowie die anschließende Diagnose mit `espefuse.py` haben die Annahmen bestätigt und vertieft. Das 868MHz-Board hat **permanent aktive `SECURE_BOOT_EN` eFuses** und einen fest eingebrannten, nicht mehr verfügbaren Schlüssel.
+    *   **Konsequenz:** Dieses Board akzeptiert **nur** noch Firmware, die mit dem originalen, verlorenen Schlüssel signiert ist. Nachdem wir den Flash-Speicher mit einer neu signierten (und damit für dieses Board ungültigen) Firmware überschrieben haben, ist es für die weitere Entwicklung effektiv unbrauchbar ("gebrickt") und kann nicht mehr geflasht werden.
+    *   **Strategische Anpassung:** Die Entwicklung wird **ausschließlich auf ungesicherter Hardware** (433MHz-Board ohne aktive Security-eFuses) und mit deaktivierten Secure-Boot/Encryption-Features im Build fortgesetzt.
 *   **Erkenntnis: Vergrößerung des Bootloaders durch Sicherheitsfeatures.**
     *   **Problem:** Die Aktivierung von Secure Boot V2 und Flash Encryption fügt dem Bootloader erhebliche Mengen an Code für Signaturverifizierung und Entschlüsselungsroutinen hinzu. Dies führte dazu, dass der Bootloader die im Standard-Partitionsschema vorgesehene Größe von 32 KB (`0x8000`) überschritt.
-    *   **Konsequenz:** Der Build-Prozess schlug fehl, da der Bootloader nicht in die für ihn vorgesehene Partition passte.
-    *   **Lösung (für gesicherten Build):** Die `partitions.csv` musste angepasst werden, um den Start-Offset der App-Partition (z.B. auf `0x20000`) zu verschieben und somit dem Bootloader mehr Platz einzuräumen. Für den aktuellen ungesicherten Build wurde dies zurückgesetzt.
+    *   **Konsequenz:** Der Build-Prozess für eine gesicherte Firmware schlägt ohne Anpassungen fehl.
+    *   **Lösung (nur für gesicherten Build relevant):** Die `partitions.csv` musste angepasst werden, um den Start-Offset der App-Partition (z.B. auf `0x20000`) zu verschieben. Für den aktuellen ungesicherten Entwicklungs-Track wurde diese Änderung zurückgenommen.
+*   **Erkenntnis: Validierung der Toolchain und Architektur.**
+    *   Der erfolgreiche Boot der voll-integrierten Firmware (inkl. aller Tasks, Treiber und des kompletten Matter SDKs) auf realer Hardware bestätigt die Korrektheit der Migration zu ESP-IDF und der gewählten Systemarchitektur. Das System ist stabil und die Matter-Dienste starten wie erwartet.
 *   **Strategische Entscheidung: Migration von PlatformIO zu nativem ESP-IDF.**
     *   **Problem:** Das PlatformIO-Build-System erwies sich bei der Integration des hochkomplexen `esp-matter`-SDKs als unzuverlässig und fehleranfällig (z.B. bei der Einbettung von Binärdaten für Zertifikate).
     *   **Entscheidung:** Das Projekt wurde vollständig auf den nativen ESP-IDF-Toolchain (`idf.py`) umgestellt, um einen stabilen, vorhersagbaren und wartbaren Build-Prozess zu gewährleisten. Dies hat alle Build-Probleme gelöst.
@@ -144,7 +148,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **Validierung des Matter-Builds:** Durchführung eines vollständigen Matter-Commissioning-Prozesses mit einem handelsüblichen Controller (z.B. Apple Home, Google Home) auf der jetzt laufenden ungesicherten Firmware, um die grundlegende Funktionalität zu verifizieren.
+*   **Praktische Validierung des Matter-Commissioning:** Durchführung eines vollständigen Matter-Commissioning-Prozesses mit einem handelsüblichen Controller (z.B. Apple Home, Google Home) auf der jetzt laufenden ungesicherten Firmware, um die grundlegende Funktionalität der Einbindung in ein Smarthome-Ökosystem zu verifizieren.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
 *   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.
 *   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (v1.1.0) und Finalisierung der Endbenutzer-Dokumentation.
