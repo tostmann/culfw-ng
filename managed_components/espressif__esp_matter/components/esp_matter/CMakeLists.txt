@@ -11,7 +11,6 @@ set(INCLUDE_DIRS_LIST   "."
 
 # TODO: This file has compilation errors
 set(EXCLUDE_SRCS_LIST "${MATTER_SDK_PATH}/src/app/clusters/closure-control-server/closure-control-server.cpp")
-list(APPEND EXCLUDE_SRCS_LIST "${MATTER_SDK_PATH}/src/app/clusters/closure-control-server/closure-control-cluster-logic.cpp")
 list(APPEND EXCLUDE_SRCS_LIST "${MATTER_SDK_PATH}/src/app/clusters/general-commissioning-server/TemporaryTestCoupling.cpp")
 
 if (CONFIG_ESP_MATTER_ENABLE_MATTER_SERVER)
