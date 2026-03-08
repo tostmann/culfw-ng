@@ -57,6 +57,25 @@
         "min": 32,
         "max": 32
       }
+    },
+    {
+      "name": "Bresser_Temp",
+      "type": "sensor",
+      "freq": 868,
+      "timing": {
+        "short": 500,
+        "long": 1000,
+        "tolerance": 200
+      },
+      "definitions": {
+        "bit0": [ {"h": 1, "l": 1} ],
+        "bit1": [ {"h": 2, "l": 1} ],
+        "sync": [ {"h": 1, "l": 4} ]
+      },
+      "len": {
+        "min": 24,
+        "max": 40
+      }
     }
   ]
 }
