@@ -294,12 +294,9 @@ void generic_decoder_process_pulse(uint16_t duration, uint8_t level) {
                 bool bit1_complete = (s->match_bit1 && s->bit1_match_idx >= p->bit1_len);
                 
                 if (bit0_complete && bit1_complete) {
-                    // Ambiguous! (e.g. bit0 is prefix of bit1)
-                    // We need more pulses to decide.
-                    // Assuming no prefix codes for now.
-                    // Prefer Bit 1? Or Error?
-                    // For now: reset.
-                     reset_state(s);
+                    // Ambiguous! 
+                    ESP_LOGW(TAG, "%s: Bit ambiguity (0 & 1 complete)", p->name);
+                    reset_state(s);
                 } else if (bit0_complete) {
                     // Found Bit 0
                     s->bit_buffer = (s->bit_buffer << 1) | 0;
