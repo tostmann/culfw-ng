@@ -89,9 +89,11 @@ esp_err_t cc1101_init() {
     cc1101_write_reg(0x0C, 0x00); 
     
     if (cc1101_is_433_flag) {
+        // 433.92 MHz
+        // Freq = 433.92e6 / (26e6 / 2^16) = 1093745 = 0x10B071
         cc1101_write_reg(0x0D, 0x10); 
-        cc1101_write_reg(0x0E, 0xB3); 
-        cc1101_write_reg(0x0F, 0x3B); 
+        cc1101_write_reg(0x0E, 0xB0); 
+        cc1101_write_reg(0x0F, 0x71); 
     } else {
         cc1101_write_reg(0x0D, 0x21); 
         cc1101_write_reg(0x0E, 0x65); 
