@@ -35,7 +35,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
     *   **Dateisystem:** Integration eines **SPIFFS-Dateisystems** zur Speicherung einer flexiblen, **verschlüsselten** Protokoll-Datenbank (`protocols.enc`). Ein Fallback-Mechanismus lädt einen hartcodierten Default, falls die Datei fehlt.
     *   **Table-Driven Decoding Engine:** Anstelle von fest einkompilierten Decodern wird eine generische Engine (`generic_decoder.c`) die Pulsfolgen mit den in der Protokolldatenbank definierten Mustern abgleichen. Die JSON-Definition unterstützt Schlüsselfelder wie `"type"` (`"switch"`, `"sensor"`) zur korrekten Zuordnung im Gateway, `id_ignore_bits` zur Trennung von Geräte-ID und Statuswert sowie `scale`/`offset` zur Konvertierung von Sensor-Rohdaten in physikalische Einheiten. Die Datenbank kann zur Laufzeit über `GR` (Generic Reload) neu geladen werden.
     *   **Matter-Architektur (Bidirektional):** Der Stick wird als **Matter Aggregator (Bridge)** implementiert. Die Bridge arbeitet in beide Richtungen:
-        *   **RX (RF $\rightarrow$ Matter):** Erkannte SlowRF-Geräte werden als dynamische **Endpoints** (z.B. Temperatursensor, Schalter) im Matter-Netzwerk on-the-fly angelegt und über eine **"Dynamic Endpoint Registry"** (`matter_bridge.c`) verwaltet. Der Name des dekodierenden Protokolls (z.B. "Nexa") wird pro Endpunkt gespeichert.
+        *   **RX (RF $\rightarrow$ Matter):** Erkannte SlowRF-Geräte werden als dynamische **Endpoints** (z.B. Temperatursensor, Schalter) im Matter-Netzwerk on-the-fly angelegt und über eine **"Dynamic Endpoint Registry"** (`matter_bridge.c`) verwaltet. Der Name des dekodierenden Protokolls (z.B. "Nexa") wird pro Endpunkt gespeichert. Die maximale Anzahl dynamischer Endpoints wurde auf 20 erhöht (`CHIP_DEVICE_CONFIG_DYNAMIC_ENDPOINT_COUNT`).
         *   **TX (Matter $\rightarrow$ RF):** Eingehende Matter-Befehle werden über einen **Callback-Mechanismus** (`matter_bridge_command_cb`) verarbeitet. Die Bridge-Logik identifiziert den Ziel-Endpunkt, liest den bei der Endpoint-Erstellung gespeicherten Protokoll-Namen (z.B. "Somfy") und die RF-ID aus und ruft den passenden Encoder auf, um den Befehl in ein SlowRF-Funkkommando zu übersetzen und über den CC1101 zu senden.
         *   Die Anwendungslogik ist gegen eine **API-Interface-Schicht** (`matter_interface.h`) entwickelt, um die Kompilierbarkeit ohne das vollständige SDK zu gewährleisten (Simulations-Modus).
     *   **Matter Endpoint ID-Masking:** Um die Proliferation von Endpoints zu verhindern (z.B. ON/OFF-Befehle derselben Fernbedienung), wird eine ID-Maskierung via `id_ignore_bits` in der Protokolldefinition verwendet. Dies stellt sicher, dass ein physisches Gerät immer demselben Matter-Endpoint zugeordnet wird.
@@ -124,32 +124,27 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Erfolgreicher Build und Flash einer **unverschlüsselten** Firmware auf offener Hardware.
 *   **[DONE]** Erfolgreicher Boot der Firmware: WiFi-Verbindung und Matter-Dienste starten korrekt auf dem Zielgerät.
 *   **[DONE]** Entfernung der seriellen `CUL-TICK` Heartbeat-Meldung zur Verbesserung der Lesbarkeit der Konsole.
+*   **[DONE]** Fehlerbehebung Timing-Inkompatibilität: Toleranzen im Intertechno-Decoder an Legacy-CULs angepasst und Logikfehler (ITv1/ITv3 Sync-Konflikt) behoben.
 
 ## 4. Neue Erkenntnisse / Probleme
 
-*   **Problem: End-to-End RX-Test (Legacy CUL $\rightarrow$ CULFW-NG) schlägt fehl.**
-    *   **Analyse:** Ein automatisierter Python-Test, bei dem ein Legacy-CUL einen Intertechno-Befehl sendet, führt zu keiner dekodierten Nachricht.
-    *   **Diagnose:** Durch Umschalten des CULFW-NG in den Debug-Modus (`X25`/SignalDuino) wurde bestätigt, dass der RF-Empfang grundsätzlich funktioniert, da Rohdaten (`MU;...`) empfangen werden.
-    *   **Ursachenforschung:**
-        1.  Der Legacy-CUL identifiziert sich initial fälschlicherweise als 868MHz-Gerät. Ein Factory-Reset (`e`-Kommando) vor dem Test behebt dieses Problem und der CUL meldet korrekt 433MHz.
-        2.  Trotz korrekter Frequenz wird das Signal im CUL-Modus (`X21`) nicht vom Intertechno-Decoder erkannt.
-    *   **Hypothese:** Die Ursache ist eine **Timing-Inkompatibilität**. Die Pulsbreiten, die der Legacy-CUL sendet, liegen außerhalb des Toleranzbereichs des Decoders in `slowrf.c` auf dem CULFW-NG.
 *   **Erkenntnis: Irreversibilität von eFuses – Praxistest mit Konsequenzen.**
     *   **Analyse:** Die Versuche, eine signierte Firmware zu flashen, haben gezeigt, dass das 868MHz-Board **permanent aktive `SECURE_BOOT_EN` eFuses** mit einem nicht mehr verfügbaren Schlüssel hat.
     *   **Konsequenz:** Dieses Board ist für die weitere Entwicklung effektiv unbrauchbar ("gebrickt").
     *   **Strategische Anpassung:** Die Entwicklung wird **ausschließlich auf ungesicherter Hardware** (433MHz-Board) fortgesetzt.
 *   **Erkenntnis: Validierung der Toolchain und Architektur.**
     *   Der erfolgreiche Boot der voll-integrierten Firmware (inkl. aller Tasks, Treiber und des kompletten Matter SDKs) auf realer Hardware bestätigt die Korrektheit der Migration zu ESP-IDF und der gewählten Systemarchitektur. Das System ist stabil und die Matter-Dienste starten wie erwartet.
+*   **Erkenntnis: Decoder-Logik für Legacy-Hardware.**
+    *   Der von einem Legacy CUL gesendete lange Sync-Puls (~10ms) wurde fälschlicherweise als ITv3-Sync interpretiert, was die parallele ITv1-Dekodierung blockierte. Die Entfernung der `it3_last_sync`-Abhängigkeit im ITv1-Decoder hat das Kompatibilitätsproblem gelöst und den End-to-End-Test erfolgreich gemacht.
+*   **Problem: Matter Endpoint-Erstellung schlägt sporadisch fehl.**
+    *   **Analyse:** Trotz Erhöhung von `CHIP_DEVICE_CONFIG_DYNAMIC_ENDPOINT_COUNT` auf 20 wird der Fehler `E (...) esp_matter_endpoint: Failed to create endpoint` im Log angezeigt. Dies beeinträchtigt nicht die RF-Funktion oder den erfolgreichen Abschluss des automatisierten Tests, muss aber für die volle Matter-Funktionalität untersucht werden.
 *   **Erkenntnis: Vergrößerung des Bootloaders durch Sicherheitsfeatures.**
     *   Die Aktivierung von Secure Boot V2 und Flash Encryption vergrößert den Bootloader signifikant, was eine Anpassung der Partitionstabelle (`partitions.csv`) für gesicherte Builds erfordert. Dies ist für den aktuellen Entwicklungs-Track nicht relevant.
 
 ## 5. Nächste Schritte
 
-*   **Fehlerbehebung Decoder-Toleranz (Höchste Priorität):**
-    *   **Analyse:** Auswertung der im `X25`-Modus aufgezeichneten Rohdaten (`MU;...`), um die exakten Puls-Timings des Legacy-CUL-Senders zu ermitteln.
-    *   **Anpassung:** Justierung der Timing-Konstanten und Toleranzfenster im Intertechno-Decoder (`slowrf.c`) auf dem CULFW-NG.
-    *   **Validierung:** Erneute Durchführung des automatisierten Python-Tests bis die Erkennung (`is...`) im CUL-Modus (`X21`) und die Registrierung in der Matter Bridge (`Registered new device...`) zuverlässig erfolgreich sind.
-*   **Praktische Validierung des Matter-Commissioning:** Nach erfolgreichem End-to-End-Test ist ein vollständiger Matter-Commissioning-Prozess mit einem handelsüblichen Controller (z.B. Apple Home, Google Home) durchzuführen, um die Funktionalität der Einbindung zu verifizieren.
+*   **Fehlerbehebung Matter-Endpoint-Erstellung (Höchste Priorität):** Ursache für den Fehler "Failed to create endpoint" analysieren und beheben. Ein `idf.py fullclean` gefolgt von einem Neu-Build ist der erste Schritt zur Validierung.
+*   **Praktische Validierung des Matter-Commissioning:** Nach erfolgreicher Fehlerbehebung ist ein vollständiger Matter-Commissioning-Prozess mit einem handelsüblichen Controller (z.B. Apple Home, Google Home) durchzuführen, um die Funktionalität der Einbindung zu verifizieren.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
 *   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (v1.1.0) und Finalisierung der Endbenutzer-Dokumentation.
 *   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.
