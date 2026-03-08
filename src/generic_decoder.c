@@ -286,7 +286,13 @@ void generic_decoder_process_pulse(uint16_t duration, uint8_t level) {
             
             // Determine Outcome
             if (!s->match_bit0 && !s->match_bit1) {
-                // Both failed -> decoding error -> reset
+                // Both failed -> pulse doesn't match any bit.
+                // If we already have enough bits, it might be the end of the packet.
+                if (s->bit_cnt >= p->min_bits) {
+                    p->count_decoded++;
+                    generic_decoder_output_packet(p, s->bit_buffer, cc1101_read_rssi());
+                    ESP_LOGI(TAG, "DECODED %s: %llX (Early Exit)", p->name, s->bit_buffer);
+                }
                 reset_state(s);
             } else {
                 // Check if any bit sequence completed
@@ -298,30 +304,22 @@ void generic_decoder_process_pulse(uint16_t duration, uint8_t level) {
                     ESP_LOGW(TAG, "%s: Bit ambiguity (0 & 1 complete)", p->name);
                     reset_state(s);
                 } else if (bit0_complete) {
-                    // Found Bit 0
                     s->bit_buffer = (s->bit_buffer << 1) | 0;
                     s->bit_cnt++;
-                    
-                    // Reset bit matchers for next bit
                     s->bit0_match_idx = 0; s->bit1_match_idx = 0;
                     s->match_bit0 = true; s->match_bit1 = true;
-                    
                 } else if (bit1_complete) {
-                    // Found Bit 1
                     s->bit_buffer = (s->bit_buffer << 1) | 1;
                     s->bit_cnt++;
-                    
-                    // Reset bit matchers
                     s->bit0_match_idx = 0; s->bit1_match_idx = 0;
                     s->match_bit0 = true; s->match_bit1 = true;
                 }
                 
-                // Check Packet Complete
-                if (s->bit_cnt >= p->max_bits) {
-                    // Success!
+                // If we reach max_bits, we must output
+                if (s->bit_cnt >= p->max_bits && p->max_bits > 0) {
                     p->count_decoded++;
                     generic_decoder_output_packet(p, s->bit_buffer, cc1101_read_rssi());
-                    ESP_LOGI(TAG, "DECODED %s: %llX", p->name, s->bit_buffer);
+                    ESP_LOGI(TAG, "DECODED %s: %llX (Max Bits)", p->name, s->bit_buffer);
                     reset_state(s);
                 }
             }

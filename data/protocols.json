@@ -4,57 +4,25 @@
       "name": "Nexa",
       "freq": 433,
       "type": "switch",
-      "sync": [1, 10],
-      "bit0": [1, 1, 1, 4],
-      "bit1": [1, 4, 1, 1],
-      "timing": 250,
-      "bits_min": 24,
-      "bits_max": 32
+      "timing": { "short": 250, "long": 1000, "tolerance": 100 },
+      "definitions": {
+         "sync": [ {"h": 1, "l": 10} ],
+         "bit0": [ {"h": 1, "l": 1}, {"h": 1, "l": 4} ],
+         "bit1": [ {"h": 1, "l": 4}, {"h": 1, "l": 1} ]
+      },
+      "len": { "min": 24, "max": 32 }
     },
     {
       "name": "Intertechno_V1",
       "freq": 433,
       "type": "switch",
-      "bit0": [1, 3, 1, 3],
-      "bit1": [3, 1, 3, 1],
-      "bitf": [1, 3, 3, 1],
-      "timing": 350,
-      "bits_min": 12,
-      "bits_max": 12,
-      "sync": [1, 31]
-    },
-    {
-      "name": "Intertechno_V3",
-      "freq": 433,
-      "type": "switch",
-      "bit0": [1, 3, 1, 3],
-      "bit1": [1, 3, 3, 1],
-      "timing": 250,
-      "bits_min": 32,
-      "bits_max": 32,
-      "sync": [1, 31]
-    },
-    {
-      "name": "Bresser_Temp",
-      "freq": 868,
-      "type": "sensor",
-      "bit0": [1, 1],
-      "bit1": [2, 1],
-      "timing": 500,
-      "bits_min": 24,
-      "bits_max": 24,
-      "sync": [4, 1]
-    },
-    {
-      "name": "X10_RF",
-      "freq": 433,
-      "type": "switch",
-      "bit0": [1, 1],
-      "bit1": [1, 3],
-      "timing": 560,
-      "bits_min": 32,
-      "bits_max": 32,
-      "sync": [8, 1]
+      "timing": { "short": 350, "long": 1050, "tolerance": 100 },
+      "definitions": {
+         "sync": [ {"h": 1, "l": 31} ],
+         "bit0": [ {"h": 1, "l": 3}, {"h": 1, "l": 3} ],
+         "bit1": [ {"h": 3, "l": 1}, {"h": 3, "l": 1} ]
+      },
+      "len": { "min": 12, "max": 12 }
     }
   ]
 }
