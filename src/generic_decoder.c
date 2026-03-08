@@ -77,6 +77,8 @@ static void generic_decoder_output_packet(rf_proto_internal_t *p, uint64_t data,
     uint8_t mode = slowrf_get_mode();
     char msg[128];
     int len = 0;
+    
+    ESP_LOGI(TAG, "Outputting packet for %s, mode=0x%02X", p->name, mode);
 
     if (mode == SLOWRF_MODE_SIGNALDUINO) {
         // MS;P0=short;P1=long;D=bits;CP=0;SP=sync;
