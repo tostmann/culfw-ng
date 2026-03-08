@@ -29,6 +29,7 @@ static esp_err_t index_get_handler(httpd_req_t *req) {
 
     snprintf(resp, 8192, 
         "<html><head><title>CUL32-C6 Status</title>"
+        "<meta http-equiv='refresh' content='5'>"
         "<style>body { font-family: sans-serif; margin: 20px; background: #f0f2f5; }"
         ".card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }"
         "h1 { color: #1a73e8; } h3 { border-bottom: 1px solid #ddd; padding-bottom: 5px; }"
