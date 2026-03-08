@@ -37,3 +37,8 @@ void matter_interface_update_attribute(uint16_t endpoint_id, float value);
  * @return "SIMULATED" or "REAL"
  */
 const char* matter_interface_get_status(void);
+
+/**
+ * @brief Register a callback for incoming commands (e.g. Turn On/Off)
+ */
+void matter_interface_register_command_cb(matter_command_cb_t cb);
