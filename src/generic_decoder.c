@@ -105,6 +105,11 @@ static void generic_decoder_output_packet(rf_proto_internal_t *p, uint64_t data,
     uint8_t shift = (p->id_ignore_bits > 0) ? p->id_ignore_bits : 8;
     uint64_t id_val = (data >> shift);
     float val = (float)(data & ((1ULL << shift) - 1));
+    
+    // Apply scale and offset for sensors
+    if (p->matter_type == 1) {
+        val = (val * p->scale) + p->offset;
+    }
 
     snprintf(id_str, sizeof(id_str), "%s_%llX", p->name, id_val);
     matter_bridge_report_event(id_str, p->name, p->matter_type == 1 ? DEVICE_TYPE_TEMP_SENSOR : DEVICE_TYPE_SWITCH, val);
