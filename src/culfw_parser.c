@@ -179,8 +179,9 @@ static void handle_command(char *cmd) {
         char hex[5];
         hex[4] = 0;
         uint8_t level = 0; // First pulse results in pulse_level 1 (HIGH)
-        ESP_LOGI(TAG, "mi cmd len: %d", (int)strlen(cmd));
-        for (int i = 2; i <= (int)strlen(cmd) - 4; i += 4) {
+        int clen = (int)strlen(cmd);
+        printf("mi cmd len: %d\r\n", clen);
+        for (int i = 2; i <= clen - 4; i += 4) {
             strncpy(hex, cmd + i, 4);
             uint32_t duration = strtol(hex, NULL, 16) * 10;
             if (duration > 0) {
