@@ -308,6 +308,11 @@ void slowrf_task(void *pvParameters) {
                 if (slowrf_reporting) {
                     uint8_t rssi = cc1101_read_rssi();
 
+                    if (slowrf_debug) {
+                        char dbg[64];
+                        snprintf(dbg, sizeof(dbg), "FS20 Bytes: %d Sync: %d Bits: %d\r\n", fs_dec.byte_cnt, (int)fs_dec.sync_found, fs_dec.bit_cnt);
+                        usb_serial_jtag_write_bytes(dbg, strlen(dbg), 0);
+                    }
                     if (fs_dec.byte_cnt >= 4) {
                         char d[32]; char id[16];
                         snprintf(id, sizeof(id), "F%02X%02X%02X", fs_dec.data[0], fs_dec.data[1], fs_dec.data[2]);
