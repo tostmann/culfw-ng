@@ -87,7 +87,7 @@ void matter_bridge_init() {
     xTaskCreate(matter_bridge_periodic_task, "matter_bridge_task", 2048, NULL, 5, NULL);
 }
 
-void matter_bridge_report_event(const char* id, matter_device_type_t type, float value) {
+void matter_bridge_report_event(const char* id, const char* proto, matter_device_type_t type, float value) {
     // 1. Lookup Device in our local table
     int idx = -1;
     for (int i = 0; i < device_count; i++) {
@@ -106,12 +106,13 @@ void matter_bridge_report_event(const char* id, matter_device_type_t type, float
         
         idx = device_count++;
         strncpy(device_table[idx].rf_id, id, sizeof(device_table[idx].rf_id)-1);
+        strncpy(device_table[idx].proto_name, proto, sizeof(device_table[idx].proto_name)-1);
         device_table[idx].type = type;
         
         // Call the interface to create the actual Matter endpoint
         device_table[idx].matter_ep_id = matter_interface_create_endpoint(id, type);
         
-        ESP_LOGI(TAG, "Registered new device: %s -> EP %d", id, device_table[idx].matter_ep_id);
+        ESP_LOGI(TAG, "Registered new device: %s -> EP %d (Proto: %s)", id, device_table[idx].matter_ep_id, proto);
     }
 
     // 3. Update the value
