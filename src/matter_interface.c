@@ -84,3 +84,14 @@ const char* matter_interface_get_status(void) {
     return "SIMULATED";
 #endif
 }
+
+void matter_interface_register_command_cb(matter_command_cb_t cb) {
+    cmd_cb = cb;
+}
+
+// Internal: simulate receiving a command
+void matter_interface_simulate_command(uint16_t endpoint_id, float value) {
+    if (cmd_cb) {
+        cmd_cb(endpoint_id, value);
+    }
+}
