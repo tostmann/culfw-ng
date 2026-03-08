@@ -98,6 +98,18 @@ static void matter_bridge_command_cb(uint16_t endpoint_id, float value) {
         int mlen = snprintf(msg, sizeof(msg), "TX_TEST_SW: %s VAL: %.1f\r\n", rf_id, value);
         usb_serial_jtag_write_bytes(msg, mlen, 0);
     }
+    else if (strcmp(proto, "FHT") == 0) {
+        // ID format: T<HC><AD>
+        char hex[13];
+        snprintf(hex, sizeof(hex), "%s%02X", rf_id + 1, (int)(value * 2.0f)); // FHT value is half degrees or similar
+        cc1101_send_fht(hex);
+    }
+    else if (strcmp(proto, "HMS") == 0) {
+        // ID format: H<ID>
+        char hex[13];
+        snprintf(hex, sizeof(hex), "%s%02X", rf_id + 1, (int)value);
+        cc1101_send_hms(hex);
+    }
     else if (strcmp(proto, "Somfy") == 0) {
         // ID format: Somfy_ADDR (ADDR is 3 bytes hex)
         char* addr_str = strchr(rf_id, '_');
