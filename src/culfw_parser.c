@@ -182,6 +182,15 @@ void handle_command(char *cmd) {
     } else if (cmd[0] == 'M' && cmd[1] == 'L') { // ML - Matter List
         matter_bridge_list_endpoints();
         len = snprintf(out, sizeof(out), "ML DONE\r\n");
+    } else if (cmd[0] == 'M' && cmd[1] == 'A') { // MA <ID> <PROTO> <TYPE> - Matter Add (Manual)
+        char mid[64], mproto[16];
+        int mtype;
+        if(sscanf(cmd + 3, "%s %s %d", mid, mproto, &mtype) == 3) {
+             matter_bridge_report_event(mid, mproto, (matter_device_type_t)mtype, 0.0);
+             len = snprintf(out, sizeof(out), "MA OK: %s added as %s (Type %d)\r\n", mid, mproto, mtype);
+        } else {
+             len = snprintf(out, sizeof(out), "MA ERR: Use MA <ID> <PROTO> <TYPE>\r\n");
+        }
     } else if (cmd[0] == 'M' && cmd[1] == 'C') { // MC <EP> <VAL> - Matter Command Simulation
         uint16_t ep;
         float val;
