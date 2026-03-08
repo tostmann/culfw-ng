@@ -315,6 +315,7 @@ void cc1101_send_fs20(const char* housecode, const char* addr, const char* cmd) 
 }
 
 void cc1101_send_it_v3(const char* data) {
+    if (!duty_cycle_add_tx(200)) return;
     ESP_LOGI(TAG, "TX IT_V3: %s", data);
     // IT V3 (Self Learning) sending logic
     // data is a string of 32 bits ('0' or '1')
