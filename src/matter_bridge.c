@@ -52,31 +52,38 @@ static void matter_bridge_command_cb(uint16_t endpoint_id, float value) {
         cc1101_send_fs20(hc, ad, cmd);
     } 
     else if (strcmp(proto, "IT_V1") == 0) {
-        // Logic for IT_V1 (fixed 12 chars)
-        cc1101_send_it_v1(rf_id);
+        // ID format: 00000000000X (12 chars, last one masked)
+        char final_id[13];
+        strncpy(final_id, rf_id, 12);
+        final_id[12] = 0;
+        if (final_id[11] == 'X') {
+            final_id[11] = (value > 0) ? '0' : 'F'; // IT_V1 usually uses '0' for ON and 'F' for OFF or similar
+        }
+        ESP_LOGI(TAG, "IT_V1 TX: %s", final_id);
+        cc1101_send_it_v1(final_id);
     }
     else if (strcmp(proto, "IT_V3") == 0 || strcmp(proto, "Nexa") == 0) {
-        // ID is Nexa_HHHHHH or IT_V3_HHHHHH
-        // We need to convert HHHHHH back to bits and append the command bit
+        // ID is Nexa_HHHHHH or IT_V3_HHHHHH (26-bit ID in Hex)
         char* hex_start = strchr(rf_id, '_');
         if (hex_start) {
-            hex_start++; // Skip '_'
+            hex_start++; 
             char bits[33];
             memset(bits, '0', 32);
             bits[32] = 0;
             
-            // Convert hex to bits (first 24-26 bits)
             uint32_t val = strtoul(hex_start, NULL, 16);
-            for(int i=0; i<24; i++) {
-                bits[23-i] = ((val >> i) & 1) ? '1' : '0';
+            // Reconstruct 26-bit ID (bits 0..25)
+            for(int i=0; i<26; i++) {
+                bits[25-i] = ((val >> i) & 1) ? '1' : '0';
             }
             
-            // Bit 26 is Group, Bit 27 is On/Off
+            // Bit 26: Group (0)
             bits[26] = '0'; 
+            // Bit 27: On/Off (On=1, Off=0)
             bits[27] = (value > 0) ? '1' : '0';
             
-            // Bits 28-31 are Unit (0000)
-            ESP_LOGI(TAG, "Nexa TX Bits: %s", bits);
+            // Bits 28..31: Unit (0000)
+            ESP_LOGI(TAG, "Nexa/IT_V3 TX Bits: %s", bits);
             cc1101_send_it_v3(bits);
         }
     }
