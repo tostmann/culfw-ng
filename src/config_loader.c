@@ -2,11 +2,26 @@
 #include "esp_log.h"
 #include "esp_spiffs.h"
 #include "generic_decoder.h"
+#include "esp_mac.h"
 #include <stdio.h>
 #include <sys/unistd.h>
 #include <sys/stat.h>
 
 static const char *TAG = "CONFIG";
+
+// IP Protection: Hardware binding
+static bool config_loader_check_auth() {
+    uint8_t mac[6];
+    esp_read_mac(mac, ESP_MAC_WIFI_STA);
+    
+    ESP_LOGI(TAG, "Auth check for: %02X:%02X:%02X:%02X:%02X:%02X", 
+             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+             
+    // In a production environment, this would check against a signed list 
+    // or use Secure Boot / Flash Encryption to ensure the check itself is not tampered with.
+    // For now, we authorize all units but log the check.
+    return true; 
+}
 
 bool config_loader_init() {
     ESP_LOGI(TAG, "Initializing SPIFFS");
