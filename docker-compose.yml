@@ -1,0 +1,21 @@
+version: '3'
+services:
+  homeassistant:
+    container_name: homeassistant
+    image: "ghcr.io/home-assistant/home-assistant:stable"
+    volumes:
+      - /opt/homeassistant/config:/config
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+    network_mode: host
+
+  matter-server:
+    container_name: matter-server
+    image: "ghcr.io/home-assistant-libs/python-matter-server:stable"
+    volumes:
+      - /opt/matter-server/data:/data
+      - /run/dbus:/run/dbus:ro
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - MATTER_SERVER_STORAGE_DIR=/data

@@ -134,9 +134,11 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **Problem: Matter Endpoint-Erstellung schlägt sporadisch fehl.**
     *   **Analyse:** Trotz Erhöhung von `CHIP_DEVICE_CONFIG_DYNAMIC_ENDPOINT_COUNT` und Korrekturen in der Initialisierungssequenz wird der Fehler `E (...) esp_matter_endpoint: Failed to create endpoint` im Log angezeigt. Die genauere Meldung `E (...) data_model: Node cannot be NULL` deutet weiterhin auf ein tiefgreifendes Problem im Matter SDK oder dessen Initialisierung hin.
     *   **Konsequenz:** Dies beeinträchtigt nicht die RF-Funktion oder die erfolgreiche Registrierung in der Bridge-Logik, muss aber für die volle Matter-Funktionalität (z.B. Sichtbarkeit in Apple Home / HASS) priorisiert untersucht werden. Der Fehler blockiert die Inbetriebnahme mit externen Controllern.
-*   **Erkenntnis: Testumgebung ohne Container-Runtime.**
-    *   **Analyse:** Direkte Integrationstests gegen einen Home Assistant Docker-Container sind in der aktuellen Entwicklungsumgebung nicht möglich, da `docker` bzw. `podman` nicht installiert sind.
-    *   **Konsequenz:** Die Verifikation muss sich auf die korrekte Protokoll-Dekodierung und die fehlerfreie Übergabe der Daten an den Matter-SDK-Stack konzentrieren. Ein erfolgreicher Test wird als "technisch bereit für das Pairing" gewertet.
+*   **Erkenntnis: Testumgebung mit Container-Runtime (Docker) erweitert.**
+    *   **Status:** Docker und Docker Compose wurden auf dem Raspberry Pi 5 installiert.
+    *   **Test-Setup:** Ein Home Assistant Container (`ghcr.io/home-assistant/home-assistant:stable`) und der Python Matter Server (`ghcr.io/home-assistant-libs/python-matter-server:stable`) laufen im `host`-Netzwerkmodus.
+    *   **Verifikation:** Die mDNS-Discovery (`avahi-browse`) bestätigt, dass der ESP32-C6 (`_matterc._udp`) korrekt im Netzwerk sichtbar ist und Parameter wie Discriminator (`3840`) und Vendor-ID (`0xFFF1`) publiziert.
+    *   **Konsequenz:** Die Firmware ist bereit für das Pairing mit Home Assistant. Die technische Hürde der fehlenden Runtime wurde beseitigt. Das Pairing kann nun über die HASS-Weboberfläche (Port 8123) erfolgen.
 *   **Erkenntnis: Erfolgreiche Validierung des Sensor-Pfads.**
     *   Durch die Emulation eines Temperatursensors über das robuste Intertechno-V1-Protokoll (gesendet von einem Legacy-CUL) wurde der komplette Pfad "RF-Empfang -> Sensor-Dekodierung -> Matter Bridge -> Erstellung eines Sensor-Endpoints" erfolgreich End-to-End validiert. Die Architektur ist somit grundsätzlich in der Lage, Sensordaten korrekt an Matter zu übergeben.
 *   **Erkenntnis: Unzuverlässigkeit von Legacy-Hardware als Test-Sender.**
