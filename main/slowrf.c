@@ -341,12 +341,18 @@ void slowrf_task(void *pvParameters) {
                         char id[17]; strncpy(id, d, 16); id[16] = 0;
                         matter_bridge_report_event(id, "Oregon", DEVICE_TYPE_TEMP_SENSOR, 20.0); // Placeholder
                     }
-                    if (hms_dec.nibble_cnt >= 19) {
+                    if (hms_dec.nibble_cnt >= 8) {
                         char d[32]; int dlen = 0;
                         for(int i=0; i<hms_dec.nibble_cnt; i++) dlen += snprintf(d+dlen, sizeof(d)-dlen, "%X", hms_dec.nibbles[i]);
                         slowrf_output_packet("H", d, rssi);
                         char id[17]; strncpy(id, d, 16); id[16] = 0;
-                        matter_bridge_report_event(id, "HMS", DEVICE_TYPE_TEMP_SENSOR, 20.0); // Placeholder
+                        
+                        // Extract value from nibbles 6 and 7 (if available) for testing
+                        float val = 20.0;
+                        if (hms_dec.nibble_cnt >= 8) {
+                            val = (float)((hms_dec.nibbles[6] << 4) | hms_dec.nibbles[7]);
+                        }
+                        matter_bridge_report_event(id, "HMS", DEVICE_TYPE_TEMP_SENSOR, val);
                     }
                     if (s300_dec.nibble_cnt >= 9) {
                         char d[32]; int dlen = 0;
