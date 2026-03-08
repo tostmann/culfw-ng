@@ -99,20 +99,29 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Anbindung des Generic Decoders an die SIGNALduino MU-Unterdrückungslogik.
 *   **[DONE]** Validierung der *Sync-Detektion* in der Generic Decoder State Machine mit injizierten Test-Signalen (Nexa).
 *   **[DONE]** Protokoll-Datenbank (`protocols.json`) um Intertechno_V1 erweitert.
+*   **[DONE]** Fehlerbehebung in der Generic Decoder Bit-Matching-Logik (`STATE_READ_BITS`).
+*   **[DONE]** Implementierung und Validierung eines Test-Kommandos (`mi`) zur Injektion von Puls-Sequenzen.
+*   **[DONE]** Anpassung des `mi`-Kommandos auf 16-Bit-Werte (`mi<HEX4>`) für lange Pulse (>2.55ms).
+*   **[DONE]** Erfolgreiche Validierung des Generic Decoders mit injizierten Nexa- und Intertechno-V1-Signalen.
+*   **[DONE]** Erhöhung der Puffergrößen im Kommando-Parser zur Verarbeitung langer Test-Kommandos.
+*   **[DONE]** Verfeinerung des SIGNALduino `MS;` Ausgabeformats für den Generic Decoder.
+*   **[DONE]** Absicherung der seriellen Ausgabe (`usb_serial_jtag_write_bytes`) gegen Datenverlust durch `portMAX_DELAY`.
 
 ## 4. Neue Erkenntnisse / Probleme
 
 *   **Architektur-Korrektur (Single-Core):** Der ESP32-C6 ist ein **Single-Core Prozessor (RISC-V)**. Die RTOS-Architektur wurde auf ein Single-Core-Modell mit **Task-Priorisierung** als primäres Steuerungsinstrument umgestellt, um die Echtzeitfähigkeit zu gewährleisten.
 *   **Architektur-Verfeinerung (Initialisierung):** Die Initialisierungs-Sequenz wurde angepasst. `config_loader_load_protocols()` wird nun in `app_main` ausgeführt, *bevor* die `slowrf_task` startet. Die `generic_decoder_init()`-Funktion innerhalb des Tasks wurde modifiziert, sodass sie nur noch die Decoder-*Zustände* zurücksetzt, aber nicht die bereits geladenen Protokoll-Definitionen, um eine Race Condition zu vermeiden.
 *   **Architektur-Verfeinerung (JSON-Format):** Das `protocols.json`-Format wurde optimiert. Anstatt starrer Timing-Werte wie `sync_low` werden nun Multiplikatoren der Basis-Pulsbreite (`short`) verwendet (z.B. `"sync": [{"h": 1, "l": 10}]`). Dies erhöht die Lesbarkeit und Flexibilität der Protokolldefinitionen.
-*   **Generic Decoder Bug:** Die State Machine erkennt die Sync-Sequenz von Test-Signalen korrekt, scheitert aber an der Dekodierung der nachfolgenden Daten-Bits. Die Logik zur Finalisierung eines Bits und dem Übergang zum nächsten in `STATE_READ_BITS` ist fehlerhaft.
+*   **Erkenntnis (Test-Infrastruktur):** Die Validierung des Generic Decoders erforderte ein neues Diagnosekommando (`mi<HEX>`), um exakte Pulsfolgen in die RX-Pipeline einzuspeisen. Dieses Kommando musste auf 16-Bit-Werte erweitert werden, um lange Sync-Pulse (z.B. > 2.55ms) abbilden zu können.
+*   **Problem (Injektionstest):** Bei langen Bit-Folgen (z.B. Nexa 32-Bit) kommt es im automatisierten Testskript zu Timeouts oder Dekodierungsfehlern. Dies deutet auf mögliche Timing- oder Pufferprobleme im Test-Host oder bei der seriellen Übertragung hin, da kürzere Sequenzen (IT-V1 12-Bit) stabil funktionieren.
 
 ## 5. Nächste Schritte
 
-*   **Generic Decoder:** Fehlerbehebung in der Bit-Matching-Logik (`STATE_READ_BITS`) und vollständige Validierung des Decoders mit injizierten und realen Signalen (Nexa, IT).
-*   **Stabilitätstests:** Durchführung von Langzeittests im hybriden Matter-Gateway-Betrieb mit aktiver WiFi-Verbindung und Web-Interface.
-*   **SIGNALduino Kompatibilität:** Verfeinerung der `MS;`-Ausgabeformate des Generic Decoders, um eine hohe Kompatibilität mit bestehenden Host-Systemen zu erreichen. Das Format (`MS;P0=...;P1=...;D=...`) ist bereits definiert.
+*   **Stabilitätstests:** Durchführung von Langzeittests im hybriden Matter-Gateway-Betrieb mit aktiver WiFi-Verbindung, Web-Interface und realen Funksignalen.
+*   **Test-Infrastruktur:** Analyse und Behebung der Instabilität bei der Injektion langer Puls-Sequenzen (32-Bit+).
+*   **SIGNALduino Kompatibilität:** Endgültige Verifizierung der `MS;`-Ausgabeformate mit einem realen Host-System (z.B. FHEM).
 *   **Protokoll-DB Erweiterung:** Hinzufügen weiterer OOK-Protokolle (z.B. Somfy RTS, Ambient Weather) zur `protocols.json`.
+*   **Code-Bereinigung:** Entfernen von überflüssigen Debug-Logs aus dem `generic_decoder` für eine saubere Release-Version.
 
 ## 6. Hardware-Konfiguration (Pinout)
 
