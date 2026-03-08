@@ -10,6 +10,9 @@ static matter_command_cb_t cmd_cb = NULL;
     #include <esp_matter.h>
     #include <esp_matter_console.h>
     #include <esp_matter_ota.h>
+    #include <setup_payload/SetupPayload.h>
+    #include <setup_payload/QRCodeSetupPayloadGenerator.h>
+    #include <setup_payload/ManualSetupPayloadGenerator.h>
     
     using namespace esp_matter;
     using namespace esp_matter::attribute;
