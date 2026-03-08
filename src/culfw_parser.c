@@ -261,6 +261,7 @@ void culfw_parser_task(void *pvParameters) {
 
     if (!usb_serial_jtag_is_driver_installed()) {
         usb_serial_jtag_driver_config_t usb_serial_jtag_config = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();
+        usb_serial_jtag_config.rx_buffer_size = 1024; // Increase RX buffer to handle long 'mi' commands
         usb_serial_jtag_driver_install(&usb_serial_jtag_config);
     }
 
