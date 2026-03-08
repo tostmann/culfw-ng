@@ -128,28 +128,28 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 4. Neue Erkenntnisse / Probleme
 
+*   **Problem: End-to-End RX-Test (Legacy CUL $\rightarrow$ CULFW-NG) schlägt fehl.**
+    *   **Analyse:** Ein automatisierter Test, bei dem ein Legacy-CUL einen Intertechno-Befehl sendet, führt zu keiner Reaktion der Matter-Bridge. Im Debug-Modus (`X25`/SignalDuino) empfängt der CULFW-NG jedoch erfolgreich Rohdaten (`MU;...`), was bestätigt, dass der RF-Empfang grundsätzlich funktioniert.
+    *   **Hypothese:** Die Ursache ist eine subtile Frequenz- oder Modulations-Abweichung zwischen dem Sender (Legacy-CUL) und dem Empfänger (CULFW-NG). Der Intertechno-Decoder im CUL-Modus (`X21`) wird daher nicht getriggert. Erschwerend kommt hinzu, dass sich der Legacy-CUL fälschlicherweise als 868MHz-Gerät identifiziert, was eine manuelle Frequenzkorrektur im Testskript erforderte.
 *   **Erkenntnis: Irreversibilität von eFuses – Praxistest mit Konsequenzen.**
     *   **Analyse:** Die Versuche, eine signierte Firmware zu flashen, sowie die anschließende Diagnose mit `espefuse.py` haben die Annahmen bestätigt und vertieft. Das 868MHz-Board hat **permanent aktive `SECURE_BOOT_EN` eFuses** und einen fest eingebrannten, nicht mehr verfügbaren Schlüssel.
     *   **Konsequenz:** Dieses Board akzeptiert **nur** noch Firmware, die mit dem originalen, verlorenen Schlüssel signiert ist. Nachdem wir den Flash-Speicher mit einer neu signierten (und damit für dieses Board ungültigen) Firmware überschrieben haben, ist es für die weitere Entwicklung effektiv unbrauchbar ("gebrickt") und kann nicht mehr geflasht werden.
     *   **Strategische Anpassung:** Die Entwicklung wird **ausschließlich auf ungesicherter Hardware** (433MHz-Board ohne aktive Security-eFuses) und mit deaktivierten Secure-Boot/Encryption-Features im Build fortgesetzt.
+*   **Erkenntnis: Boot-Warnung `Node does not exist...` ist unkritisch.**
+    *   Die Analyse des ESP-Matter-SDK-Codes zeigt, dass diese Warnung auftritt, wenn versucht wird, auf den Matter-Node zuzugreifen, bevor der `esp_matter::start()`-Prozess vollständig abgeschlossen ist. Da der Matter-Stack kurz darauf erfolgreich initialisiert und in den Commissioning-Modus wechselt, handelt es sich um ein unkritisches Timing-Problem während des Boot-Vorgangs.
 *   **Erkenntnis: Vergrößerung des Bootloaders durch Sicherheitsfeatures.**
     *   **Problem:** Die Aktivierung von Secure Boot V2 und Flash Encryption fügt dem Bootloader erhebliche Mengen an Code für Signaturverifizierung und Entschlüsselungsroutinen hinzu. Dies führte dazu, dass der Bootloader die im Standard-Partitionsschema vorgesehene Größe von 32 KB (`0x8000`) überschritt.
     *   **Konsequenz:** Der Build-Prozess für eine gesicherte Firmware schlägt ohne Anpassungen fehl.
     *   **Lösung (nur für gesicherten Build relevant):** Die `partitions.csv` musste angepasst werden, um den Start-Offset der App-Partition (z.B. auf `0x20000`) zu verschieben. Für den aktuellen ungesicherten Entwicklungs-Track wurde diese Änderung zurückgenommen.
 *   **Erkenntnis: Validierung der Toolchain und Architektur.**
     *   Der erfolgreiche Boot der voll-integrierten Firmware (inkl. aller Tasks, Treiber und des kompletten Matter SDKs) auf realer Hardware bestätigt die Korrektheit der Migration zu ESP-IDF und der gewählten Systemarchitektur. Das System ist stabil und die Matter-Dienste starten wie erwartet.
-*   **Strategische Entscheidung: Migration von PlatformIO zu nativem ESP-IDF.**
-    *   **Problem:** Das PlatformIO-Build-System erwies sich bei der Integration des hochkomplexen `esp-matter`-SDKs als unzuverlässig und fehleranfällig (z.B. bei der Einbettung von Binärdaten für Zertifikate).
-    *   **Entscheidung:** Das Projekt wurde vollständig auf den nativen ESP-IDF-Toolchain (`idf.py`) umgestellt, um einen stabilen, vorhersagbaren und wartbaren Build-Prozess zu gewährleisten. Dies hat alle Build-Probleme gelöst.
-*   **Erkenntnis (Abhängigkeitsmanagement im ESP-IDF):** Die Migration zu nativem IDF zeigt, wie kritisch die `sdkconfig`-Konfiguration ist. Ein Linker-Fehler (`undefined reference to 'mbedtls_hkdf'`) innerhalb des Matter SDKs konnte nur durch die Aktivierung eines spezifischen Flags (`CONFIG_MBEDTLS_HKDF_C`) in der MbedTLS-Komponente behoben werden.
-*   **Erkenntnis (C/C++ Interoperabilität bei SDKs):** Das ESP-Matter SDK ist in C++ implementiert. Die Integration in ein bestehendes C-Projekt erforderte die Umstellung der Schnittstellen-Module (z.B. `matter_interface.c`) auf C++ (`.cpp`) und die Sicherstellung der C-Linkage für den Rest des Projekts über `extern "C"` im Header.
-*   **Architektur-Korrektur (Single-Core):** Der ESP32-C6 ist ein **Single-Core Prozessor (RISC-V)**. Die RTOS-Architektur wurde auf ein Single-Core-Modell mit **Task-Priorisierung** als primäres Steuerungsinstrument umgestellt, um die Echtzeitfähigkeit zu gewährleisten.
-*   **Erkenntnis (Komplexität zustandsbehafteter Protokolle):** Die Implementierung von Protokollen wie **Somfy RTS** erfordert mehr als nur einen Encoder. Ein persistenter **Rolling-Code-Manager**, der die Zählerstände im NVS speichert, ist unerlässlich, um die Synchronisation mit dem Empfänger aufrechtzuerhalten.
-*   **Erkenntnis (Interaktive Web-Diagnose als Entwicklungsbeschleuniger):** Die Erweiterung des Web-Dashboards zu einem interaktiven Diagnose- und Test-Werkzeug hat sich als fundamentaler Entwicklungsbeschleuniger erwiesen. Das Testen und Debuggen von Decodern ist nun ohne physische Sender möglich, was die Entwicklungszyklen drastisch verkürzt.
 
 ## 5. Nächste Schritte
 
-*   **Matter End-to-End Test (RX-Pfad):** Analyse der `Node does not exist...` Boot-Warnung. Anschließend Validierung des gesamten Empfangspfads durch Senden eines emulierten Sensorsignals (z.B. HMS) mit einem Legacy CUL und Überprüfung, ob das Gerät korrekt als Matter-Endpoint auf dem CULFW-NG erscheint.
+*   **Fehlerbehebung End-to-End Test (RX-Pfad):** Systematische Analyse des fehlgeschlagenen Intertechno-Tests mit folgenden Schritten:
+    *   **Frequenz-Validierung:** Sicherstellen, dass der Legacy-CUL als Sender zuverlässig und präzise auf 433.92 MHz sendet.
+    *   **Decoder-Toleranz-Prüfung:** Überprüfen und ggf. anpassen der Timing-Toleranzen im Intertechno-Decoder (`slowrf.c`) auf dem CULFW-NG, um robustere Erkennung zu gewährleisten.
+    *   **Test-Wiederholung:** Erneute Durchführung des automatisierten Python-Tests bis die Erkennung (`Registered new device...`) im CUL-Modus (`X21`) erfolgreich ist.
 *   **Praktische Validierung des Matter-Commissioning:** Nach dem erfolgreichen End-to-End-Test ist ein vollständiger Matter-Commissioning-Prozess mit einem handelsüblichen Controller (z.B. Apple Home, Google Home) durchzuführen, um die Funktionalität der Einbindung zu verifizieren.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
 *   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.

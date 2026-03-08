@@ -37,8 +37,8 @@ Du läufst auf einem Raspberry Pi 5 mit vollem root Zugriff
 
 # ls -l /dev/serial/by-id/
 
-usb-busware.de_CUL868-if00 - Referenz CUL 868MHz auf ATMEGA32u4 Basis mit culfw
-usb-busware.de_CUL433-if00 - Referenz CUL 433MHz auf ATMEGA32u4 Basis mit culfw
+usb-busware.de_CUL868-if00 - Referenz CUL 868MHz auf ATMEGA32u4 Basis mit culfw - CRLF Zeilenterminierung
+usb-busware.de_CUL433-if00 - Referenz CUL 433MHz auf ATMEGA32u4 Basis mit culfw - CRLF Zeilenterminierung
 usb-Espressif_USB_JTAG_serial_debug_unit_58:E6:C5:E6:8E:A4-if00 - 868MHz Zielhardware ESP32-C6 (with wrong 433MHz HF Balun assembled)
 usb-Espressif_USB_JTAG_serial_debug_unit_58:E6:C5:E6:90:B0-if00 - 433MHz Zielhardware ESP32-C6
 
