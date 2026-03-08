@@ -124,6 +124,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Erfolgreiche Diagnose des Hardware-Sicherheitsstatus mittels `espefuse.py` (Bestätigung: 1x Board "gebrickt", 1x Board offen).
 *   **[DONE]** Erfolgreicher Build und Flash einer **unverschlüsselten** Firmware auf offener Hardware.
 *   **[DONE]** Erfolgreicher Boot der Firmware: WiFi-Verbindung und Matter-Dienste starten korrekt auf dem Zielgerät.
+*   **[DONE]** Entfernung der seriellen `CUL-TICK` Heartbeat-Meldung zur Verbesserung der Lesbarkeit der Konsole.
 
 ## 4. Neue Erkenntnisse / Probleme
 
