@@ -61,6 +61,28 @@ static esp_err_t index_get_handler(httpd_req_t *req) {
     return ESP_OK;
 }
 
+static esp_err_t cmd_get_handler(httpd_req_t *req) {
+    char buf[128];
+    int ret, remaining = req->content_len;
+    if (httpd_req_get_url_query_str(req, buf, sizeof(buf)) == ESP_OK) {
+        char cmd[64];
+        if (httpd_query_key_value(buf, "c", cmd, sizeof(cmd)) == ESP_OK) {
+            ESP_LOGI(TAG, "Web Command received: %s", cmd);
+            // We use a helper function to avoid repeating the parser logic 
+            // or just trigger handle_command if we expose it.
+            // For now, let's simulate the command by injecting it into the parser's logic.
+            extern void handle_command(char *cmd); // Declare extern
+            handle_command(cmd);
+        }
+    }
+    // Redirect back to index
+    httpd_resp_set_status(req, "303 See Other");
+    httpd_resp_set_type(req, "text/html");
+    httpd_resp_set_hdr(req, "Location", "/");
+    httpd_resp_send(req, NULL, 0);
+    return ESP_OK;
+}
+
 static const httpd_uri_t index_uri = {
     .uri       = "/",
     .method    = HTTP_GET,
@@ -68,7 +90,24 @@ static const httpd_uri_t index_uri = {
     .user_ctx  = NULL
 };
 
+static const httpd_uri_t cmd_uri = {
+    .uri       = "/cmd",
+    .method    = HTTP_GET,
+    .handler   = cmd_get_handler,
+    .user_ctx  = NULL
+};
+
 void web_server_init(void) {
+    httpd_handle_t server = NULL;
+    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    config.stack_size = 8192; // Increase stack size
+
+    ESP_LOGI(TAG, "Starting Web Server on port: '%d'", config.server_port);
+    if (httpd_start(&server, &config) == ESP_OK) {
+        httpd_register_uri_handler(server, &index_uri);
+        httpd_register_uri_handler(server, &cmd_uri);
+    }
+}
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.stack_size = 8192; // Increase stack size
