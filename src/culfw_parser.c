@@ -61,7 +61,7 @@ bool culfw_reporting_enabled() {
     return reporting_enabled;
 }
 
-static void handle_command(char *cmd) {
+void handle_command(char *cmd) {
     char out[256];
     int len = 0;
     if (cmd[0] == 'V') {
