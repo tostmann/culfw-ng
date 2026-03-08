@@ -322,6 +322,7 @@ void generic_decoder_process_pulse(uint16_t duration, uint8_t level) {
                 // Check Packet Complete
                 if (s->bit_cnt >= p->max_bits) {
                     // Success!
+                    p->count_decoded++;
                     generic_decoder_output_packet(p, s->bit_buffer, cc1101_read_rssi());
                     ESP_LOGI(TAG, "DECODED %s: %llX", p->name, s->bit_buffer);
                     reset_state(s);
