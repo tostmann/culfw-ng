@@ -128,9 +128,16 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** End-to-End-Test (Sensor-Pfad): Emulation eines Temperatursensors via Intertechno V1 Protokoll erfolgreich validiert.
 *   **[DONE]** Decoder-Validierung (FS20): Erfolgreicher Test des FS20-Decoders und der Matter-Bridge-Anbindung mittels direkter Puls-Injektion (`mi`-Kommando).
 *   **[DONE]** Fehlerbehebung Matter-Initialisierung: Korrektur der Initialisierungssequenz in `matter_interface.cpp` zur expliziten Erzeugung des Root-Nodes und des Aggregator-Endpoints.
+*   **[DONE]** Docker-Umgebung für Home Assistant und Matter-Server aufgesetzt und validiert.
+*   **[DONE]** Erfolgreiche Verifikation der mDNS-Sichtbarkeit des Matter-Gerätes (`_matterc._udp`).
+*   **[DONE]** Automatisierte Test-Skripte für Factory-Reset (`factory_reset.py`) und Commissioning-Versuche (`commission_script.py`) entwickelt.
 
 ## 4. Neue Erkenntnisse / Probleme
 
+*   **Erkenntnis: Commissioning-Hürden und Test-Anpassung.**
+    *   **Problem:** Automatisierte Commissioning-Versuche über die `matter-server` Websocket-API schlagen wiederholt mit `Secure Pairing Failed` und `PASESession timed out` fehl. Die genaue Ursache (Timing, falscher Setup-Code) ist unklar.
+    *   **Erkenntnis:** Die offizielle Weboberfläche von Home Assistant leitet für das Hinzufügen von Matter-Geräten explizit zur mobilen Companion-App weiter. Dies legt nahe, dass der interaktive, App-gesteuerte Prozess der vorgesehene und robusteste Weg für das Pairing ist.
+    *   **Konsequenz:** Die Teststrategie wird angepasst. Statt auf ein fehleranfälliges, vollautomatisches CLI-Pairing zu setzen, wird der Fokus auf die Validierung über den offiziellen User-Flow (Home Assistant UI/App) gelegt.
 *   **Erkenntnis: Testumgebung mit Container-Runtime (Docker) erweitert.**
     *   **Status:** Docker und Docker Compose wurden auf dem Raspberry Pi 5 installiert.
     *   **Test-Setup:** Ein Home Assistant Container (`ghcr.io/home-assistant/home-assistant:stable`) und der Python Matter Server (`ghcr.io/home-assistant-libs/python-matter-server:stable`) laufen im `host`-Netzwerkmodus.
@@ -152,7 +159,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **Praktische Validierung des Matter-Commissioning (Höchste Priorität):** Durchführung eines vollständigen Matter-Commissioning-Prozesses mit einem handelsüblichen Controller (z.B. Home Assistant in der vorbereiteten Docker-Umgebung, Apple Home, Google Home), um die Funktionalität der Einbindung und die Sichtbarkeit der dynamisch erstellten Endpoints zu verifizieren.
+*   **Praktische Validierung des Matter-Commissioning (Höchste Priorität):** Durchführung eines vollständigen Matter-Commissioning-Prozesses unter Verwendung der offiziellen **Home Assistant UI (und/oder Companion App)** in der vorbereiteten Docker-Umgebung. Ziel ist es, die Funktionalität der Einbindung und die Sichtbarkeit der dynamisch erstellten Endpoints zu verifizieren.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
 *   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (v1.1.0) und Finalisierung der Endbenutzer-Dokumentation.
 *   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.
@@ -184,3 +191,4 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
         *   `homeassistant`: `ghcr.io/home-assistant/home-assistant:stable`
         *   `matter-server`: `ghcr.io/home-assistant-libs/python-matter-server:stable`
     *   **Konfiguration:** Beide Container laufen im `host`-Netzwerkmodus, um mDNS-Discovery und direkte Kommunikation mit dem ESP32-C6 zu ermöglichen.
+    *   **Test-Skripte:** Python-Skripte für automatisierte Tests, inkl. Factory-Reset (`factory_reset.py`) und Commissioning-Versuche (`commission_script.py`).
