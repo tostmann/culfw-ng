@@ -54,3 +54,7 @@ void matter_interface_register_command_cb(matter_command_cb_t cb);
  * @brief Internal/Test: simulate receiving a command
  */
 void matter_interface_simulate_command(uint16_t endpoint_id, float value);
+
+#ifdef __cplusplus
+}
+#endif
