@@ -75,3 +75,11 @@ void matter_interface_update_attribute(uint16_t endpoint_id, float value) {
     ESP_LOGI(TAG, "[SIMULATION] Updated Endpoint %d to value %.2f", endpoint_id, value);
 #endif
 }
+
+const char* matter_interface_get_status(void) {
+#ifdef CONFIG_ESP_MATTER_ENABLE
+    return "REAL";
+#else
+    return "SIMULATED";
+#endif
+}
