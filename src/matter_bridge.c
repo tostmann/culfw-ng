@@ -78,8 +78,11 @@ void matter_bridge_report_event(const char* id, matter_device_type_t type, float
 
 void matter_bridge_list_endpoints() {
     char out[128];
+    int len = snprintf(out, sizeof(out), "Matter Bridge: Uptime %d s, Devices %d\r\n", bridge_uptime_sec, device_count);
+    usb_serial_jtag_write_bytes(out, len, 0);
+
     for (int i = 0; i < device_count; i++) {
-        int len = snprintf(out, sizeof(out), "EP %d: ID=%s Type=%d\r\n", 
+        len = snprintf(out, sizeof(out), "EP %d: ID=%s Type=%d\r\n", 
                            device_table[i].matter_ep_id, device_table[i].rf_id, device_table[i].type);
         usb_serial_jtag_write_bytes(out, len, 0);
     }
