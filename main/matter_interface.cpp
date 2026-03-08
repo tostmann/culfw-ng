@@ -57,9 +57,24 @@ void matter_interface_init(void) {
     ESP_LOGI(TAG, "Starting ESP-Matter SDK...");
     esp_matter::start(app_event_cb);
 
-    ESP_LOGW("MATTER_SETUP", "Manual Code: 34905722491"); 
-    ESP_LOGW("MATTER_SETUP", "Passcode: 20202021");
-    ESP_LOGW("MATTER_SETUP", "Discriminator: 3840");
+    // Print actual commissioning information
+    chip::SetupPayload payload;
+    payload.version = 0;
+    payload.discriminator = 3840;
+    payload.setUpPINCode = 20202021;
+    payload.vendorID = 0xFFF1;
+    payload.productID = 0x8000;
+    payload.commissioningFlow = chip::CommissioningFlow::kStandard;
+    payload.rendezvousInformation.SetValue(chip::RendezvousInformationFlag::kOnNetwork);
+
+    char manual_code[chip::kManualSetupCodeMaxLength + 1];
+    if (chip::ManualSetupPayloadGenerator(payload).payloadDecimalString(manual_code, sizeof(manual_code)) == CHIP_NO_ERROR) {
+        ESP_LOGW("MATTER_SETUP", "========================================");
+        ESP_LOGW("MATTER_SETUP", "Manual Code: %s", manual_code);
+        ESP_LOGW("MATTER_SETUP", "Passcode: %lu", payload.setUpPINCode);
+        ESP_LOGW("MATTER_SETUP", "Discriminator: %d", payload.discriminator);
+        ESP_LOGW("MATTER_SETUP", "========================================");
+    }
 
 #else
     ESP_LOGW(TAG, "Matter SDK NOT ENABLED. Running in simulation mode.");
