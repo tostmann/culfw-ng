@@ -45,7 +45,12 @@ uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_t
         case DEVICE_TYPE_TEMP_SENSOR:
             endpoint = temperature_sensor::create(node, nullptr, ENDPOINT_FLAG_NONE, nullptr);
             break;
-        // ... add more types
+        case DEVICE_TYPE_OUTLET:
+            endpoint = on_off_plugin_unit::create(node, nullptr, ENDPOINT_FLAG_NONE, nullptr);
+            break;
+        case DEVICE_TYPE_COVER:
+            endpoint = window_covering_device::create(node, nullptr, ENDPOINT_FLAG_NONE, nullptr);
+            break;
         default:
             ESP_LOGE(TAG, "Unknown device type: %d", type);
             return 0xFFFF;
