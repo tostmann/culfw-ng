@@ -43,7 +43,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **Bivalenter Betriebsmodus (Hybride Intelligenz):** Die Firmware ist umschaltbar gestaltet, um die Stärken von CUL und SIGNALduino zu vereinen. Der gewählte Modus wird im NVS persistent gespeichert.
     *   **CUL-Modus (`X21`):** 100%ige Kompatibilität zum etablierten CUL-Protokoll. Ausgabe generischer Protokolle mit neuem `G`-Präfix (`G<Name><Daten>...`).
     *   **SIGNALduino-Modus (`X25`):** Vollständige Emulation eines SIGNALduino mit Rohdaten-Ausgabe (`MU;...` für unbekannte, `MS;...` für bekannte Protokolle). Die Ausgabe erfolgt über eine zentrale `slowrf_output_packet`-Funktion. Die `MU`-Ausgabe wird unterdrückt, wenn ein Decoder (fest oder generisch) das Signal erfolgreich verarbeitet hat.
-*   **WiFi & Web-Dashboard:** Ein integrierter HTTP-Server (Port 80) bietet ein **vollwertiges, interaktives Diagnose-Dashboard** mit modernem CSS-Styling und Auto-Refresh. Es zeigt nicht nur Systemdaten, Protokolle und den Matter-Status, sondern ermöglicht auch die **direkte Steuerung** von Frequenz und Betriebsmodus, die **Anzeige des Duty-Cycle-Status** sowie die **Simulation von Matter-TX-Befehlen** über ein Web-Formular.
+*   **WiFi & Web-Dashboard:** Ein integrierter HTTP-Server (Port 80) bietet ein **vollwertiges, interaktives Diagnose-Dashboard** mit modernem CSS-Styling und 10-Sekunden-Auto-Refresh. Es zeigt Systemdaten (Chip-ID, IP-Adresse), Protokolle, den Matter-Status, den **Duty-Cycle-Status** und eine **vollständige Live-Ansicht aller CC1101-Register** an. Zusätzlich ermöglicht es die **direkte Steuerung** von Frequenz und Betriebsmodus sowie die **Simulation von Matter-TX-Befehlen**.
 *   **Regulatorische Konformität (Duty Cycle):** Eine implementierte **1%-Duty-Cycle-Überwachung** (`culfw_duty_cycle.c`) für das 868-MHz-Band akkumuliert die Sendezeit über eine gleitende Stunde und blockiert weitere Sendeanfragen, wenn das Limit von 36.000 ms überschritten wird, um die Funkzulassung nicht zu gefährden.
 *   **Intellectual Property (IP) / Kopierschutz (3-Säulen-Strategie):**
     *   **1. Kommerzieller Schutz ("Matter-Schild"):** Die Bindung an den Matter-Standard erfordert ein offizielles **Device Attestation Certificate (DAC)**. Clones ohne dieses Zertifikat werden von Systemen wie Apple/Google Home als "nicht verifiziert" markiert.
@@ -99,16 +99,16 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Bidirektionale Matter-Bridge (TX-Pfad): Implementierung und Validierung der Logik zur Rekonstruktion von Sendebefehlen (Nexa/IT_V3/IT_V1/FS20) aus der Matter-ID.
 *   **[DONE]** Persistenz des Betriebsmodus (`X21`/`X25`) und des Reporting-Status (`X00`/`X99`) im NVS implementiert.
 *   **[DONE]** Erweiterung des Web-Interfaces zu einem vollwertigen Diagnose-Dashboard mit CSS-Styling, Auto-Refresh sowie interaktiver Steuerung von Frequenz/Modus und Matter-TX-Simulation.
+*   **[DONE]** Erweiterung des Web-Dashboards um Anzeige des Duty-Cycle-Status, der eindeutigen Chip-ID und einer vollständigen CC1101-Registerkarte.
 *   **[DONE]** Implementierung einer Duty-Cycle-Überwachung (1%-Regel) zur Einhaltung regulatorischer Vorschriften.
 *   **[DONE]** Implementierung des Sende-Protokolls (TX) für Somfy RTS inkl. Rolling-Code-Management und präziser Frequenzabstimmung.
 *   **[DONE]** Integration von Somfy RTS in den bidirektionalen Matter-Bridge TX-Pfad.
-*   **[DONE]** Erweiterung des Web-Dashboards um Anzeige des Duty-Cycle-Status und der eindeutigen Chip-ID.
 *   **[DONE]** End-to-End-Test: Vollständiger RX->Matter->TX-Zyklus für Schalter- (Nexa) und Aktor-Protokolle (Somfy RTS) validiert.
 *   **[DONE]** End-to-End-Test (Generic): Validierung des vollständigen Pfades für tabellengesteuerte Protokolle (Generic Decoder -> Matter Bridge -> TX-Translation).
 *   **[DONE]** IP-Schutz: Tooling zur hardwaregebundenen Verschlüsselung der Protokolldatenbank (`encrypt_protocols.py`) erfolgreich eingesetzt und im Feld validiert (Hardware-MAC Bindung).
 *   **[DONE]** Erstellung einer automatisierten Test-Infrastruktur (Python-Skripte) zur Validierung der Bridge- und Decoder-Logik.
 *   **[DONE]** Code-Bereinigung und Finalisierung der Dokumentation (`COMMANDS.md`).
-*   **[DONE]** Release Management: Finaler Code-Stand als **Release v1.0.4** und Binaries (`binaries/`) auf GitHub vorbereitet.
+*   **[DONE]** Release Management: Finaler Code-Stand als **Release v1.0.5 (Build 6)** und Binaries (`binaries/`) auf GitHub vorbereitet.
 
 ## 4. Neue Erkenntnisse / Probleme
 
@@ -116,9 +116,9 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **Architektur-Verfeinerung (Initialisierung):** Die gesamte Initialisierungssequenz in `app_main` wurde optimiert, um eine stabile System-Startup-Logik sicherzustellen: NVS -> SPIFFS/Config -> WiFi -> Web Server -> Matter Bridge -> CC1101 Radio -> Start der RTOS-Tasks. Dies verhindert Race Conditions zwischen abhängigen Komponenten.
 *   **Erkenntnis (Komplexität zustandsbehafteter Protokolle):** Die Implementierung von Protokollen wie **Somfy RTS** erfordert mehr als nur einen Encoder. Ein persistenter **Rolling-Code-Manager**, der die Zählerstände im NVS speichert, ist unerlässlich, um die Synchronisation mit dem Empfänger aufrechtzuerhalten und eine zuverlässige Funktion zu gewährleisten.
 *   **Erkenntnis (Implementierung regulatorischer Notwendigkeit):** Die Implementierung einer serverseitigen **Duty-Cycle-Überwachung** ist für ein kommerziell tragfähiges Produkt im 868-MHz-Band unerlässlich, um die gesetzliche 1%-Regel einzuhalten. Die Realisierung (`culfw_duty_cycle.c`) sichert die Konformität ab.
-*   **Erkenntnis (Diagnose-Fähigkeit):** Ein vollumfängliches, **interaktives** Web-Dashboard, das nicht nur Live-Daten anzeigt, sondern auch die direkte Steuerung (Frequenz, Modus) und die Simulation von Ereignissen (Matter-TX) ermöglicht, ist für die Validierung des komplexen Brückensystems unerlässlich und beschleunigt die Fehlersuche erheblich.
+*   **Erkenntnis (Unverzichtbarkeit der Web-Diagnose):** Ein erweitertes Web-Dashboard, das nicht nur Steuerungsfunktionen bietet, sondern auch tiefgehende Hardware-Diagnosedaten wie die vollständige CC1101-Registerkarte in Echtzeit anzeigt, ist für die schnelle Fehleranalyse ohne physischen Zugriff auf das Gerät von entscheidender Bedeutung und beschleunigt die Fehlersuche erheblich.
 *   **Erkenntnis (Matter SDK Komplexität):** Die direkte Integration des ESP-Matter SDK in eine bestehende PlatformIO/ESP-IDF-Umgebung ist aufwändig. Die gewählte Architektur mit einer Abstraktionsschicht (`matter_interface.h`) und einem **Simulations-Modus** hat sich als entscheidend erwiesen, um die Gateway-Logik unabhängig vom schweren SDK entwickeln und testen zu können. Dies ermöglicht eine Parallelentwicklung und reduziert die Build-Komplexität.
-*   **Erkenntnis (Unverzichtbarkeit der Test-Automation):** Die Validierung der komplexen, bidirektionalen Gateway-Logik (RF <-> Matter) ist ohne eine skriptbasierte Test-Infrastruktur (Python) kaum machbar. Die Fähigkeit, sowohl Funksignale (`mi`-Kommando) als auch Matter-Befehle (`MC`-Kommando) über die serielle Schnittstelle zu simulieren, hat sich als entscheidend für die schnelle und zuverlässige End-to-End-Verifikation erwiesen.
+*   **Erkenntnis (Unverzichtbarkeit der Test-Automation):** Die Validierung der komplexen, bidirektionalen Gateway-Logik (RF <-> Matter), insbesondere für dynamisch geladene Protokolle, ist ohne eine skriptbasierte Test-Infrastruktur (Python) kaum machbar. Die Fähigkeit, sowohl Funksignale (`mi`-Kommando) als auch Matter-Befehle (`MC`-Kommando) über die serielle Schnittstelle zu simulieren, hat sich als entscheidend für die schnelle und zuverlässige End-to-End-Verifikation erwiesen.
 
 ## 5. Nächste Schritte
 
