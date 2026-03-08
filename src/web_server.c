@@ -39,7 +39,6 @@ static esp_err_t index_get_handler(httpd_req_t *req) {
     sprintf(mac_str, "%02X%02X%02X%02X%02X%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
     char ip_addr[16];
-    extern void wifi_manager_get_ip(char* ip);
     wifi_manager_get_ip(ip_addr);
 
     snprintf(resp, 8192, 
