@@ -121,17 +121,18 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Behebung von Linker-Fehlern durch Aktivierung notwendiger SDK-Komponenten (`CONFIG_MBEDTLS_HKDF_C=y`).
 *   **[DONE]** Erfolgreiche Kompilierung des Projekts mit voll aktiviertem ESP-Matter SDK.
 *   **[DONE]** Konfiguration der Hardware-Sicherheitsfeatures (Secure Boot V2, Flash Encryption) in `sdkconfig.defaults` zur Härtung des IP-Schutzes.
+*   **[DONE]** Erfolgreicher Boot und Start der Matter-Dienste auf ungesicherter Hardware nach Deaktivierung der Security-Features.
 
 ## 4. Neue Erkenntnisse / Probleme
 
-*   **Problem: Flashen von Hardware mit aktiven Sicherheitsmerkmalen:**
-    *   **Problem:** Nach der erfolgreichen Kompilierung der Firmware mit aktivierten Sicherheitsfeatures (Secure Boot V2, Flash Encryption) schlägt der Standard-Flash-Befehl (`idf.py flash`) fehl.
-    *   **Analyse:** Das Tool `esptool.py` bricht mit der Meldung `Active security features detected, erasing flash is disabled` ab. Dies ist ein Sicherheitsmechanismus, der verhindert, dass bereits gesicherte (d.h. mit "gebrannten" eFuses) Chips einfach überschrieben werden können. Das Zielgerät ist offenbar bereits für die Produktion vorkonfiguriert.
-    *   **Konsequenz:** Der Deployment-Prozess für bereits gesicherte Hardware unterscheidet sich fundamental vom Deployment auf "jungfräulicher" Hardware. Ein einfaches Löschen und Flashen ist nicht möglich.
+*   **Erkenntnis: Irreversibilität von eFuses und Implikationen für den Entwicklungsprozess.**
+    *   **Analyse:** Eine Untersuchung der Hardware mit `espefuse.py` hat ergeben, dass die Entwicklungsboards unterschiedliche Sicherheitslevel aufweisen. Auf einem der Boards (868MHz-Variante) wurde das `SECURE_BOOT_EN` eFuse permanent aktiviert.
+    *   **Konsequenz:** Dieses Board akzeptiert **nur** noch Firmware, die mit einem spezifischen, in den eFuses hinterlegten Schlüssel-Hash signiert ist. Da dieser ursprüngliche Schlüssel nicht verfügbar ist, kann auf diesem Board keine neue (oder unsignierte) Firmware mehr geflasht werden. Es ist für die flexible Entwicklung unbrauchbar ("gebrickt") und verhält sich wie ein Produktionsgerät.
+    *   **Strategische Anpassung:** Die Entwicklung wird vorerst **ausschließlich auf ungesicherter Hardware** (433MHz-Board ohne aktive Security-eFuses) und mit deaktivierten Secure-Boot/Encryption-Features im Build fortgesetzt. Der Deployment-Prozess für gesicherte Hardware wird auf einen späteren Zeitpunkt verschoben.
 *   **Erkenntnis: Vergrößerung des Bootloaders durch Sicherheitsfeatures:**
     *   **Problem:** Die Aktivierung von Secure Boot V2 und Flash Encryption fügt dem Bootloader erhebliche Mengen an Code für Signaturverifizierung und Entschlüsselungsroutinen hinzu. Dies führte dazu, dass der Bootloader die im Standard-Partitionsschema vorgesehene Größe von 32 KB (`0x8000`) überschritt.
     *   **Konsequenz:** Der Build-Prozess schlug fehl, da der Bootloader nicht in die für ihn vorgesehene Partition passte.
-    *   **Lösung:** Die `partitions.csv` musste angepasst werden, um den Start-Offset der App-Partition (auf `0x20000`) zu verschieben und somit dem Bootloader mehr Platz einzuräumen.
+    *   **Lösung (für gesicherten Build):** Die `partitions.csv` musste angepasst werden, um den Start-Offset der App-Partition (auf `0x20000`) zu verschieben und somit dem Bootloader mehr Platz einzuräumen. Für den aktuellen ungesicherten Build wurde dies zurückgesetzt.
 *   **Strategische Entscheidung: Migration von PlatformIO zu nativem ESP-IDF:**
     *   **Problem:** Das PlatformIO-Build-System erwies sich bei der Integration des hochkomplexen `esp-matter`-SDKs als unzuverlässig und fehleranfällig (z.B. bei der Einbettung von Binärdaten für Zertifikate).
     *   **Entscheidung:** Das Projekt wurde vollständig auf den nativen ESP-IDF-Toolchain (`idf.py`) umgestellt, um einen stabilen, vorhersagbaren und wartbaren Build-Prozess zu gewährleisten.
@@ -143,10 +144,9 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **Analyse der eFuse-Konfiguration:** Mit `espefuse.py summary` den exakten Status der Sicherheits-eFuses auf der Zielhardware ermitteln, um den genauen Grund für den Flash-Fehler zu bestätigen.
-*   **Entwicklung eines Deployment-Prozesses für gesicherte Hardware:** Erarbeiten und Testen einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses (z.B. via `esptool.py --force`).
-*   **Validierung des Matter-Builds:** Nach erfolgreichem Flash, Durchführung eines vollständigen Matter-Commissioning-Prozesses mit einem handelsüblichen Controller (z.B. Apple Home), um die korrekte Funktion der Zertifikate (DAC) zu verifizieren.
+*   **Validierung des Matter-Builds:** Durchführung eines vollständigen Matter-Commissioning-Prozesses mit einem handelsüblichen Controller (z.B. Apple Home, Google Home) auf der jetzt laufenden ungesicherten Firmware, um die grundlegende Funktionalität zu verifizieren.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
+*   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber vorerst zurückgestellt.
 *   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (v1.1.0) und Finalisierung der Endbenutzer-Dokumentation.
 
 ## 6. Hardware-Konfiguration (Pinout)
