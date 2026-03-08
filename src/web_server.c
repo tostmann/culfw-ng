@@ -63,6 +63,7 @@ static esp_err_t index_get_handler(httpd_req_t *req) {
         is_433 ? "433" : "868",
         mode,
         mode == SLOWRF_MODE_CUL ? "CUL" : "SIGNALduino",
+        36000 - duty_cycle_get_remaining(),
         proto_list,
         matter_list,
         events[0] ? events : "Waiting for radio signals..."
