@@ -8,6 +8,7 @@
 #include "culfw_duty_cycle.h"
 #include <string.h>
 #include "esp_mac.h"
+#include "wifi_manager.h"
 
 static const char *TAG = "WEB_SERVER";
 
