@@ -163,20 +163,15 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 ## 4. Erkenntnisse & Gelöste Probleme
 
 *   **Neues Problem: Laufzeit-Crash bei Initialisierung des Thread-Stacks.**
-    *   **Analyse:** Unmittelbar nach dem erfolgreichen Build und Flash der Firmware mit aktiviertem OpenThread-Stack stürzt das Gerät in einer permanenten Boot-Schleife ab. Die Log-Analyse zeigt zwei kritische Fehler, die dem Absturz vorausgehen:
-        1.  `E (1517) OPENTHREAD: ... Failed to create OpenThread task queue event fd`
-        2.  `E (1531) OPENTHREAD: ... esp_openthread_platform_init failed`
-    *   Der eigentliche Absturz wird durch `assert failed: modem_clock_device_disable modem_clock.c:277` ausgelöst.
-    *   **Hypothese:** Dies deutet auf einen tiefgreifenden Ressourcenkonflikt hin. Entweder sind die verfügbaren `eventfd`-Deskriptoren erschöpft, oder es gibt einen Deadlock/Race-Condition zwischen dem WiFi- und dem Thread-Stack, die beide auf den 2.4-GHz-Funk (Modem-Takt) zugreifen müssen. Das Coexistence-Management scheint hier zu versagen oder falsch konfiguriert zu sein.
-*   **Gelöstes Problem: Build-Fehler durch API-Inkompatibilität in `esp_vfs_eventfd_register`.**
-    *   **Analyse:** Der Build-Prozess brach mit dem Fehler `error: too few arguments to function 'esp_vfs_eventfd_register'` ab. Die verwendete ESP-IDF Version (v5.5.2) erwartete für diese Funktion eine Konfigurationsstruktur (`esp_vfs_eventfd_config_t`), während der Code sie noch parameterlos aufrief.
-    *   **Lösung:** Der Aufruf in `thread_manager.c` wurde an die aktuelle API angepasst, indem eine `esp_vfs_eventfd_config_t`-Struktur mit Standardwerten (`ESP_VFS_EVENTD_CONFIG_DEFAULT()`) initialisiert und übergeben wird. Der Build ist nun erfolgreich.
-*   **Gelöstes Problem: OpenThread-Konfigurationsmakros nicht gefunden.**
-    *   **Analyse:** Der Build schlug fehl, da Makros wie `ESP_OPENTHREAD_DEFAULT_RADIO_CONFIG()` nicht gefunden wurden. Eine Analyse der ESP-IDF-Beispiele zeigte, dass diese Makros in den Beispiel-Anwendungen selbst und nicht in den öffentlichen Headern der Komponente definiert sind.
-    *   **Lösung:** Die notwendigen Makro-Definitionen wurden aus den Beispielen extrahiert und lokal in `thread_manager.c` als `CUL_OPENTHREAD_DEFAULT_..._CONFIG()` implementiert, um eine stabile und von den Beispielen unabhängige Build-Konfiguration zu gewährleisten.
-*   **Gelöstes Problem: Build-Fehler `esp_openthread.h: No such file or directory` nach Aktivierung von Thread.**
-    *   **Analyse:** Die neuen Konfigurationseinstellungen aus `sdkconfig.defaults` wurden nicht in der aktiven Build-Konfiguration (`sdkconfig`) übernommen, weshalb das Build-System die Abhängigkeiten zur OpenThread-Komponente nicht auflöste.
-    *   **Lösung:** Ein `idf.py reconfigure` hat die Projektkonfiguration erzwungenermaßen aktualisiert und die `sdkconfig` neu generiert. Dies hat den Header-Fehler behoben und die Komponente korrekt eingebunden.
+    *   **Fehler-Kette:** Die Log-Analyse zeigt eine klare Kausal-Kette:
+        1.  `E (...) OPENTHREAD: ... Failed to create OpenThread task queue event fd`
+        2.  `E (...) OPENTHREAD: ... esp_openthread_platform_init failed`
+        3.  `assert failed: modem_clock_device_disable modem_clock.c:277`
+    *   **Analyse:** Der eigentliche Crash im `modem_clock` ist ein Folgefehler, ausgelöst durch das Scheitern der OpenThread-Initialisierung. Der Kern des Problems ist der erste Fehler: Dem System gelingt es nicht, die notwendigen Systemressourcen (`eventfd`, ein Mechanismus zur Task-Benachrichtigung) für OpenThread bereitzustellen.
+    *   **Hypothese:** Dies deutet auf einen tiefgreifenden Ressourcenkonflikt hin. Da die Option `CONFIG_ESP_MATTER_ENABLE_OPENTHREAD` aktiv ist, versucht das Matter-SDK den Thread-Stack automatisch zu starten. Unsere manuelle Initialisierung in `thread_manager.c` führt zu einer Kollision (Race Condition) bei der Registrierung des `eventfd`-VFS und der Beanspruchung des 2.4-GHz-Funkmoduls. Obwohl Versuche unternommen wurden, das VFS frühzeitig und zentral zu registrieren, bleibt der Konflikt bestehen.
+*   **Gelöstes Problem: Build-Fehler bei Thread-Aktivierung.**
+    *   **Analyse:** Der Build-Prozess schlug aufgrund mehrerer Probleme fehl, nachdem der Thread-Stack aktiviert wurde. Dazu gehörten API-Änderungen (`esp_vfs_eventfd_register` erwartet nun eine Konfigurationsstruktur), fehlende Header-Dateien durch nicht aktualisierte Konfigurationen, nicht-öffentliche Makros und Tippfehler in Funktionsaufrufen (`esp_openthread_launch_mainloop`).
+    *   **Lösung:** Die `sdkconfig` wurde mit `idf.py reconfigure` erneuert, der Code an die neue API angepasst, notwendige Makros wurden aus Beispielen extrahiert und Tippfehler korrigiert. Der Build-Prozess für die Thread-fähige Firmware ist nun stabil.
 *   **Gelöstes Problem: OpenThread-Funkmodul (ESP32-C6) war in permanenter Boot-Schleife.**
     *   **Analyse:** Der OpenThread Border Router (`otbr-agent`) konnte keine Verbindung zum Funkmodul (Radio Co-Processor, RCP) auf `/dev/ttyACM3` herstellen. Eine direkte Analyse der seriellen Schnittstelle des Moduls zeigte, dass dessen Firmware nicht startete, sondern sich der ESP32-C6 in einer permanenten Neustart-Schleife befand (`ESP-ROM:esp32c6...`).
     *   **Lösung:** Die fehlerhafte Firmware des RCP-Moduls wurde mittels `esptool.py` vollständig überschrieben. Eine stabile, vorkompilierte RCP-Firmware (`generic-esp32c6.bin`) wurde auf den ESP32-C6 geflasht. Unmittelbar danach startete das Modul korrekt und der `otbr-agent` im Docker-Container konnte die Verbindung erfolgreich herstellen. **Der Blocker für die Matter-over-Thread-Validierung ist damit beseitigt.**
@@ -185,25 +180,18 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
         1.  **Interner Start-Daemon Bug:** Das Standard-Startskript (`/app/script/server`) im Container verwendet einen fehlerhaften `start-stop-daemon`-Aufruf, der bei wiederholten Starts zu einem instabilen Zustand führt.
         2.  **Falsche Listen-Adresse:** Der `otbr-agent` lauscht standardmäßig nur auf `127.0.0.1` (localhost), was den Zugriff von anderen Containern (z.B. Home Assistant Matter Server) verhindert.
     *   **Lösung:** Eine grundlegende Anpassung der `docker-compose.yml`. Das fehlerhafte Start-Skript des Containers wird komplett umgangen, indem der `entrypoint` des Containers überschrieben wird. Die Dienste (`rsyslog`, `dbus`, `otbr-agent`, `otbr-web`) werden nun direkt und in der korrekten Reihenfolge gestartet. Dem `otbr-agent` wird dabei der kritische Parameter `--rest-listen-address 0.0.0.0` übergeben. **Der OTBR-Container startet nun stabil und ist im Netzwerk voll funktionsfähig.**
-*   **Erkenntnis: Dynamische Endpoints müssen explizit aktiviert werden (Validiert).**
-    *   **Analyse:** Dynamisch über `...::create()` erstellte Endpoints wurden vom SDK zwar intern verwaltet, aber nicht aktiv im Matter-Netzwerk publiziert.
-    *   **Konsequenz:** In `matter_interface.cpp` wird nun direkt nach der Erstellung eines Endpoints die Funktion `esp_matter::endpoint::enable(endpoint)` aufgerufen. **Das Problem der Unsichtbarkeit ist damit nachweislich gelöst.**
-*   **Erkenntnis: SDK-Abstürze durch uninitialisierte Konfigurationen (Validiert).**
-    *   **Analyse:** Die Firmware stürzte beim Erstellen dynamischer Matter-Endpoints mit einer `Cluster cannot be NULL`-Fehlermeldung ab.
-    *   **Konsequenz:** Die `matter_interface.cpp` wurde gehärtet, indem für jeden Endpoint-Typ eine explizite, standard-initialisierte `config_t`-Struktur erzeugt wird. **Der Absturz konnte mit dieser Methode nachweislich behoben werden.**
-*   **Erkenntnis: ESP-Matter SDK API-Evolution.**
-    *   **Analyse:** Ein Build-Fehler (`'get_root_node_endpoint' is not a member of ...`) zeigte, dass sich die API zur Erstellung und Verknüpfung von Endpoints in der verwendeten SDK-Version (`>=1.2.0`) geändert hat.
-    *   **Konsequenz:** Die Logik in `matter_interface.cpp` wurde umgestellt. Endpoints werden nun zuerst am Haupt-`node` erstellt und anschließend dem `aggregator`-Endpoint mittels `set_parent_endpoint` explizit untergeordnet.
 *   **Erkenntnis: Irreversibilität von eFuses – Praxistest mit Konsequenzen.**
     *   **Analyse:** Das 868MHz-Board hat **permanent aktive `SECURE_BOOT_EN` eFuses** mit einem nicht mehr verfügbaren Schlüssel.
     *   **Konsequenz:** Dieses Board ist für die weitere Entwicklung effektiv unbrauchbar ("gebrickt"). Die Entwicklung wird **ausschließlich auf ungesicherter Hardware** (433MHz-Board) fortgesetzt.
 
 ## 5. Nächste Schritte
 
-*   **Analyse und Behebung des Laufzeit-Absturzes (Höchste Priorität):** Systematische Untersuchung des `modem_clock`-Asserts. Dies beinhaltet:
-    *   Überprüfung der Initialisierungsreihenfolge von WiFi, Thread und Matter in `app_main`.
-    *   Verifizierung der Coexistence-Einstellungen (`CONFIG_ESP_COEX_SW_COEXIST_ENABLE`) in `sdkconfig`.
-    *   Experimentelles Erhöhen der maximalen Anzahl von `eventfd`-Deskriptoren in der `esp_vfs_eventfd_config_t`.
+*   **Analyse und Behebung des Laufzeit-Absturzes (Höchste Priorität):** Systematische Lösung des Ressourcen-Konflikts zwischen dem Matter SDK und der manuellen Thread-Initialisierung.
+    *   **Hypothese:** Das Matter-SDK verwaltet den Start des OpenThread-Stacks selbst, wenn `CONFIG_ESP_MATTER_ENABLE_OPENTHREAD=y` gesetzt ist. Unsere manuelle Initialisierung in `thread_manager.c` führt zu einer fatalen Kollision.
+    *   **Strategie:**
+        1.  **Kontrollierte Initialisierung:** Die manuelle Initialisierung in `thread_manager.c` und der zugehörige Task werden vollständig entfernt. Die Verantwortung für den Start des Thread-Stacks wird dem ESP-Matter SDK überlassen.
+        2.  **Zentrale Ressourcen-Verwaltung:** Sicherstellen, dass der `eventfd`-VFS nur einmalig und sehr früh in `app_main` initialisiert wird, bevor das Matter-SDK die Kontrolle übernimmt.
+        3.  **Tiefenanalyse:** Untersuchung des `OpenthreadLauncher.cpp`-Codes im ESP-Matter SDK, um dessen genauen Initialisierungsablauf und Ressourcenbedarf zu verstehen.
 *   **Matter-over-Thread Validierung:** **[Blockiert]** Nach Behebung des Absturzes: Durchführung eines End-to-End-Tests der Kommunikation (RX und TX) über das nun auf dem Gerät aktive Thread-Netzwerk, um die hybride (WiFi & Thread) Funktionalität zu verifizieren.
 *   **End-to-End-Validierung der Matter-Bridge (TX-Pfad):** **[Blockiert]** Senden von Befehlen aus Home Assistant (z.B. Schalten eines via RF erstellten FS20- oder Somfy-Endpoints) und Verifikation des am CC1101 korrekt generierten und gesendeten Funksignals über WiFi und Thread.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
