@@ -150,16 +150,16 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** **API-Anpassung (Matter SDK):** Endpoint-Erstellungslogik an geänderte SDK-API angepasst (Verwendung von `set_parent_endpoint` anstelle veralteter Funktionen), um Kompilierung zu ermöglichen und Build-Fehler zu beheben.
 *   **[DONE]** **Sichtbarkeit dynamischer Endpoints:** Implementierung von `esp_matter::endpoint::enable()` nach der Erstellung, um die Endpoints im Matter-Netzwerk sichtbar zu machen.
 *   **[DONE]** **End-to-End-Validierung (RX-Pfad):** Erfolgreiche Erstellung, Aktivierung und Sichtbarmachung dynamischer Endpoints (Sensor/Schalter) im Matter-Netzwerk (Home Assistant) und korrekte Übermittlung der Attribut-Werte verifiziert.
-*   **[PAUSED]** **Thread-Infrastruktur (OTBR):** Die Stabilisierung des OpenThread Border Router Docker-Containers ist fehlgeschlagen. Die Arbeiten hieran sind vorerst pausiert, um den Fokus auf die Matter-over-WiFi Funktionalität zu legen.
+*   **[DONE]** **Thread-Infrastruktur (OTBR):** Die Instabilität des OpenThread Border Router Docker-Containers wurde analysiert und behoben. Der Fokus liegt nun wieder auf der vollständigen Matter-Funktionalität (WiFi & Thread).
 
 ## 4. Erkenntnisse & Gelöste Probleme
 
+*   **Erkenntnis: Docker-basierte OTBR-Instabilität durch fehlende Host-Kernel-Module (Validiert).**
+    *   **Analyse:** Der `openthread/otbr` Docker-Container stürzte in einer Neustart-Schleife ab. Die Ursache war das Fehlschlagen des internen Start-Skripts, das versuchte, IPv6-Firewall-Regeln via `ip6tables` zu setzen. Dem Host-System fehlten hierfür die notwendigen Kernel-Module (`ip6table_filter`).
+    *   **Konsequenz:** Durch das manuelle Laden der benötigten Kernel-Module auf dem Host (`sudo modprobe ip6table_filter`) konnte die Firewall-Initialisierung im Container erfolgreich durchgeführt werden. Der OTBR-Container startet nun stabil. Die Test-Infrastruktur für Matter-over-Thread ist damit wieder voll funktionsfähig.
 *   **Erkenntnis: Dynamische Endpoints müssen explizit aktiviert werden (Validiert).**
     *   **Analyse:** Dynamisch über `...::create()` erstellte Endpoints wurden vom SDK zwar intern verwaltet, aber nicht aktiv im Matter-Netzwerk publiziert. Sie blieben daher für Controller wie Home Assistant unsichtbar.
     *   **Konsequenz:** In `matter_interface.cpp` wird nun direkt nach der Erstellung eines Endpoints die Funktion `esp_matter::endpoint::enable(endpoint)` aufgerufen. Dies stößt den notwendigen Prozess im SDK an, um den neuen Endpoint und seine Funktionen (Cluster) im Fabric bekannt zu machen. **Das Problem der Unsichtbarkeit ist damit nachweislich gelöst.**
-*   **Erkenntnis: Instabile Docker-basierte Thread-Infrastruktur (Arbeit pausiert).**
-    *   **Analyse:** Trotz wiederholter Versuche, den offiziellen `openthread/otbr`-Container durch Überschreiben des `entrypoint` zu stabilisieren, bleibt die Konfiguration unzuverlässig. Interne Start-Skripte des Containers verursachen weiterhin Konflikte mit dem Host-System (z.B. bei DBus, Firewall-Diensten, fehlenden Kernel-Modulen wie `ip6table_filter`), was zu einem instabilen Betrieb führt.
-    *   **Konsequenz:** Die Arbeit an einer Matter-over-Thread-Lösung wird vorerst pausiert. Der Fokus liegt nun vollständig auf der Validierung der **Matter-over-WiFi Funktionalität**, welche die Kernanforderung des Projekts darstellt.
 *   **Erkenntnis: SDK-Abstürze durch uninitialisierte Konfigurationen (Validiert).**
     *   **Analyse:** Die Firmware stürzte beim Erstellen dynamischer Matter-Endpoints (via `MT`-Kommando) mit einer `Cluster cannot be NULL`-Fehlermeldung ab. Das Übergeben eines `nullptr` für die Konfigurationsstruktur an die `create()`-Funktionen des SDK ist nicht sicher.
     *   **Konsequenz:** Die `matter_interface.cpp` wurde gehärtet, indem für jeden Endpoint-Typ eine explizite, standard-initialisierte `config_t`-Struktur erzeugt und deren Adresse an die `create()`-Funktion übergeben wird. **Der Absturz konnte mit dieser Methode nachweislich behoben werden.** Die dynamische Endpoint-Erstellung ist nun stabil.
@@ -188,6 +188,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 ## 5. Nächste Schritte
 
 *   **End-to-End-Validierung der Matter-Bridge (TX-Pfad) (Höchste Priorität):** Senden von Befehlen aus Home Assistant (z.B. Schalten eines via RF erstellten FS20- oder Somfy-Endpoints) und Verifikation des am CC1101 korrekt generierten und gesendeten Funksignals.
+*   **Matter-over-Thread Validierung:** Durchführung eines End-to-End-Tests der Kommunikation (RX und TX) über das nun stabilisierte Thread-Netzwerk (OTBR).
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
 *   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (**v1.1.0-NG**) und Finalisierung der Endbenutzer-Dokumentation.
 *   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.
@@ -221,5 +222,5 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
         *   `homeassistant`: `ghcr.io/home-assistant/home-assistant:stable`
         *   `matter-server`: `ghcr.io/home-assistant-libs/python-matter-server:stable`
         *   `otbr`: `openthread/otbr:latest` (OpenThread Border Router)
-    *   **Konfiguration:** Alle Container laufen im `host`-Netzwerkmodus. Der OTBR-Container wurde für Tests konfiguriert, erwies sich jedoch als instabil. Die Matter-over-Thread Funktionalität ist daher **vorerst ausgesetzt**.
+    *   **Konfiguration:** Alle Container laufen im `host`-Netzwerkmodus. Die Stabilität des OTBR-Containers wurde durch das Laden der Kernel-Module `ip6table_filter` auf dem Host-System sichergestellt.
     *   **Test-Skripte:** Python-Skripte für automatisierte Tests, inkl. Factory-Reset (`force_reset.py`) und Log-Erfassung (`capture_boot.py`).
