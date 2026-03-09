@@ -41,3 +41,5 @@ services:
       - INFRA_IF_NAME=eth0
       - THREAD_IF_NAME=wpan0
       - RADIO_URL=spinel+hdlc:///dev/ttyACM3
+    entrypoint: /usr/sbin/otbr-agent
+    command: ["-I", "wpan0", "-B", "eth0", "spinel+hdlc:///dev/ttyACM3"]
