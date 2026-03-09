@@ -38,6 +38,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
         *   **RX (RF $\rightarrow$ Matter):** Erkannte SlowRF-Geräte werden als dynamische **Endpoints** (z.B. Temperatursensor, Schalter) im Matter-Netzwerk on-the-fly angelegt und über eine **"Dynamic Endpoint Registry"** (`matter_bridge.c`) verwaltet. Der Name des dekodierenden Protokolls (z.B. "Nexa") wird pro Endpunkt gespeichert. Die maximale Anzahl dynamischer Endpoints wurde auf 20 erhöht (`CHIP_DEVICE_CONFIG_DYNAMIC_ENDPOINT_COUNT`).
         *   **TX (Matter $\rightarrow$ RF):** Eingehende Matter-Befehle werden über einen **Callback-Mechanismus** (`matter_bridge_command_cb`) verarbeitet. Die Bridge-Logik identifiziert den Ziel-Endpunkt, liest den bei der Endpoint-Erstellung gespeicherten Protokoll-Namen (z.B. "Somfy") und die RF-ID aus und ruft den passenden Encoder auf, um den Befehl in ein SlowRF-Funkkommando zu übersetzen und über den CC1101 zu senden.
         *   Die Anwendungslogik ist gegen eine **API-Interface-Schicht** (`matter_interface.h`) entwickelt, um die Kompilierbarkeit ohne das vollständige SDK zu gewährleisten (Simulations-Modus).
+        *   **Thread-Sicherheit:** Alle API-Aufrufe, die den Zustand des Matter-Datenmodells verändern (z.B. `attribute::update`), werden durch einen expliziten Lock (`lock::chip_stack_lock`) gegen den Matter-Haupt-Thread abgesichert.
     *   **Matter Endpoint ID-Masking:** Um die Proliferation von Endpoints zu verhindern (z.B. ON/OFF-Befehle derselben Fernbedienung), wird eine ID-Maskierung via `id_ignore_bits` in der Protokolldefinition verwendet. Dies stellt sicher, dass ein physisches Gerät immer demselben Matter-Endpoint zugeordnet wird.
 *   **Zustandsbehaftete Protokolle (Rolling Codes):** Für Protokolle wie **Somfy RTS** wurde ein dedizierter **Rolling-Code-Manager** (`rolling_code.c`) implementiert. Dieser speichert die Zählerstände für jedes Gerät persistent im NVS, um eine De-Synchronisation mit Original-Fernbedienungen zu verhindern. Die Sende-Routine wurde gehärtet und sendet einen präzisen Wake-Up-Puls gefolgt von der Manchester-kodierten Frame-Sequenz.
 *   **Bivalenter Betriebsmodus (Hybride Intelligenz):** Die Firmware ist umschaltbar gestaltet, um die Stärken von CUL und SIGNALduino zu vereinen. Der gewählte Modus wird im NVS persistent gespeichert.
@@ -142,6 +143,8 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** **IPv6-Konnektivität implementiert:** WiFi-Manager erweitert, um IPv6 Link-Local-Adressen zu aktivieren und zu verwalten.
 *   **[DONE]** **Version-String (`V`) erweitert:** Ausgabe um die aktive IPv6-Adresse ergänzt.
 *   **[DONE]** **Build-Skript optimiert:** Inkrementelles Kompilieren als Standard in `build_idf.sh` festgelegt, um Entwicklungszyklen zu beschleunigen.
+*   **[DONE]** **Thread-Sicherheit für Matter-Bridge gehärtet:** API-Aufrufe mit `chip_stack_lock` synchronisiert, um Race Conditions zu verhindern.
+*   **[DONE]** **Fehlerbehebung Web-Interface:** URL-Parsing für Befehle mit Leerzeichen (z.B. 'MT ...') korrigiert.
 
 ## 4. Erkenntnisse & Gelöste Probleme
 
@@ -157,6 +160,9 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **Erkenntnis: Matter erfordert explizite IPv6 Link-Local Konfiguration.**
     *   **Analyse:** Obwohl der Matter-Stack intern IPv6 nutzt, war das Gerät im Netzwerk nicht per IPv6 (Ping) erreichbar. Die grundlegende Kommunikation mit dem Controller war instabil.
     *   **Konsequenz:** Die WiFi-Verbindungslogik wurde um einen expliziten Aufruf zur Erstellung der IPv6 Link-Local-Adresse (`esp_netif_create_ip6_linklocal`) erweitert. Dies stellt sicher, dass das Gerät eine standardkonforme, routing-unabhängige IPv6-Adresse für die lokale Kommunikation mit einem Matter-Controller besitzt. Die Erreichbarkeit wurde per Ping verifiziert.
+*   **Erkenntnis: Matter-SDK-Aufrufe erfordern explizite Thread-Synchronisation.**
+    *   **Analyse:** Asynchrone Aufrufe der `matter_interface` aus anderen Tasks (z.B. `slowrf_task`) führten zu Race Conditions und instabilem Verhalten, da sie mit dem Haupt-Thread des Matter-Stacks kollidierten.
+    *   **Konsequenz:** Alle kritischen API-Aufrufe, die den Zustand des Matter-SDK verändern (z.B. `attribute::update`), wurden durch einen Mutex (`lock::chip_stack_lock`) abgesichert. Dies stellt die Integrität des Matter-Datenmodells sicher.
 *   **Erkenntnis: Unzuverlässigkeit von Legacy-Hardware als Test-Sender.**
     *   **Analyse:** Wiederholte Versuche, komplexe Protokolle wie HMS oder FHT von einem Legacy-CUL zu senden, schlugen fehl. Dies deutet auf Timing-Probleme oder Inkompatibilitäten in der alten CUL-Firmware hin.
     *   **Konsequenz:** Für die zuverlässige Validierung von Decodern wurde auf die direkte Puls-Injektion (`mi`-Kommando) umgestiegen. Dies entkoppelt die Decoder-Entwicklung von der unzuverlässigen Sender-Hardware und ermöglicht präzise, wiederholbare Tests.
@@ -166,7 +172,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **End-to-End-Validierung der Matter-Bridge (Höchste Priorität):** Systematischer Test der bidirektionalen Funktionalität: (A) Empfang von SlowRF-Signalen (z.B. Intertechno-Sensor) und deren korrekte Darstellung in Home Assistant; (B) Senden von Befehlen aus Home Assistant (z.B. Schalten von Somfy/FS20) und Verifikation des gesendeten Funksignals.
+*   **End-to-End-Validierung der Matter-Bridge (Höchste Priorität):** Systematischer Test der bidirektionalen Funktionalität: (A) Empfang von SlowRF-Signalen (z.B. Intertechno-Sensor) und deren korrekte Darstellung als dynamischer Endpoint in Home Assistant; (B) Senden von Befehlen aus Home Assistant (z.B. Schalten von Somfy/FS20) und Verifikation des gesendeten Funksignals.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
 *   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (**v1.1.0-NG**) und Finalisierung der Endbenutzer-Dokumentation.
 *   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.
