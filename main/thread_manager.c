@@ -33,12 +33,16 @@ static const char *TAG = "THREAD_MGR";
     }
 
 static void ot_task_worker(void *aContext) {
+    // Wait for WiFi to settle
+    vTaskDelay(pdMS_TO_TICKS(5000));
+
     esp_openthread_platform_config_t config = {
         .radio_config = CUL_OPENTHREAD_DEFAULT_RADIO_CONFIG(),
         .host_config = CUL_OPENTHREAD_DEFAULT_HOST_CONFIG(),
         .port_config = CUL_OPENTHREAD_DEFAULT_PORT_CONFIG(),
     };
 
+    ESP_LOGI(TAG, "Initializing OpenThread stack...");
     // Initialize the OpenThread stack
     ESP_ERROR_CHECK(esp_openthread_init(&config));
 
