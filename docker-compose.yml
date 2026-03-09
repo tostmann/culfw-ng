@@ -42,4 +42,11 @@ services:
       - THREAD_IF_NAME=wpan0
       - HTTP_PORT=8081
       - REST_HOST=0.0.0.0
-    command: ["--radio-url", "spinel+hdlc+uart:///dev/ttyACM3"]
+    entrypoint: >
+      /bin/bash -c "
+      /app/script/server &
+      sleep 10;
+      pkill -f start-stop-daemon;
+      /usr/sbin/otbr-agent -I wpan0 -B eth0 -d7 --rest-listen-address 0.0.0.0 spinel+hdlc+uart:///dev/ttyACM3 &
+      /usr/sbin/otbr-web -I wpan0 -d7 -a 0.0.0.0 -p 8081 &
+      sleep infinity"
