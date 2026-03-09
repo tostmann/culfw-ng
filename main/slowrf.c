@@ -314,7 +314,7 @@ void slowrf_task(void *pvParameters) {
                         int dlen = 0;
                         for (int i = 0; i < fs_dec.byte_cnt; i++) dlen += snprintf(d + dlen, sizeof(d) - dlen, "%02X", fs_dec.data[i]);
                         slowrf_output_packet("F", d, rssi);
-#if defined(CONFIG_ESP_MATTER_ENABLE_WIFI) || defined(CONFIG_ESP_MATTER_ENABLE_OPENTHREAD)
+#if defined(CONFIG_ESP_MATTER_ENABLE) && (CONFIG_ESP_MATTER_ENABLE == 1)
                         matter_bridge_report_event(id, "FS20", DEVICE_TYPE_SWITCH, (fs_dec.data[3] & 0x1) ? 1.0 : 0.0);
 #endif
                     }
