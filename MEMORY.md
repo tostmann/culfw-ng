@@ -147,9 +147,13 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** **Fehlerbehebung Web-Interface:** URL-Parsing für Befehle mit Leerzeichen (z.B. 'MT ...') korrigiert.
 *   **[DONE]** **Test-Infrastruktur erweitert:** OpenThread Border Router (OTBR) als Docker-Container (`openthread/otbr`) aufgesetzt und für Thread-Kommunikation konfiguriert.
 *   **[DONE]** **Fehlerbehebung Matter-Bridge-Absturz:** Behoben durch explizite Initialisierung der Endpoint-Konfigurationen (`config_t`), um kritische 'Cluster cannot be NULL'-Fehler im SDK zu vermeiden und die Stabilität bei der dynamischen Endpoint-Erstellung zu gewährleisten.
+*   **[DONE]** **API-Anpassung (Matter SDK):** Endpoint-Erstellungslogik an geänderte SDK-API angepasst (Verwendung von `set_parent_endpoint` anstelle veralteter Funktionen), um Kompilierung zu ermöglichen.
 
 ## 4. Erkenntnisse & Gelöste Probleme
 
+*   **Erkenntnis: ESP-Matter SDK API-Evolution.**
+    *   **Analyse:** Ein Build-Fehler (`'get_root_node_endpoint' is not a member of ...`) zeigte, dass sich die API zur Erstellung und Verknüpfung von Endpoints in der verwendeten SDK-Version (`>=1.2.0`) geändert hat.
+    *   **Konsequenz:** Die Logik in `matter_interface.cpp` wurde umgestellt. Endpoints werden nun zuerst am Haupt-`node` erstellt und anschließend dem `aggregator`-Endpoint mittels `set_parent_endpoint` explizit untergeordnet. Dies stellt die Kompatibilität mit dem aktuellen SDK her.
 *   **Erkenntnis: SDK-Abstürze durch uninitialisierte Konfigurationen.**
     *   **Analyse:** Die Firmware stürzte beim Erstellen dynamischer Matter-Endpoints (via `MT`-Kommando) ab. Die Ursache wurde auf eine `Cluster cannot be NULL`-Fehlermeldung im ESP-Matter SDK zurückgeführt. Das Übergeben eines `nullptr` für die Konfigurationsstruktur an die `create()`-Funktionen des SDK (z.B. `temperature_sensor::create`) ist nicht sicher und führt zu einem undefinierten Zustand und schließlich zum Absturz.
     *   **Konsequenz:** Die `matter_interface.cpp` wurde gehärtet, indem für jeden Endpoint-Typ eine explizite, standard-initialisierte `config_t`-Struktur erzeugt und deren Adresse an die `create()`-Funktion übergeben wird. Dies stellt sicher, dass das SDK immer mit gültigen, initialisierten Daten arbeitet und hat den Absturz zuverlässig behoben.
@@ -180,7 +184,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **End-to-End-Validierung der Matter-Bridge (Höchste Priorität):** Der kritische Absturz bei der Endpoint-Erstellung ist behoben. Nun folgt der systematische Test der bidirektionalen Funktionalität: (A) Empfang von SlowRF-Signalen (z.B. Intertechno-Sensor) und deren korrekte Darstellung als dynamischer Endpoint in Home Assistant; (B) Senden von Befehlen aus Home Assistant (z.B. Schalten von Somfy/FS20) und Verifikation des gesendeten Funksignals.
+*   **End-to-End-Validierung der Matter-Bridge (Höchste Priorität):** Der kritische Absturz bei der Endpoint-Erstellung sowie der nachfolgende Kompilierungsfehler aufgrund von API-Änderungen sind behoben. Nun folgt der systematische Test der bidirektionalen Funktionalität: (A) Empfang von SlowRF-Signalen (z.B. Intertechno-Sensor) und deren korrekte Darstellung als dynamischer Endpoint in Home Assistant; (B) Senden von Befehlen aus Home Assistant (z.B. Schalten von Somfy/FS20) und Verifikation des gesendeten Funksignals.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
 *   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (**v1.1.0-NG**) und Finalisierung der Endbenutzer-Dokumentation.
 *   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.
