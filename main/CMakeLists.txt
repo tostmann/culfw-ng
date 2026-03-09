@@ -17,23 +17,23 @@ if (CONFIG_ESP_WIFI_ENABLED STREQUAL "y" OR CONFIG_ESP_WIFI_ENABLED EQUAL 1)
     list(APPEND app_sources wifi_manager.c web_server.c)
 endif()
 
-if (CONFIG_OPENTHREAD_ENABLED)
+if (CONFIG_OPENTHREAD_ENABLED STREQUAL "y" OR CONFIG_OPENTHREAD_ENABLED EQUAL 1)
     message(STATUS "Thread Enabled - adding Thread sources")
     list(APPEND app_sources thread_manager.c)
 endif()
 
-if (CONFIG_ESP_MATTER_ENABLE_WIFI OR CONFIG_ESP_MATTER_ENABLE_OPENTHREAD)
+if ((CONFIG_ESP_MATTER_ENABLE_WIFI STREQUAL "y") OR (CONFIG_ESP_MATTER_ENABLE_OPENTHREAD STREQUAL "y"))
     message(STATUS "Matter Enabled - adding Matter sources")
     list(APPEND app_sources matter_bridge.c matter_interface.cpp)
 endif()
 
 set(app_requires nvs_flash esp_partition spiffs driver esp_timer esp_netif esp_event json esp_driver_usb_serial_jtag)
 
-if (CONFIG_ESP_WIFI_ENABLED)
+if (CONFIG_ESP_WIFI_ENABLED STREQUAL "y" OR CONFIG_ESP_WIFI_ENABLED EQUAL 1)
     list(APPEND app_requires esp_wifi esp_http_server)
 endif()
 
-if (CONFIG_OPENTHREAD_ENABLED)
+if (CONFIG_OPENTHREAD_ENABLED STREQUAL "y" OR CONFIG_OPENTHREAD_ENABLED EQUAL 1)
     list(APPEND app_requires openthread)
 endif()
 
