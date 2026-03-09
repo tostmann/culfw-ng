@@ -67,21 +67,6 @@ void app_main(void) {
         config_loader_load_protocols();
     }
     
-    // Initialize WiFi
-    wifi_manager_init();
-    
-    // Initialize Thread (if enabled in sdkconfig)
-    thread_manager_init();
-    
-    // Initialize Web Server
-    web_server_init();
-
-    // Initialize Matter Bridge Foundation
-    matter_bridge_init();
-
-    // Initialize Duty Cycle Monitor
-    duty_cycle_init();
-
     // Install USB Serial JTAG early
     if (!usb_serial_jtag_is_driver_installed()) {
         usb_serial_jtag_driver_config_t config = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();
@@ -109,4 +94,19 @@ void app_main(void) {
     // Initializing RF tasks
     slowrf_init();
     xTaskCreatePinnedToCore(culfw_parser_task, "culfw_parser_task", 8192, NULL, 5, NULL, 0);
+
+    // Initialize Duty Cycle Monitor
+    duty_cycle_init();
+
+    // Initialize WiFi
+    wifi_manager_init();
+    
+    // Initialize Thread (if enabled in sdkconfig)
+    thread_manager_init();
+    
+    // Initialize Web Server
+    web_server_init();
+
+    // Initialize Matter Bridge Foundation
+    matter_bridge_init();
 }
