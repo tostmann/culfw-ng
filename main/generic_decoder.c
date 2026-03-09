@@ -2,7 +2,9 @@
 #include "generic_decoder.h"
 #include "slowrf.h"
 #include "cc1101.h"
+#if APP_MATTER_ENABLED == 1
 #include "matter_bridge.h"
+#endif
 #include "esp_log.h"
 #include "cJSON.h"
 #include "driver/usb_serial_jtag.h"
