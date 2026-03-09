@@ -174,6 +174,7 @@ void handle_command(char *cmd) {
             gpio_set_level(GPIO_LED, 1);
             len = snprintf(out, sizeof(out), "l00 OK\r\n");
         }
+#if defined(CONFIG_ESP_MATTER_ENABLE_WIFI) || defined(CONFIG_ESP_MATTER_ENABLE_OPENTHREAD)
     } else if (cmd[0] == 'M' && cmd[1] == 'T') { // MT <ID> <VAL> - Matter Test
         char mid[64];
         float mval = 0;
@@ -205,6 +206,7 @@ void handle_command(char *cmd) {
         } else {
             len = snprintf(out, sizeof(out), "MC ERR\r\n");
         }
+#endif
     } else if (cmd[0] == 'G' && cmd[1] == 'L') { // GL - Generic List
         generic_decoder_list_protocols();
         len = snprintf(out, sizeof(out), "GL DONE\r\n");
