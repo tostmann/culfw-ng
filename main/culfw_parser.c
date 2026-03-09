@@ -190,7 +190,7 @@ void handle_command(char *cmd) {
     } else if (cmd[0] == 'M' && cmd[1] == 'A') { // MA <ID> <PROTO> <TYPE> - Matter Add (Manual)
         char mid[64], mproto[16];
         int mtype;
-        if(sscanf(cmd + 3, "%s %s %d", mid, mproto, &mtype) == 3) {
+        if(sscanf(cmd + 2, "%s %s %d", mid, mproto, &mtype) == 3) {
              matter_bridge_report_event(mid, mproto, (matter_device_type_t)mtype, 0.0);
              len = snprintf(out, sizeof(out), "MA OK: %s added as %s (Type %d)\r\n", mid, mproto, mtype);
         } else {
