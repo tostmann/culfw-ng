@@ -29,10 +29,17 @@ fi
 case "$CMD" in
     build)
         echo "Building profile: $PROFILE"
-        rm -f sdkconfig
-        cat sdkconfig.defaults > sdkconfig
-        if [ -f "sdkconfig.defaults.$PROFILE" ]; then
-            cat "sdkconfig.defaults.$PROFILE" >> sdkconfig
+        rm -rf sdkconfig build
+        if [ "$PROFILE" == "serial" ]; then
+            cp "sdkconfig.defaults.$PROFILE" sdkconfig
+            # Explicitly disable things from the main defaults
+            echo "CONFIG_ESP_MATTER_ENABLE=n" >> sdkconfig
+            echo "CONFIG_ESP_WIFI_ENABLED=n" >> sdkconfig
+        else
+            cat sdkconfig.defaults > sdkconfig
+            if [ -f "sdkconfig.defaults.$PROFILE" ]; then
+                cat "sdkconfig.defaults.$PROFILE" >> sdkconfig
+            fi
         fi
         idf.py reconfigure
         idf.py build
