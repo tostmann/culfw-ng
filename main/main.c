@@ -113,16 +113,19 @@ void app_main(void) {
     // Initialize Duty Cycle Monitor
     duty_cycle_init();
 
-    // Initialize WiFi
+    // Initialize WiFi (if enabled)
+#if CONFIG_ESP_WIFI_ENABLED
     wifi_manager_init();
-    
-    // Initialize Thread (if enabled in sdkconfig)
-    // We disable our manual init to let Matter's OpenthreadLauncher handle it if needed
-    // thread_manager_init();
-    
-    // Initialize Web Server
     web_server_init();
+#endif
+    
+    // Initialize Thread (if enabled)
+#if CONFIG_OPENTHREAD_ENABLED
+    thread_manager_init();
+#endif
 
-    // Initialize Matter Bridge Foundation
+    // Initialize Matter Bridge Foundation (if enabled)
+#if CONFIG_ESP_MATTER_ENABLE_DATA_MODEL
     matter_bridge_init();
+#endif
 }
