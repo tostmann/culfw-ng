@@ -33,6 +33,12 @@ services:
       - NET_RAW
     devices:
       - /dev/ttyACM3:/dev/ttyACM3
+    # Use environment variables only, use default entrypoint script 
+    # but try to disable firewalling via env if supported.
+    # Otherwise, override entrypoint to just run the agent.
     environment:
       - OTBR_AGENT_OPTS="-I wpan0 -B eth0 spinel+hdlc:///dev/ttyACM3"
-    entrypoint: ["/usr/sbin/otbr-agent", "-I", "wpan0", "-B", "eth0", "spinel+hdlc:///dev/ttyACM3"]
+      - FIREWALL=0
+    # Overriding entrypoint completely to avoid the setup script that fails on firewall
+    entrypoint: /usr/sbin/otbr-agent
+    command: -I wpan0 -B eth0 spinel+hdlc:///dev/ttyACM3
