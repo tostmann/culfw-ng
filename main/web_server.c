@@ -111,11 +111,29 @@ static esp_err_t index_get_handler(httpd_req_t *req) {
     return ESP_OK;
 }
 
+static void url_decode(char *src) {
+    char *dst = src;
+    while (*src) {
+        if (*src == '+') {
+            *dst++ = ' ';
+            src++;
+        } else if (*src == '%' && src[1] && src[2]) {
+            char hex[3] = { src[1], src[2], 0 };
+            *dst++ = (char)strtol(hex, NULL, 16);
+            src += 3;
+        } else {
+            *dst++ = *src++;
+        }
+    }
+    *dst = '\0';
+}
+
 static esp_err_t cmd_get_handler(httpd_req_t *req) {
-    char buf[128];
+    char buf[256];
     if (httpd_req_get_url_query_str(req, buf, sizeof(buf)) == ESP_OK) {
-        char cmd[64];
+        char cmd[200];
         if (httpd_query_key_value(buf, "c", cmd, sizeof(cmd)) == ESP_OK) {
+            url_decode(cmd);
             ESP_LOGI(TAG, "Web Command received: %s", cmd);
             extern void handle_command(char *cmd);
             handle_command(cmd);
