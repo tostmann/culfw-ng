@@ -13,6 +13,7 @@
 #include "driver/usb_serial_jtag.h"
 #include "config_loader.h"
 #include "wifi_manager.h"
+#include "thread_manager.h"
 #include "web_server.h"
 #include "culfw_duty_cycle.h"
 
