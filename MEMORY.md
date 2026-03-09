@@ -148,11 +148,15 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** **Test-Infrastruktur erweitert:** OpenThread Border Router (OTBR) als Docker-Container (`openthread/otbr`) aufgesetzt und für Thread-Kommunikation konfiguriert.
 *   **[DONE]** **Fehlerbehebung Matter-Bridge-Absturz:** Behoben durch explizite Initialisierung der Endpoint-Konfigurationen (`config_t`), um kritische 'Cluster cannot be NULL'-Fehler im SDK zu vermeiden und die Stabilität bei der dynamischen Endpoint-Erstellung zu gewährleisten.
 *   **[DONE]** **API-Anpassung (Matter SDK):** Endpoint-Erstellungslogik an geänderte SDK-API angepasst (Verwendung von `set_parent_endpoint` anstelle veralteter Funktionen), um Kompilierung zu ermöglichen und Build-Fehler zu beheben.
-*   **[IN PROGRESS]** **Sichtbarkeit dynamischer Endpoints:** Implementierung von `esp_matter::endpoint::enable()` nach der Erstellung, um die Endpoints im Matter-Netzwerk sichtbar zu machen.
+*   **[DONE]** **Sichtbarkeit dynamischer Endpoints:** Implementierung von `esp_matter::endpoint::enable()` nach der Erstellung, um die Endpoints im Matter-Netzwerk sichtbar zu machen.
+*   **[DONE]** **End-to-End-Validierung (RX-Pfad):** Erfolgreiche Erstellung, Aktivierung und Sichtbarmachung dynamischer Endpoints (Sensor/Schalter) im Matter-Netzwerk (Home Assistant) und korrekte Übermittlung der Attribut-Werte verifiziert.
 *   **[PAUSED]** **Thread-Infrastruktur (OTBR):** Die Stabilisierung des OpenThread Border Router Docker-Containers ist fehlgeschlagen. Die Arbeiten hieran sind vorerst pausiert, um den Fokus auf die Matter-over-WiFi Funktionalität zu legen.
 
 ## 4. Erkenntnisse & Gelöste Probleme
 
+*   **Erkenntnis: Dynamische Endpoints müssen explizit aktiviert werden (Validiert).**
+    *   **Analyse:** Dynamisch über `...::create()` erstellte Endpoints wurden vom SDK zwar intern verwaltet, aber nicht aktiv im Matter-Netzwerk publiziert. Sie blieben daher für Controller wie Home Assistant unsichtbar.
+    *   **Konsequenz:** In `matter_interface.cpp` wird nun direkt nach der Erstellung eines Endpoints die Funktion `esp_matter::endpoint::enable(endpoint)` aufgerufen. Dies stößt den notwendigen Prozess im SDK an, um den neuen Endpoint und seine Funktionen (Cluster) im Fabric bekannt zu machen. **Das Problem der Unsichtbarkeit ist damit nachweislich gelöst.**
 *   **Erkenntnis: Instabile Docker-basierte Thread-Infrastruktur (Arbeit pausiert).**
     *   **Analyse:** Trotz wiederholter Versuche, den offiziellen `openthread/otbr`-Container durch Überschreiben des `entrypoint` zu stabilisieren, bleibt die Konfiguration unzuverlässig. Interne Start-Skripte des Containers verursachen weiterhin Konflikte mit dem Host-System (z.B. bei DBus, Firewall-Diensten), was zu einem instabilen Betrieb führt.
     *   **Konsequenz:** Die Arbeit an einer Matter-over-Thread-Lösung wird vorerst pausiert. Der Fokus liegt nun vollständig auf der Validierung der **Matter-over-WiFi Funktionalität**, welche die Kernanforderung des Projekts darstellt.
@@ -183,8 +187,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **Validierung der Sichtbarkeit dynamischer Endpoints (Höchste Priorität):** Nachdem das Gateway erfolgreich provisioniert wurde, werden per RF erstellte dynamische Endpoints noch nicht im Matter-Netzwerk (z.B. Home Assistant) angezeigt. Der eingeleitete Fix durch explizites Aktivieren der Endpoints (`esp_matter::endpoint::enable()`) muss validiert werden. Ziel ist es, dass ein via `mi`-Kommando oder Funksignal erstellter Sensor/Schalter korrekt in Home Assistant erscheint und bedienbar ist.
-*   **End-to-End-Validierung der Matter-Bridge (TX-Pfad):** Senden von Befehlen aus Home Assistant (z.B. Schalten von Somfy/FS20) und Verifikation des gesendeten Funksignals.
+*   **End-to-End-Validierung der Matter-Bridge (TX-Pfad) (Höchste Priorität):** Senden von Befehlen aus Home Assistant (z.B. Schalten eines via RF erstellten FS20- oder Somfy-Endpoints) und Verifikation des am CC1101 korrekt generierten und gesendeten Funksignals.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
 *   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (**v1.1.0-NG**) und Finalisierung der Endbenutzer-Dokumentation.
 *   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.
