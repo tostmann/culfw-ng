@@ -145,7 +145,7 @@ void matter_interface_update_attribute(uint16_t endpoint_id, float value) {
 #if defined(CONFIG_ESP_MATTER_ENABLE_DATA_MODEL)
     esp_matter_attr_val_t attr_val;
 
-    lock::chip_stack_lock();
+    lock::chip_stack_lock(portMAX_DELAY);
     // 1. OnOff
     attr_val = esp_matter_bool(value > 0.5f);
     attribute::update(endpoint_id, chip::app::Clusters::OnOff::Id, chip::app::Clusters::OnOff::Attributes::OnOff::Id, &attr_val);
