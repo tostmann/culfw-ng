@@ -150,10 +150,13 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** **API-Anpassung (Matter SDK):** Endpoint-Erstellungslogik an geänderte SDK-API angepasst (Verwendung von `set_parent_endpoint` anstelle veralteter Funktionen), um Kompilierung zu ermöglichen und Build-Fehler zu beheben.
 *   **[DONE]** **Sichtbarkeit dynamischer Endpoints:** Implementierung von `esp_matter::endpoint::enable()` nach der Erstellung, um die Endpoints im Matter-Netzwerk sichtbar zu machen.
 *   **[DONE]** **End-to-End-Validierung (RX-Pfad):** Erfolgreiche Erstellung, Aktivierung und Sichtbarmachung dynamischer Endpoints (Sensor/Schalter) im Matter-Netzwerk (Home Assistant) und korrekte Übermittlung der Attribut-Werte verifiziert.
-*   **[DONE]** **Thread-Infrastruktur (OTBR):** Die Instabilität des OpenThread Border Router Docker-Containers wurde analysiert und behoben. Die Testumgebung für Matter-over-Thread ist nun voll funktionsfähig.
+*   **[DONE]** **Thread-Infrastruktur (OTBR):** Die Docker-Konfiguration des OpenThread Border Router Containers wurde stabilisiert und gehärtet. Der Container startet nun zuverlässig.
 
 ## 4. Erkenntnisse & Gelöste Probleme
 
+*   **Erkenntnis: OpenThread-Funkmodul (ESP32-C6) in permanenter Boot-Schleife (Validiert).**
+    *   **Analyse:** Der OpenThread Border Router (`otbr-agent`) konnte keine Verbindung zum Funkmodul (Radio Co-Processor, RCP) auf `/dev/ttyACM3` herstellen, was zu Timeouts und einem Absturz des Dienstes führte. Eine direkte Analyse der seriellen Schnittstelle des Moduls zeigte, dass dessen Firmware nicht startete. Stattdessen befand sich der ESP32-C6 in einer permanenten Neustart-Schleife und gab kontinuierlich die BootROM-Meldung (`ESP-ROM:esp32c6...`) aus.
+    *   **Konsequenz:** Die Matter-over-Thread Funktionalität kann nicht validiert werden, bis die Firmware des RCP-Moduls repariert (neu geflasht) ist. Dieses Problem blockiert die weitere Systemintegration auf der Thread-Ebene.
 *   **Erkenntnis: Docker-basierte OTBR-Instabilität durch Bug im Start-Skript und falsche API-Konfiguration (Validiert).**
     *   **Analyse:** Der `openthread/otbr` Docker-Container stürzte in einer Neustart-Schleife ab oder war für Home Assistant nicht erreichbar. Die Ursache war zweigeteilt:
         1.  **Interner Start-Daemon Bug:** Das Standard-Startskript (`/app/script/server`) im Container verwendet einen fehlerhaften `start-stop-daemon`-Aufruf, der dazu führt, dass die `otbr-agent`- und `otbr-web`-Dienste nicht zuverlässig im Hintergrund gestartet werden und in einer 100%-CPU-Schleife hängen bleiben.
@@ -192,7 +195,8 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **Matter-over-Thread Validierung (Höchste Priorität):** Durchführung eines End-to-End-Tests der Kommunikation (RX und TX) über das nun stabilisierte Thread-Netzwerk (OTBR), um die hybride (WiFi & Thread) Funktionalität zu verifizieren.
+*   **[BLOCKER] Fehlerbehebung des OpenThread RCP-Moduls (Höchste Priorität):** Neu-Flashen der OpenThread Radio Co-Processor (RCP) Firmware auf dem ESP32-C6-Modul (`/dev/ttyACM3`), um den Bootloop zu beheben und die Kommunikation mit dem OTBR-Container wiederherzustellen.
+*   **[GEBLOCKT] Matter-over-Thread Validierung:** Durchführung eines End-to-End-Tests der Kommunikation (RX und TX) über das Thread-Netzwerk (OTBR), um die hybride (WiFi & Thread) Funktionalität zu verifizieren. *Abhängig von der Behebung des RCP-Modul-Blockers.*
 *   **End-to-End-Validierung der Matter-Bridge (TX-Pfad):** Senden von Befehlen aus Home Assistant (z.B. Schalten eines via RF erstellten FS20- oder Somfy-Endpoints) und Verifikation des am CC1101 korrekt generierten und gesendeten Funksignals.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
 *   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (**v1.1.0-NG**) und Finalisierung der Endbenutzer-Dokumentation.
