@@ -314,7 +314,9 @@ void slowrf_task(void *pvParameters) {
                         int dlen = 0;
                         for (int i = 0; i < fs_dec.byte_cnt; i++) dlen += snprintf(d + dlen, sizeof(d) - dlen, "%02X", fs_dec.data[i]);
                         slowrf_output_packet("F", d, rssi);
+#if defined(CONFIG_ESP_MATTER_ENABLE_WIFI) || defined(CONFIG_ESP_MATTER_ENABLE_OPENTHREAD)
                         matter_bridge_report_event(id, "FS20", DEVICE_TYPE_SWITCH, (fs_dec.data[3] & 0x1) ? 1.0 : 0.0);
+#endif
                     }
                     // IT_V1 Check: Removed !it3_last_sync because CUL sends ~10000us sync which overlaps with IT_V3 sync range
                     if (it1_dec.pos == 12) {
@@ -332,17 +334,23 @@ void slowrf_task(void *pvParameters) {
                                 val <<= 1;
                                 if(it1_dec.s[k] == '1') val |= 1;
                             }
+#if defined(CONFIG_ESP_MATTER_ENABLE_WIFI) || defined(CONFIG_ESP_MATTER_ENABLE_OPENTHREAD)
                             matter_bridge_report_event(id, "IT_V1", DEVICE_TYPE_TEMP_SENSOR, (float)(val * 10.0));
+#endif
                         } else {
                             id[11] = 'X'; // Mask state bit in ID for Switches
+#if defined(CONFIG_ESP_MATTER_ENABLE_WIFI) || defined(CONFIG_ESP_MATTER_ENABLE_OPENTHREAD)
                             matter_bridge_report_event(id, "IT_V1", DEVICE_TYPE_SWITCH, (it1_dec.s[11] == '0' ? 0.0 : 1.0));
+#endif
                         }
                     }
                     if (it3_dec.bit_pos == 32) {
                         slowrf_output_packet("is", it3_dec.s, rssi);
                         char id[33]; strcpy(id, it3_dec.s);
                         id[18] = 'X'; // Mask state bit in ID
+#if defined(CONFIG_ESP_MATTER_ENABLE_WIFI) || defined(CONFIG_ESP_MATTER_ENABLE_OPENTHREAD)
                         matter_bridge_report_event(id, "IT_V3", DEVICE_TYPE_SWITCH, (it3_dec.s[18] == '1' ? 1.0 : 0.0));
+#endif
                     }
                     if (os_dec.nibble_cnt >= 16) {
                         char d[64]; int dlen = 0;
@@ -354,7 +362,9 @@ void slowrf_task(void *pvParameters) {
                         slowrf_output_packet("P", d, rssi);
                         // Oregon: ID is usually in the first few nibbles
                         char id[17]; strncpy(id, d, 16); id[16] = 0;
+#if defined(CONFIG_ESP_MATTER_ENABLE_WIFI) || defined(CONFIG_ESP_MATTER_ENABLE_OPENTHREAD)
                         matter_bridge_report_event(id, "Oregon", DEVICE_TYPE_TEMP_SENSOR, 20.0); // Placeholder
+#endif
                     }
                     if (hms_dec.nibble_cnt >= 8) {
                         char d[32]; int dlen = 0;
@@ -367,14 +377,18 @@ void slowrf_task(void *pvParameters) {
                         if (hms_dec.nibble_cnt >= 8) {
                             val = (float)((hms_dec.nibbles[6] << 4) | hms_dec.nibbles[7]);
                         }
+#if defined(CONFIG_ESP_MATTER_ENABLE_WIFI) || defined(CONFIG_ESP_MATTER_ENABLE_OPENTHREAD)
                         matter_bridge_report_event(id, "HMS", DEVICE_TYPE_TEMP_SENSOR, val);
+#endif
                     }
                     if (s300_dec.nibble_cnt >= 9) {
                         char d[32]; int dlen = 0;
                         for(int i=0; i<s300_dec.nibble_cnt; i++) dlen += snprintf(d+dlen, sizeof(d)-dlen, "%X", s300_dec.nibbles[i]);
                         slowrf_output_packet("K", d, rssi);
                         char id[17]; strncpy(id, d, 16); id[16] = 0;
+#if defined(CONFIG_ESP_MATTER_ENABLE_WIFI) || defined(CONFIG_ESP_MATTER_ENABLE_OPENTHREAD)
                         matter_bridge_report_event(id, "S300TH", DEVICE_TYPE_TEMP_SENSOR, 20.0); // Placeholder
+#endif
                     }
                     if (fht_dec.byte_cnt >= 5) {
                         char d[32]; char id[16];
@@ -383,14 +397,10 @@ void slowrf_task(void *pvParameters) {
                         for (int i = 0; i < fht_dec.byte_cnt; i++) dlen += snprintf(d + dlen, sizeof(d) - dlen, "%02X", fht_dec.data[i]);
                         slowrf_output_packet("T", d, rssi);
                         // FHT reporting - data[3] is the value byte (0-255), represents valve % or temp*2
+#if defined(CONFIG_ESP_MATTER_ENABLE_WIFI) || defined(CONFIG_ESP_MATTER_ENABLE_OPENTHREAD)
                         matter_bridge_report_event(id, "FHT", DEVICE_TYPE_TEMP_SENSOR, (float)fht_dec.data[3] / 2.0f);
+#endif
                     }
-                    /* if (rtl_dec.bit_cnt >= 24) {
-                        char d[32];
-                        snprintf(d, sizeof(d), "%08X", (unsigned int)rtl_dec.bit_buffer);
-                        slowrf_output_packet("r", d, rssi);
-                        matter_bridge_report_event(d, "Generic", DEVICE_TYPE_CONTACT_SENSOR, 1.0);
-                    } */
                 }
                 reset_fs20(&fs_dec);
                 reset_fht(&fht_dec);
