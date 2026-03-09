@@ -122,18 +122,26 @@ uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_t
     log_jtag("MATTER_IF: Lock acquired, calling SDK create...\n");
     
     switch(type) {
-        case DEVICE_TYPE_SWITCH:
-            endpoint = on_off_light::create(parent, nullptr, ENDPOINT_FLAG_NONE, nullptr);
+        case DEVICE_TYPE_SWITCH: {
+            on_off_light::config_t config;
+            endpoint = on_off_light::create(parent, &config, ENDPOINT_FLAG_NONE, nullptr);
             break;
-        case DEVICE_TYPE_TEMP_SENSOR:
-            endpoint = temperature_sensor::create(parent, nullptr, ENDPOINT_FLAG_NONE, nullptr);
+        }
+        case DEVICE_TYPE_TEMP_SENSOR: {
+            temperature_sensor::config_t config;
+            endpoint = temperature_sensor::create(parent, &config, ENDPOINT_FLAG_NONE, nullptr);
             break;
-        case DEVICE_TYPE_OUTLET:
-            endpoint = on_off_plugin_unit::create(parent, nullptr, ENDPOINT_FLAG_NONE, nullptr);
+        }
+        case DEVICE_TYPE_OUTLET: {
+            on_off_plugin_unit::config_t config;
+            endpoint = on_off_plugin_unit::create(parent, &config, ENDPOINT_FLAG_NONE, nullptr);
             break;
-        case DEVICE_TYPE_COVER:
-            endpoint = window_covering_device::create(parent, nullptr, ENDPOINT_FLAG_NONE, nullptr);
+        }
+        case DEVICE_TYPE_COVER: {
+            window_covering_device::config_t config;
+            endpoint = window_covering_device::create(parent, &config, ENDPOINT_FLAG_NONE, nullptr);
             break;
+        }
         default:
             log_jtag("MATTER_IF: Unknown device type!\n");
             lock::chip_stack_unlock();
