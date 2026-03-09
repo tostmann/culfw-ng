@@ -120,13 +120,7 @@ uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_t
     }
 
     endpoint_t *endpoint = nullptr;
-    endpoint_t *parent = s_aggregator_endpoint; 
     
-    if (!parent) {
-        log_jtag("MATTER_IF: Aggregator not found, using root endpoint as parent\n");
-        parent = endpoint::get_root_node_endpoint(node);
-    }
-
     // Lock the CHIP stack for thread-safe endpoint creation
     log_jtag("MATTER_IF: Locking CHIP stack...\n");
     lock::chip_stack_lock(portMAX_DELAY);
@@ -134,22 +128,22 @@ uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_t
     switch(type) {
         case DEVICE_TYPE_SWITCH: {
             on_off_light::config_t config;
-            endpoint = on_off_light::create(parent, &config, ENDPOINT_FLAG_NONE, nullptr);
+            endpoint = on_off_light::create(node, &config, ENDPOINT_FLAG_NONE, nullptr);
             break;
         }
         case DEVICE_TYPE_TEMP_SENSOR: {
             temperature_sensor::config_t config;
-            endpoint = temperature_sensor::create(parent, &config, ENDPOINT_FLAG_NONE, nullptr);
+            endpoint = temperature_sensor::create(node, &config, ENDPOINT_FLAG_NONE, nullptr);
             break;
         }
         case DEVICE_TYPE_OUTLET: {
             on_off_plugin_unit::config_t config;
-            endpoint = on_off_plugin_unit::create(parent, &config, ENDPOINT_FLAG_NONE, nullptr);
+            endpoint = on_off_plugin_unit::create(node, &config, ENDPOINT_FLAG_NONE, nullptr);
             break;
         }
         case DEVICE_TYPE_COVER: {
             window_covering_device::config_t config;
-            endpoint = window_covering_device::create(parent, &config, ENDPOINT_FLAG_NONE, nullptr);
+            endpoint = window_covering_device::create(node, &config, ENDPOINT_FLAG_NONE, nullptr);
             break;
         }
         default:
@@ -159,6 +153,9 @@ uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_t
     }
 
     if (endpoint) {
+        if (s_aggregator_endpoint) {
+            esp_matter::endpoint::set_parent_endpoint(endpoint, s_aggregator_endpoint);
+        }
         endpoint_id = endpoint::get_id(endpoint);
     }
     
