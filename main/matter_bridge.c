@@ -181,6 +181,7 @@ void matter_bridge_init() {
 }
 
 void matter_bridge_report_event(const char* id, const char* proto, matter_device_type_t type, float value) {
+    ESP_LOGI(TAG, "Report event: ID=%s, Proto=%s, Type=%d, Val=%.1f", id, proto, type, value);
     // 1. Lookup Device in our local table
     int idx = -1;
     for (int i = 0; i < device_count; i++) {
@@ -192,24 +193,34 @@ void matter_bridge_report_event(const char* id, const char* proto, matter_device
 
     // 2. If not found, register it
     if (idx == -1) {
+        ESP_LOGI(TAG, "Device %s not in table, adding...", id);
         if (device_count >= MAX_ENDPOINTS) {
             ESP_LOGW(TAG, "Device table full! Cannot add %s", id);
             return;
         }
         
-        idx = device_count++;
-        strncpy(device_table[idx].rf_id, id, sizeof(device_table[idx].rf_id)-1);
-        strncpy(device_table[idx].proto_name, proto, sizeof(device_table[idx].proto_name)-1);
-        device_table[idx].type = type;
+        int current_idx = device_count;
+        strncpy(device_table[current_idx].rf_id, id, sizeof(device_table[current_idx].rf_id)-1);
+        strncpy(device_table[current_idx].proto_name, proto, sizeof(device_table[current_idx].proto_name)-1);
+        device_table[current_idx].type = type;
         
         // Call the interface to create the actual Matter endpoint
-        device_table[idx].matter_ep_id = matter_interface_create_endpoint(id, type);
+        uint16_t ep_id = matter_interface_create_endpoint(id, type);
+        device_table[current_idx].matter_ep_id = ep_id;
         
-        ESP_LOGI(TAG, "Registered new device: %s -> EP %d (Proto: %s)", id, device_table[idx].matter_ep_id, proto);
+        if (ep_id != 0xFFFF) {
+            device_count++;
+            ESP_LOGI(TAG, "Registered new device: %s -> EP %d (Proto: %s). Total devices: %d", id, ep_id, proto, device_count);
+            idx = current_idx;
+        } else {
+            ESP_LOGE(TAG, "Failed to create Matter endpoint for %s", id);
+            return;
+        }
     }
 
     // 3. Update the value
     if (idx != -1 && device_table[idx].matter_ep_id != 0xFFFF) {
+        ESP_LOGI(TAG, "Updating EP %d attribute to %.1f", device_table[idx].matter_ep_id, value);
         matter_interface_update_attribute(device_table[idx].matter_ep_id, value);
         
         char web_msg[64];
