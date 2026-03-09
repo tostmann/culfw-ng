@@ -58,3 +58,7 @@ target_compile_definitions(${COMPONENT_LIB} PUBLIC
     GPIO_SW=9
     GPIO_433MARKER=4
 )
+
+if (PROFILE_SERIAL)
+    target_compile_definitions(${COMPONENT_LIB} PUBLIC PROFILE_SERIAL=1)
+endif()
