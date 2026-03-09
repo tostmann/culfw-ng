@@ -40,6 +40,6 @@ services:
       - DOCKER=0
       - INFRA_IF_NAME=eth0
       - THREAD_IF_NAME=wpan0
-      - RADIO_URL=spinel+hdlc:///dev/ttyACM3
-    entrypoint: /usr/sbin/otbr-agent
-    command: ["-I", "wpan0", "-B", "eth0", "-d", "7", "spinel+hdlc:///dev/ttyACM3"]
+      - HTTP_PORT=8081
+      - REST_HOST=0.0.0.0
+    command: ["--radio-url", "spinel+hdlc+uart:///dev/ttyACM3"]
