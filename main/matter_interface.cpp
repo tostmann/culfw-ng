@@ -7,7 +7,7 @@
 static const char *TAG = "MATTER_IF";
 
 static void log_jtag(const char* msg) {
-    usb_serial_jtag_write_bytes(msg, strlen(msg), 0);
+    usb_serial_jtag_write_bytes(msg, strlen(msg), portMAX_DELAY);
 }
 static matter_command_cb_t cmd_cb = NULL;
 
