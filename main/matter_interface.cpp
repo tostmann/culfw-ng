@@ -91,19 +91,22 @@ uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_t
     node_t *node = node::get();
     endpoint_t *endpoint = nullptr;
     
+    // Use aggregator as parent if available
+    endpoint_t *parent = s_aggregator_endpoint ? s_aggregator_endpoint : (endpoint_t*)node;
+
     // Create actual Matter Endpoint based on type
     switch(type) {
         case DEVICE_TYPE_SWITCH:
-            endpoint = on_off_light::create(node, nullptr, ENDPOINT_FLAG_NONE, nullptr);
+            endpoint = on_off_light::create(parent, nullptr, ENDPOINT_FLAG_NONE, nullptr);
             break;
         case DEVICE_TYPE_TEMP_SENSOR:
-            endpoint = temperature_sensor::create(node, nullptr, ENDPOINT_FLAG_NONE, nullptr);
+            endpoint = temperature_sensor::create(parent, nullptr, ENDPOINT_FLAG_NONE, nullptr);
             break;
         case DEVICE_TYPE_OUTLET:
-            endpoint = on_off_plugin_unit::create(node, nullptr, ENDPOINT_FLAG_NONE, nullptr);
+            endpoint = on_off_plugin_unit::create(parent, nullptr, ENDPOINT_FLAG_NONE, nullptr);
             break;
         case DEVICE_TYPE_COVER:
-            endpoint = window_covering_device::create(node, nullptr, ENDPOINT_FLAG_NONE, nullptr);
+            endpoint = window_covering_device::create(parent, nullptr, ENDPOINT_FLAG_NONE, nullptr);
             break;
         default:
             ESP_LOGE(TAG, "Unknown device type: %d", type);
@@ -112,7 +115,7 @@ uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_t
 
     if (endpoint) {
         endpoint_id = endpoint::get_id(endpoint);
-        ESP_LOGI(TAG, "Created Matter Endpoint %d for device %s", endpoint_id, device_id);
+        ESP_LOGI(TAG, "Created Matter Endpoint %d for device %s (Parent: %p)", endpoint_id, device_id, parent);
     }
 #else
     // Simulation: Generate pseudo-random ID based on string hash or counter
@@ -126,8 +129,35 @@ uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_t
 
 void matter_interface_update_attribute(uint16_t endpoint_id, float value) {
 #if defined(CONFIG_ESP_MATTER_ENABLE_DATA_MODEL)
-    esp_matter_attr_val_t attr_val = esp_matter_bool(value > 0.5f);
+    // Find cluster type for this endpoint to know which attribute to update
+    // For now, we assume endpoint_id mapping
+    // This is a bit simplified, but should work for basic sensors/switches
+    
+    // Temperature: Value in 0.01 C
+    // OnOff: bool
+    
+    esp_matter_attr_val_t attr_val;
+    uint32_t cluster_id;
+    uint32_t attr_id;
+
+    // We should ideally query the endpoint for its clusters, 
+    // but here we try to update both or detect by value/context.
+    // For CULFW-NG, we know the mapping from device_table in matter_bridge.c
+    // but here we are in the interface layer.
+    
+    // Try to update Temperature first if it looks like one, or OnOff otherwise.
+    // In a real implementation, we'd store the device type per endpoint_id here too.
+    
+    // For now, try to update both (the SDK will return error for non-existent clusters)
+    
+    // 1. OnOff
+    attr_val = esp_matter_bool(value > 0.5f);
     attribute::update(endpoint_id, chip::app::Clusters::OnOff::Id, chip::app::Clusters::OnOff::Attributes::OnOff::Id, &attr_val);
+
+    // 2. Temperature (Value is in C, Matter expects 100 * C)
+    attr_val = esp_matter_int16((int16_t)(value * 100));
+    attribute::update(endpoint_id, chip::app::Clusters::TemperatureMeasurement::Id, chip::app::Clusters::TemperatureMeasurement::Attributes::MeasuredValue::Id, &attr_val);
+
 #else
     ESP_LOGI(TAG, "[SIMULATION] Updated Endpoint %d to value %.2f", endpoint_id, value);
 #endif
