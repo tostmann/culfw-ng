@@ -82,8 +82,8 @@ esp_err_t cc1101_init() {
     }
 
     cc1101_lock();
-    cc1101_write_reg(0x02, 0x0D); 
-    cc1101_write_reg(0x00, 0x0E); 
+    cc1101_write_reg(0x02, 0x0E); // GDO2 = Carrier Sense
+    cc1101_write_reg(0x00, 0x0D); // GDO0 = Serial Data Output (Async)
     cc1101_write_reg(0x08, 0x32); 
     cc1101_write_reg(0x0B, 0x06); 
     cc1101_write_reg(0x0C, 0x00); 
