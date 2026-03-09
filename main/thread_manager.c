@@ -4,7 +4,6 @@
 #include "esp_openthread_types.h"
 #include "esp_openthread_lock.h"
 #include "esp_openthread_netif_glue.h"
-#include "esp_openthread_netif_glue_priv.h"
 #include "esp_vfs_eventfd.h"
 #include "driver/uart.h"
 #include "freertos/FreeRTOS.h"
