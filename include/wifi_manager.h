@@ -5,5 +5,6 @@
 
 void wifi_manager_init(void);
 void wifi_manager_get_ip(char* ip);
+void wifi_manager_get_ipv6(char* ip);
 
 #endif
