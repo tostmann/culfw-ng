@@ -153,19 +153,27 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** **Thread-Infrastruktur (OTBR):** Die Docker-Konfiguration des OpenThread Border Router Containers wurde stabilisiert und gehärtet. Der Container startet nun zuverlässig.
 *   **[DONE]** **Fehlerbehebung OTBR-Hardware:** Das OpenThread RCP-Modul (ESP32-C6) wurde erfolgreich mit einer stabilen, vorkompilierten Firmware (`generic-esp32c6.bin`) neu geflasht. Der Bootloop wurde damit behoben und der `otbr-agent` kann nun stabil mit dem Modul kommunizieren.
 *   **[DONE]** **Release-Management:** Meilenstein **v1.1.0-NG** (stabile Matter-over-WiFi Implementierung) erstellt und auf GitHub veröffentlicht.
-*   **[DONE]** **Architektur für Thread-Integration:** `thread_manager.c/h` Modul zur Kapselung des OpenThread-Stacks entworfen und implementiert.
-*   **[DONE]** **Integration Thread-Stack:** `thread_manager_init()` in die Haupt-Applikationslogik (`app_main`) integriert.
-*   **[DONE]** **Build-Konfiguration für Thread:** `sdkconfig.defaults` um `CONFIG_OPENTHREAD_ENABLED=y` und `CONFIG_ESP_MATTER_ENABLE_OPENTHREAD=y` erweitert.
-*   **[DONE]** **Firmware-Speicher erweitert:** Partitionsschema (`partitions.csv`) angepasst, um die durch den Thread-Stack vergrößerte Firmware aufzunehmen (Factory-Partition auf 2.5MB vergrößert).
+*   **[DONE]** Architektur für Thread-Integration: `thread_manager.c/h` Modul zur Kapselung des OpenThread-Stacks entworfen und implementiert.
+*   **[DONE]** Integration Thread-Stack: `thread_manager_init()` in die Haupt-Applikationslogik (`app_main`) integriert.
+*   **[DONE]** Build-Konfiguration für Thread: `sdkconfig.defaults` um `CONFIG_OPENTHREAD_ENABLED=y` und `CONFIG_ESP_MATTER_ENABLE_OPENTHREAD=y` erweitert.
+*   **[DONE]** Firmware-Speicher erweitert: Partitionsschema (`partitions.csv`) angepasst, um die durch den Thread-Stack vergrößerte Firmware aufzunehmen (Factory-Partition auf 2.5MB vergrößert).
+*   **[DONE]** Behebung von Build-Fehlern bei Thread-Aktivierung: API-Inkompatibilitäten (`esp_vfs_eventfd_register`), fehlende Makro-Definitionen und Tippfehler (`esp_openthread_launch_mainloop`) korrigiert.
+*   **[FAILED]** Laufzeit-Validierung (Thread): Die Firmware stürzt nach dem Boot in einer Schleife ab, wenn der Thread-Stack initialisiert wird.
 
 ## 4. Erkenntnisse & Gelöste Probleme
 
-*   **Neues Problem: Build-Fehler durch API-Inkompatibilität in `esp_vfs_eventfd_register`.**
-    *   **Analyse:** Der Build-Prozess bricht mit dem Fehler `error: too few arguments to function 'esp_vfs_eventfd_register'` ab. Die verwendete ESP-IDF Version (v5.5.2) erwartet für diese Funktion eine Konfigurationsstruktur (`esp_vfs_eventfd_config_t`), während der Code sie noch parameterlos aufruft, basierend auf älteren API-Versionen oder Beispielen.
-    *   **Lösungsstrategie:** Der Aufruf in `thread_manager.c` muss an die aktuelle API angepasst werden, indem eine `esp_vfs_eventfd_config_t`-Struktur mit Standardwerten übergeben wird.
-*   **Erkenntnis: OpenThread-Konfigurationsmakros sind nicht Teil der öffentlichen API.**
+*   **Neues Problem: Laufzeit-Crash bei Initialisierung des Thread-Stacks.**
+    *   **Analyse:** Unmittelbar nach dem erfolgreichen Build und Flash der Firmware mit aktiviertem OpenThread-Stack stürzt das Gerät in einer permanenten Boot-Schleife ab. Die Log-Analyse zeigt zwei kritische Fehler, die dem Absturz vorausgehen:
+        1.  `E (1517) OPENTHREAD: ... Failed to create OpenThread task queue event fd`
+        2.  `E (1531) OPENTHREAD: ... esp_openthread_platform_init failed`
+    *   Der eigentliche Absturz wird durch `assert failed: modem_clock_device_disable modem_clock.c:277` ausgelöst.
+    *   **Hypothese:** Dies deutet auf einen tiefgreifenden Ressourcenkonflikt hin. Entweder sind die verfügbaren `eventfd`-Deskriptoren erschöpft, oder es gibt einen Deadlock/Race-Condition zwischen dem WiFi- und dem Thread-Stack, die beide auf den 2.4-GHz-Funk (Modem-Takt) zugreifen müssen. Das Coexistence-Management scheint hier zu versagen oder falsch konfiguriert zu sein.
+*   **Gelöstes Problem: Build-Fehler durch API-Inkompatibilität in `esp_vfs_eventfd_register`.**
+    *   **Analyse:** Der Build-Prozess brach mit dem Fehler `error: too few arguments to function 'esp_vfs_eventfd_register'` ab. Die verwendete ESP-IDF Version (v5.5.2) erwartete für diese Funktion eine Konfigurationsstruktur (`esp_vfs_eventfd_config_t`), während der Code sie noch parameterlos aufrief.
+    *   **Lösung:** Der Aufruf in `thread_manager.c` wurde an die aktuelle API angepasst, indem eine `esp_vfs_eventfd_config_t`-Struktur mit Standardwerten (`ESP_VFS_EVENTD_CONFIG_DEFAULT()`) initialisiert und übergeben wird. Der Build ist nun erfolgreich.
+*   **Gelöstes Problem: OpenThread-Konfigurationsmakros nicht gefunden.**
     *   **Analyse:** Der Build schlug fehl, da Makros wie `ESP_OPENTHREAD_DEFAULT_RADIO_CONFIG()` nicht gefunden wurden. Eine Analyse der ESP-IDF-Beispiele zeigte, dass diese Makros in den Beispiel-Anwendungen selbst und nicht in den öffentlichen Headern der Komponente definiert sind.
-    *   **Konsequenz:** Die notwendigen Makro-Definitionen wurden aus den Beispielen extrahiert und lokal in `thread_manager.c` als `CUL_OPENTHREAD_DEFAULT_..._CONFIG()` implementiert, um eine stabile und von den Beispielen unabhängige Build-Konfiguration zu gewährleisten.
+    *   **Lösung:** Die notwendigen Makro-Definitionen wurden aus den Beispielen extrahiert und lokal in `thread_manager.c` als `CUL_OPENTHREAD_DEFAULT_..._CONFIG()` implementiert, um eine stabile und von den Beispielen unabhängige Build-Konfiguration zu gewährleisten.
 *   **Gelöstes Problem: Build-Fehler `esp_openthread.h: No such file or directory` nach Aktivierung von Thread.**
     *   **Analyse:** Die neuen Konfigurationseinstellungen aus `sdkconfig.defaults` wurden nicht in der aktiven Build-Konfiguration (`sdkconfig`) übernommen, weshalb das Build-System die Abhängigkeiten zur OpenThread-Komponente nicht auflöste.
     *   **Lösung:** Ein `idf.py reconfigure` hat die Projektkonfiguration erzwungenermaßen aktualisiert und die `sdkconfig` neu generiert. Dies hat den Header-Fehler behoben und die Komponente korrekt eingebunden.
@@ -192,9 +200,12 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **Behebung des API-Fehlers (Höchste Priorität):** Den Aufruf von `esp_vfs_eventfd_register` in `thread_manager.c` an die aktuelle SDK-API anpassen, um den Build-Blocker zu beseitigen und einen erfolgreichen Build der Firmware mit aktiviertem Thread-Stack zu ermöglichen.
-*   **Matter-over-Thread Validierung:** Nach erfolgreichem Build: Durchführung eines End-to-End-Tests der Kommunikation (RX und TX) über das nun auf dem Gerät aktive Thread-Netzwerk, um die hybride (WiFi & Thread) Funktionalität zu verifizieren.
-*   **End-to-End-Validierung der Matter-Bridge (TX-Pfad):** Senden von Befehlen aus Home Assistant (z.B. Schalten eines via RF erstellten FS20- oder Somfy-Endpoints) und Verifikation des am CC1101 korrekt generierten und gesendeten Funksignals über WiFi und Thread.
+*   **Analyse und Behebung des Laufzeit-Absturzes (Höchste Priorität):** Systematische Untersuchung des `modem_clock`-Asserts. Dies beinhaltet:
+    *   Überprüfung der Initialisierungsreihenfolge von WiFi, Thread und Matter in `app_main`.
+    *   Verifizierung der Coexistence-Einstellungen (`CONFIG_ESP_COEX_SW_COEXIST_ENABLE`) in `sdkconfig`.
+    *   Experimentelles Erhöhen der maximalen Anzahl von `eventfd`-Deskriptoren in der `esp_vfs_eventfd_config_t`.
+*   **Matter-over-Thread Validierung:** **[Blockiert]** Nach Behebung des Absturzes: Durchführung eines End-to-End-Tests der Kommunikation (RX und TX) über das nun auf dem Gerät aktive Thread-Netzwerk, um die hybride (WiFi & Thread) Funktionalität zu verifizieren.
+*   **End-to-End-Validierung der Matter-Bridge (TX-Pfad):** **[Blockiert]** Senden von Befehlen aus Home Assistant (z.B. Schalten eines via RF erstellten FS20- oder Somfy-Endpoints) und Verifikation des am CC1101 korrekt generierten und gesendeten Funksignals über WiFi und Thread.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
 *   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.
 
