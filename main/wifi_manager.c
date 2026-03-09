@@ -81,3 +81,14 @@ void wifi_manager_get_ip(char* ip) {
         strcpy(ip, "0.0.0.0");
     }
 }
+
+void wifi_manager_get_ipv6(char* ip) {
+    esp_netif_t* netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
+    esp_ip6_addr_t ip6[3];
+    int num = esp_netif_get_all_ip6(netif, ip6);
+    if (num > 0) {
+        snprintf(ip, 40, IPV6STR, IPV62STR(ip6[0]));
+    } else {
+        strcpy(ip, "::");
+    }
+}
