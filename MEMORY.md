@@ -27,14 +27,14 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **SPI-Kommunikation:** Die SPI-Geschwindigkeit wurde zur Erhöhung der Stabilität auf 500 kHz festgelegt. Für das Auslesen der Statusregister wird der `READ_BURST`-Modus (`0xC0`) verwendet.
 *   **Persistenz:** Wichtige Einstellungen (z.B. der Betriebsmodus `X21`/`X25`, die RF-Frequenz, Reporting An/Aus, **Rolling Codes**) werden im **Non-Volatile Storage (NVS)** des ESP32 gespeichert und bei Neustart automatisch wiederhergestellt.
 *   **Software-Architektur: Angepasste Single-Core FreeRTOS Architektur (RISC-V)**
-    *   **Task-Management auf Core 0:** Alle Tasks (`slowrf_task`, `culfw_parser_task`, Management-Tasks) laufen auf dem einzigen verfügbaren **Core 0**.
+    *   **Task-Management auf Core 0:** Alle Tasks (`slowrf_task`, `culfw_parser_task`, `thread_manager_task`, Management-Tasks) laufen auf dem einzigen verfügbaren **Core 0**.
     *   **Echtzeit-Absicherung durch Priorisierung:** Die `slowrf_task` besitzt eine hohe Priorität, um die Echtzeit-Verarbeitung von Funksignalen (RX/TX) vor weniger zeitkritischen Tasks (z.B. WiFi, Web-Server, Kommando-Parsing) zu schützen und Jitter zu minimieren.
     *   **Thread-Sicherheit:** Alle Zugriffe auf den CC1101-Treiber sind durch einen **rekursiven Mutex (Semaphore)** geschützt. Dies verhindert Race Conditions und Datenkorruption.
     *   **Stabilität:** Der Stack für den `culfw_parser_task` wurde auf 8192 Bytes erhöht, um Stack Overflows bei der Verarbeitung sehr langer serieller Kommandos (z.B. via `mi`-Kommando) zu verhindern.
 *   **On-Board Intelligence & Matter-Gateway:**
     *   **Dateisystem:** Integration eines **SPIFFS-Dateisystems** zur Speicherung einer flexiblen, **verschlüsselten** Protokoll-Datenbank (`protocols.enc`). Ein Fallback-Mechanismus lädt einen hartcodierten Default, falls die Datei fehlt.
     *   **Table-Driven Decoding Engine:** Anstelle von fest einkompilierten Decodern wird eine generische Engine (`generic_decoder.c`) die Pulsfolgen mit den in der Protokolldatenbank definierten Mustern abgleichen. Die JSON-Definition unterstützt Schlüsselfelder wie `"type"` (`"switch"`, `"sensor"`) zur korrekten Zuordnung im Gateway, `id_ignore_bits` zur Trennung von Geräte-ID und Statuswert sowie `scale`/`offset` zur Konvertierung von Sensor-Rohdaten in physikalische Einheiten. Die Datenbank kann zur Laufzeit über `GR` (Generic Reload) neu geladen werden.
-    *   **Matter-Architektur (Bidirektional):** Der Stick wird als **Matter Aggregator (Bridge)** implementiert. Die Bridge arbeitet in beide Richtungen:
+    *   **Matter-Architektur (Bidirektional, Hybride Konnektivität):** Der Stick wird als **Matter Aggregator (Bridge)** implementiert und unterstützt sowohl **Matter-over-WiFi** als auch **Matter-over-Thread**.
         *   **RX (RF $\rightarrow$ Matter):** Erkannte SlowRF-Geräte werden als dynamische **Endpoints** (z.B. Temperatursensor, Schalter) im Matter-Netzwerk on-the-fly angelegt und über eine **"Dynamic Endpoint Registry"** (`matter_bridge.c`) verwaltet. Der Name des dekodierenden Protokolls (z.B. "Nexa") wird pro Endpunkt gespeichert. Die maximale Anzahl dynamischer Endpoints wurde auf 20 erhöht (`CHIP_DEVICE_CONFIG_DYNAMIC_ENDPOINT_COUNT`).
         *   **TX (Matter $\rightarrow$ RF):** Eingehende Matter-Befehle werden über einen **Callback-Mechanismus** (`matter_bridge_command_cb`) verarbeitet. Die Bridge-Logik identifiziert den Ziel-Endpunkt, liest den bei der Endpoint-Erstellung gespeicherten Protokoll-Namen (z.B. "Somfy") und die RF-ID aus und ruft den passenden Encoder auf, um den Befehl in ein SlowRF-Funkkommando zu übersetzen und über den CC1101 zu senden.
         *   Die Anwendungslogik ist gegen eine **API-Interface-Schicht** (`matter_interface.h`) entwickelt, um die Kompilierbarkeit ohne das vollständige SDK zu gewährleisten (Simulations-Modus).
@@ -152,9 +152,17 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** **End-to-End-Validierung (RX-Pfad):** Erfolgreiche Erstellung, Aktivierung und Sichtbarmachung dynamischer Endpoints (Sensor/Schalter) im Matter-Netzwerk (Home Assistant) und korrekte Übermittlung der Attribut-Werte verifiziert.
 *   **[DONE]** **Thread-Infrastruktur (OTBR):** Die Docker-Konfiguration des OpenThread Border Router Containers wurde stabilisiert und gehärtet. Der Container startet nun zuverlässig.
 *   **[DONE]** **Fehlerbehebung OTBR-Hardware:** Das OpenThread RCP-Modul (ESP32-C6) wurde erfolgreich mit einer stabilen, vorkompilierten Firmware (`generic-esp32c6.bin`) neu geflasht. Der Bootloop wurde damit behoben und der `otbr-agent` kann nun stabil mit dem Modul kommunizieren.
+*   **[DONE]** **Release-Management:** Meilenstein **v1.1.0-NG** (stabile Matter-over-WiFi Implementierung) erstellt und auf GitHub veröffentlicht.
+*   **[DONE]** **Architektur für Thread-Integration:** `thread_manager.c/h` Modul zur Kapselung des OpenThread-Stacks entworfen und implementiert.
+*   **[DONE]** **Integration Thread-Stack:** `thread_manager_init()` in die Haupt-Applikationslogik (`app_main`) integriert.
+*   **[DONE]** **Build-Konfiguration für Thread:** `sdkconfig.defaults` um `CONFIG_OPENTHREAD_ENABLED=y` und `CONFIG_ESP_MATTER_ENABLE_OPENTHREAD=y` erweitert.
+*   **[DONE]** **Firmware-Speicher erweitert:** Partitionsschema (`partitions.csv`) angepasst, um die durch den Thread-Stack vergrößerte Firmware aufzunehmen (Factory-Partition auf 2.5MB vergrößert).
 
 ## 4. Erkenntnisse & Gelöste Probleme
 
+*   **Neues Problem: Build-Fehler nach Aktivierung von OpenThread.**
+    *   **Analyse:** Der Build-Prozess bricht mit dem Fehler `fatal error: esp_openthread.h: No such file or directory` ab. Dies deutet darauf hin, dass die neuen Konfigurationseinstellungen aus `sdkconfig.defaults` noch nicht in der aktiven Build-Konfiguration (`sdkconfig`) übernommen wurden und das Build-System die Abhängigkeiten zur OpenThread-Komponente nicht korrekt auflöst.
+    *   **Lösungsstrategie:** Ausführen von `idf.py reconfigure`, um die Projektkonfiguration zu aktualisieren und die Inkludierung der OpenThread-Header zu erzwingen.
 *   **Gelöstes Problem: OpenThread-Funkmodul (ESP32-C6) war in permanenter Boot-Schleife.**
     *   **Analyse:** Der OpenThread Border Router (`otbr-agent`) konnte keine Verbindung zum Funkmodul (Radio Co-Processor, RCP) auf `/dev/ttyACM3` herstellen. Eine direkte Analyse der seriellen Schnittstelle des Moduls zeigte, dass dessen Firmware nicht startete, sondern sich der ESP32-C6 in einer permanenten Neustart-Schleife befand (`ESP-ROM:esp32c6...`).
     *   **Lösung:** Die fehlerhafte Firmware des RCP-Moduls wurde mittels `esptool.py` vollständig überschrieben. Eine stabile, vorkompilierte RCP-Firmware (`generic-esp32c6.bin`) wurde auf den ESP32-C6 geflasht. Unmittelbar danach startete das Modul korrekt und der `otbr-agent` im Docker-Container konnte die Verbindung erfolgreich herstellen. **Der Blocker für die Matter-over-Thread-Validierung ist damit beseitigt.**
@@ -172,31 +180,16 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **Erkenntnis: ESP-Matter SDK API-Evolution.**
     *   **Analyse:** Ein Build-Fehler (`'get_root_node_endpoint' is not a member of ...`) zeigte, dass sich die API zur Erstellung und Verknüpfung von Endpoints in der verwendeten SDK-Version (`>=1.2.0`) geändert hat.
     *   **Konsequenz:** Die Logik in `matter_interface.cpp` wurde umgestellt. Endpoints werden nun zuerst am Haupt-`node` erstellt und anschließend dem `aggregator`-Endpoint mittels `set_parent_endpoint` explizit untergeordnet.
-*   **Erkenntnis: Der fest definierte manuelle Pairing-Code ist unzuverlässig.**
-    *   **Analyse:** Der Commissioning-Prozess schlug fehl, weil der vom SDK berechnete Pairing-Code von dem in der `sdkconfig` definierten abwich.
-    *   **Konsequenz:** Statt einen Code manuell zu berechnen, wird der **tatsächliche Code zur Laufzeit vom SDK generiert** und im seriellen Log ausgegeben.
-*   **Erkenntnis: Kritische Debugging-Informationen durch Konsolen-Routing.**
-    *   **Analyse:** Wichtige Debug-Ausgaben des Matter-SDK wurden auf eine physische UART statt auf den zugänglichen USB-JTAG-Port geroutet.
-    *   **Konsequenz:** Die primäre Systemkonsole wurde in der `sdkconfig` fest auf den USB-JTAG-Port umgeleitet.
-*   **Erkenntnis: Notwendigkeit des Matter-Server-Resets ("Stale Session"-Problem).**
-    *   **Analyse:** Nach fehlgeschlagenen Commissioning-Versuchen behält der Matter-Server gecachte Informationen über das Gerät.
-    *   **Konsequenz:** Eine zuverlässige Testprozedur muss das Löschen des alten Geräts aus dem Controller UND einen Neustart des Matter-Server-Dienstes beinhalten.
-*   **Erkenntnis: Matter erfordert explizite IPv6 Link-Local Konfiguration.**
-    *   **Analyse:** Obwohl der Matter-Stack intern IPv6 nutzt, war das Gerät im Netzwerk nicht per IPv6 erreichbar.
-    *   **Konsequenz:** Die WiFi-Verbindungslogik wurde um einen expliziten Aufruf zur Erstellung der IPv6 Link-Local-Adresse (`esp_netif_create_ip6_linklocal`) erweitert.
-*   **Erkenntnis: Matter-SDK-Aufrufe erfordern explizite Thread-Synchronisation.**
-    *   **Analyse:** Asynchrone Aufrufe der `matter_interface` aus anderen Tasks führten zu Race Conditions.
-    *   **Konsequenz:** Alle kritischen API-Aufrufe, die den Zustand des Matter-SDK verändern, wurden durch einen Mutex (`lock::chip_stack_lock`) abgesichert.
 *   **Erkenntnis: Irreversibilität von eFuses – Praxistest mit Konsequenzen.**
     *   **Analyse:** Das 868MHz-Board hat **permanent aktive `SECURE_BOOT_EN` eFuses** mit einem nicht mehr verfügbaren Schlüssel.
     *   **Konsequenz:** Dieses Board ist für die weitere Entwicklung effektiv unbrauchbar ("gebrickt"). Die Entwicklung wird **ausschließlich auf ungesicherter Hardware** (433MHz-Board) fortgesetzt.
 
 ## 5. Nächste Schritte
 
-*   **Matter-over-Thread Validierung (Höchste Priorität):** Durchführung eines End-to-End-Tests der Kommunikation (RX und TX) über das nun funktionale Thread-Netzwerk (OTBR), um die hybride (WiFi & Thread) Funktionalität zu verifizieren.
-*   **End-to-End-Validierung der Matter-Bridge (TX-Pfad):** Senden von Befehlen aus Home Assistant (z.B. Schalten eines via RF erstellten FS20- oder Somfy-Endpoints) und Verifikation des am CC1101 korrekt generierten und gesendeten Funksignals.
+*   **Behebung des Build-Fehlers (Höchste Priorität):** Die Projektkonfiguration mittels `idf.py reconfigure` erneuern, um die OpenThread-Abhängigkeiten korrekt aufzulösen und einen erfolgreichen Build der Firmware mit aktiviertem Thread-Stack zu ermöglichen.
+*   **Matter-over-Thread Validierung:** Nach erfolgreichem Build: Durchführung eines End-to-End-Tests der Kommunikation (RX und TX) über das nun auf dem Gerät aktive Thread-Netzwerk, um die hybride (WiFi & Thread) Funktionalität zu verifizieren.
+*   **End-to-End-Validierung der Matter-Bridge (TX-Pfad):** Senden von Befehlen aus Home Assistant (z.B. Schalten eines via RF erstellten FS20- oder Somfy-Endpoints) und Verifikation des am CC1101 korrekt generierten und gesendeten Funksignals über WiFi und Thread.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
-*   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (**v1.1.0-NG**) und Finalisierung der Endbenutzer-Dokumentation.
 *   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.
 
 ## 6. Hardware-Konfiguration (Pinout)
