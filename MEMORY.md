@@ -163,6 +163,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Ressourcenkonflikt (`modem_clock` crash) durch Deaktivierung von WiFi im Thread-Profil behoben.
 *   **[DONE]** Stabile Laufzeit für alle drei Build-Profile (WiFi, Thread, Serial) verifiziert.
 *   **[DONE]** Fehlerbehebung CC1101-Empfang: GDO0/GDO2 Pin-Konfiguration im Treiber korrigiert und damit Empfang von Rohdaten (Pulsen) ermöglicht.
+*   **[IN PROGRESS]** Build-System gehärtet, um einen reinen "Serial-Only"-Build ohne Netzwerk-Stacks zu ermöglichen (Behebung von Linker-Fehlern).
 
 ## 4. Erkenntnisse & Gelöste Probleme
 
@@ -172,12 +173,9 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **Gelöstes Problem: Kein Empfang von RF-Signalen trotz korrekter Frequenz.**
     *   **Analyse:** Der CC1101-Treiber (`cc1101.c`) hatte die Registerkonfiguration für `GDO0` (Daten-Interrupt-Pin) und `GDO2` (Carrier Sense Pin) vertauscht. Die Interrupt Service Routine wartete auf Pulse am `GDO0`-Pin, dieser war jedoch als Carrier-Sense konfiguriert und lieferte somit keine Datenflanken.
     *   **Lösung:** Die Werte für die Register `IOCFG0` und `IOCFG2` wurden getauscht, sodass `GDO0` nun korrekterweise als "Serial Data Output" fungiert. Dies hat den Empfang von rohen Pulsfolgen (`P:...` und `MU;...`) freigeschaltet.
-*   **Gelöstes Problem: OpenThread-Funkmodul (ESP32-C6) war in permanenter Boot-Schleife.**
-    *   **Analyse:** Der OpenThread Border Router (`otbr-agent`) konnte keine Verbindung zum Funkmodul (Radio Co-Processor, RCP) auf `/dev/ttyACM3` herstellen. Eine direkte Analyse der seriellen Schnittstelle des Moduls zeigte, dass dessen Firmware nicht startete, sondern sich der ESP32-C6 in einer permanenten Neustart-Schleife befand (`ESP-ROM:esp32c6...`).
-    *   **Lösung:** Die fehlerhafte Firmware des RCP-Moduls wurde mittels `esptool.py` vollständig überschrieben. Eine stabile, vorkompilierte RCP-Firmware (`generic-esp32c6.bin`) wurde auf den ESP32-C6 geflasht. Unmittelbar danach startete das Modul korrekt und der `otbr-agent` im Docker-Container konnte die Verbindung erfolgreich herstellen.
-*   **Gelöstes Problem: Docker-basierte OTBR-Instabilität durch Bug im Start-Skript und falsche API-Konfiguration.**
-    *   **Analyse:** Der `openthread/otbr` Docker-Container stürzte in einer Neustart-Schleife ab oder war für Home Assistant nicht erreichbar. Die Ursache war zweigeteilt: ein interner `start-stop-daemon`-Bug im Startskript und eine falsche `otbr-agent`-Konfiguration (lauschte nur auf `localhost`).
-    *   **Lösung:** Eine grundlegende Anpassung der `docker-compose.yml`. Das fehlerhafte Start-Skript wird umgangen, indem der `entrypoint` des Containers überschrieben und die Dienste direkt mit korrekten Parametern (`--rest-listen-address 0.0.0.0`) gestartet werden. Der OTBR-Container startet nun stabil und ist im Netzwerk voll funktionsfähig.
+*   **Erkenntnis: Starke Kopplung durch ESP-Matter SDK.**
+    *   **Analyse:** Der Versuch, einen minimalen `serial`-Build zu erstellen, scheiterte zunächst an tiefgreifenden Abhängigkeiten. Das `esp-matter` SDK als "managed component" wird standardmäßig in den Build-Prozess integriert und verursacht Kompilierungs- und Linker-Fehler, selbst wenn es in der Applikation nicht aktiv genutzt wird. Die transitive Einbindung von IDF-Komponenten (wie `esp_driver_usb_serial_jtag`) durch Matter verschleiert die tatsächlichen Abhängigkeiten der eigenen Applikation.
+    *   **Lösung (in Arbeit):** Eine mehrstufige Entkopplung ist notwendig: (1) Bedingte Kompilierung von Quellcode-Dateien in `CMakeLists.txt`, (2) Absicherung aller Cross-Component-Funktionsaufrufe mit Präprozessor-Makros und (3) explizite Deklaration aller benötigten Basis-IDF-Komponenten, um unabhängig von Matter lauffähig zu sein.
 *   **Erkenntnis: Irreversibilität von eFuses – Praxistest mit Konsequenzen.**
     *   **Analyse:** Das 868MHz-Board hat **permanent aktive `SECURE_BOOT_EN` eFuses** mit einem nicht mehr verfügbaren Schlüssel.
     *   **Konsequenz:** Dieses Board ist für die weitere Entwicklung effektiv unbrauchbar ("gebrickt"). Die Entwicklung wird **ausschließlich auf ungesicherter Hardware** (433MHz-Board) fortgesetzt.
@@ -186,7 +184,8 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **Validierung der RF-Empfangsstabilität (Höchste Priorität):** Testen der Firmware im **`serial`-Build-Profil** (ohne WiFi/Netzwerkstacks), um die Hypothese der 2,4-GHz-WiFi-Interferenz auf den 433-MHz-Empfang zu verifizieren. Ziel ist der saubere Empfang und die Dekodierung von Signalen eines Legacy-CULs.
+*   **[BLOCKIERT]** **Build-Prozess für `serial`-Profil finalisieren:** Behebung der verbleibenden Linker-Fehler durch korrekte Deklaration von IDF-Treiber-Komponenten (`esp_driver_usb_serial_jtag`) in `CMakeLists.txt` und Absicherung der letzten verbleibenden Matter-Abhängigkeiten (z.B. in `web_server.c`).
+*   **Validierung der RF-Empfangsstabilität (Höchste Priorität):** Nach erfolgreichem `serial`-Build, Testen der Firmware ohne WiFi/Netzwerkstacks, um die Hypothese der 2,4-GHz-WiFi-Interferenz auf den 433-MHz-Empfang zu verifizieren. Ziel ist der saubere Empfang und die Dekodierung von Signalen eines Legacy-CULs.
 *   **End-to-End-Validierung des RX-Pfads (Matter-over-WiFi):** Nach erfolgreichem Empfang im `serial`-Modus, erneuter Test mit dem `wifi`-Profil. Validierung des vollständigen Pfades: RF-Signal -> CC1101 -> Decoder -> Matter-Bridge -> Attribut-Update in Home Assistant.
 *   **Matter-over-Thread Validierung:** Durchführung eines End-to-End-Tests der Kommunikation (RX und TX) über das Thread-Netzwerk, um die hybride Funktionalität zu verifizieren.
 *   **End-to-End-Validierung der Matter-Bridge (TX-Pfad):** Senden von Befehlen aus Home Assistant (z.B. Schalten eines via RF erstellten FS20- oder Somfy-Endpoints) und Verifikation des am CC1101 korrekt generierten Funksignals.
