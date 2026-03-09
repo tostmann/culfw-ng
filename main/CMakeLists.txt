@@ -1,7 +1,5 @@
 set(include_dirs "../include" "include")
 
-message(STATUS "DEBUG: CONFIG_ESP_WIFI_ENABLED = '${CONFIG_ESP_WIFI_ENABLED}'")
-
 # Define mandatory sources
 set(app_sources
     main.c
@@ -13,20 +11,24 @@ set(app_sources
     generic_decoder.c
 )
 
-# Optional components based on configuration
-if (CONFIG_ESP_WIFI_ENABLED STREQUAL "y" OR CONFIG_ESP_WIFI_ENABLED EQUAL 1)
-    message(STATUS "WiFi Enabled - adding WiFi sources")
-    list(APPEND app_sources wifi_manager.c web_server.c)
-endif()
+if (NOT PROFILE_SERIAL)
+    # Optional components based on configuration
+    if (CONFIG_ESP_WIFI_ENABLED STREQUAL "y" OR CONFIG_ESP_WIFI_ENABLED EQUAL 1)
+        message(STATUS "WiFi Enabled - adding WiFi sources")
+        list(APPEND app_sources wifi_manager.c web_server.c)
+    endif()
 
-if (CONFIG_OPENTHREAD_ENABLED STREQUAL "y" OR CONFIG_OPENTHREAD_ENABLED EQUAL 1)
-    message(STATUS "Thread Enabled - adding Thread sources")
-    list(APPEND app_sources thread_manager.c)
-endif()
+    if (CONFIG_OPENTHREAD_ENABLED STREQUAL "y" OR CONFIG_OPENTHREAD_ENABLED EQUAL 1)
+        message(STATUS "Thread Enabled - adding Thread sources")
+        list(APPEND app_sources thread_manager.c)
+    endif()
 
-if ((CONFIG_ESP_MATTER_ENABLE_WIFI STREQUAL "y") OR (CONFIG_ESP_MATTER_ENABLE_OPENTHREAD STREQUAL "y"))
-    message(STATUS "Matter Enabled - adding Matter sources")
-    list(APPEND app_sources matter_bridge.c matter_interface.cpp)
+    if ((CONFIG_ESP_MATTER_ENABLE_WIFI STREQUAL "y") OR (CONFIG_ESP_MATTER_ENABLE_OPENTHREAD STREQUAL "y"))
+        message(STATUS "Matter Enabled - adding Matter sources")
+        list(APPEND app_sources matter_bridge.c matter_interface.cpp)
+    endif()
+else()
+    message(STATUS "Serial Profile - omitting network sources")
 endif()
 
 set(app_requires nvs_flash esp_partition spiffs driver esp_timer esp_netif esp_event json esp_driver_usb_serial_jtag)
