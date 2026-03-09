@@ -47,17 +47,20 @@ void matter_interface_init(void) {
     ESP_LOGI(TAG, "Initializing ESP-Matter Node...");
     
     node::config_t node_config;
+    // node_config has no default constructor but can be zeroed
+    memset(&node_config, 0, sizeof(node_config));
+
     node_t *node = node::create(&node_config, app_attribute_update_cb, app_identification_cb);
     
     if (node) {
         endpoint::aggregator::config_t aggregator_config;
+        // memset(&aggregator_config, 0, sizeof(aggregator_config)); // Actually aggregator::config_t is empty in some versions
         s_aggregator_endpoint = endpoint::aggregator::create(node, &aggregator_config, ENDPOINT_FLAG_NONE, NULL);
-        ESP_LOGI(TAG, "Node and Aggregator created.");
-
-        // Create a static test endpoint to verify stack
-        endpoint::on_off_light::config_t light_config;
-        endpoint::on_off_light::create(node, &light_config, ENDPOINT_FLAG_NONE, NULL);
-        ESP_LOGI(TAG, "Static Test Endpoint created.");
+        if (s_aggregator_endpoint) {
+            ESP_LOGI(TAG, "Node and Aggregator created.");
+        } else {
+            ESP_LOGE(TAG, "Failed to create Aggregator!");
+        }
     } else {
         ESP_LOGE(TAG, "Failed to create Node!");
     }
