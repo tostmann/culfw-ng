@@ -54,7 +54,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
     *   **Hardware-Default:** Die Modulfrequenz (433/868 MHz) wird initial über einen GPIO-Pin (`GPIO_433MARKER`) erkannt.
     *   **Software-Override:** Ein Benutzer kann die Frequenz zur Laufzeit per Kommando (`f433` oder `f868`) umschalten. Diese Einstellung wird **permanent im NVS gespeichert**.
     *   **Präzise Frequenzsteuerung:** Eine `cc1101_set_frequency_raw()` Funktion erlaubt die exakte Einstellung spezifischer Frequenzen (z.B. **433.92 MHz** für Intertechno), die von den Standardbändern abweichen. Die Registerwerte hierfür wurden präzisiert.
-*   **Versionierung:** Automatisierter Build-Nummer und detaillierter, culfw-kompatibler Versions-String, der nun Chip-ID, die **aktuelle IP-Adresse**, den **Betriebsmodus**, den **Matter-Status** sowie die **verbleibende Duty-Cycle-Sendezeit** enthält (`V`-Kommando).
+*   **Versionierung:** Automatisierter Build-Nummer und detaillierter, culfw-kompatibler Versions-String, der nun Chip-ID, die **aktuelle IPv4- und IPv6-Adresse**, den **Betriebsmodus**, den **Matter-Status** sowie die **verbleibende Duty-Cycle-Sendezeit** enthält (`V`-Kommando).
 
 ## 3. Implementierungsstatus
 
@@ -138,6 +138,10 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Implementierung zur **dynamischen Generierung des Pairing-Codes** durch das Matter-SDK in `matter_interface.cpp` zur Sicherstellung der Korrektheit.
 *   **[DONE]** Build-Prozess gehärtet: Zahlreiche C/C++ Interoperabilitäts- und SDK-Konfigurationsfehler in `matter_interface.cpp` und `sdkconfig` behoben.
 *   **[DONE]** Erfolgreicher Build und Flash der Firmware (**v1.1.0-NG**) mit funktionierender dynamischer Code-Generierung.
+*   **[DONE]** **Erfolgreiches Matter-Commissioning:** Das Gerät wurde erfolgreich mit dem dynamisch generierten Code in Home Assistant eingebunden. Die grundlegende Kommunikation über IPv6 ist verifiziert.
+*   **[DONE]** **IPv6-Konnektivität implementiert:** WiFi-Manager erweitert, um IPv6 Link-Local-Adressen zu aktivieren und zu verwalten.
+*   **[DONE]** **Version-String (`V`) erweitert:** Ausgabe um die aktive IPv6-Adresse ergänzt.
+*   **[DONE]** **Build-Skript optimiert:** Inkrementelles Kompilieren als Standard in `build_idf.sh` festgelegt, um Entwicklungszyklen zu beschleunigen.
 
 ## 4. Erkenntnisse & Gelöste Probleme
 
@@ -150,6 +154,9 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **Erkenntnis: Notwendigkeit des Matter-Server-Resets ("Stale Session"-Problem).**
     *   **Analyse:** Nach fehlgeschlagenen Commissioning-Versuchen behält der Matter-Server (z.B. in Home Assistant) gecachte Informationen über das Gerät. Selbst nach einem Firmware-Update kann ein erneuter Versuch scheitern, da der Server von veralteten Daten ausgeht.
     *   **Konsequenz:** Eine zuverlässige Testprozedur muss das Löschen des alten Geräts aus dem Controller UND einen Neustart des Matter-Server-Dienstes beinhalten, um einen sauberen Zustand zu garantieren.
+*   **Erkenntnis: Matter erfordert explizite IPv6 Link-Local Konfiguration.**
+    *   **Analyse:** Obwohl der Matter-Stack intern IPv6 nutzt, war das Gerät im Netzwerk nicht per IPv6 (Ping) erreichbar. Die grundlegende Kommunikation mit dem Controller war instabil.
+    *   **Konsequenz:** Die WiFi-Verbindungslogik wurde um einen expliziten Aufruf zur Erstellung der IPv6 Link-Local-Adresse (`esp_netif_create_ip6_linklocal`) erweitert. Dies stellt sicher, dass das Gerät eine standardkonforme, routing-unabhängige IPv6-Adresse für die lokale Kommunikation mit einem Matter-Controller besitzt. Die Erreichbarkeit wurde per Ping verifiziert.
 *   **Erkenntnis: Unzuverlässigkeit von Legacy-Hardware als Test-Sender.**
     *   **Analyse:** Wiederholte Versuche, komplexe Protokolle wie HMS oder FHT von einem Legacy-CUL zu senden, schlugen fehl. Dies deutet auf Timing-Probleme oder Inkompatibilitäten in der alten CUL-Firmware hin.
     *   **Konsequenz:** Für die zuverlässige Validierung von Decodern wurde auf die direkte Puls-Injektion (`mi`-Kommando) umgestiegen. Dies entkoppelt die Decoder-Entwicklung von der unzuverlässigen Sender-Hardware und ermöglicht präzise, wiederholbare Tests.
@@ -159,8 +166,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **Matter-Commissioning abschließen (Höchste Priorität):** Den im seriellen Log **vom SDK dynamisch generierten** Pairing-Code für den finalen Commissioning-Versuch in Home Assistant nutzen.
-*   **End-to-End-Validierung der Matter-Bridge:** Systematischer Test der bidirektionalen Funktionalität: (A) Empfang von SlowRF-Signalen (z.B. Intertechno-Sensor) und deren korrekte Darstellung in Home Assistant; (B) Senden von Befehlen aus Home Assistant (z.B. Schalten von Somfy/FS20) und Verifikation des gesendeten Funksignals.
+*   **End-to-End-Validierung der Matter-Bridge (Höchste Priorität):** Systematischer Test der bidirektionalen Funktionalität: (A) Empfang von SlowRF-Signalen (z.B. Intertechno-Sensor) und deren korrekte Darstellung in Home Assistant; (B) Senden von Befehlen aus Home Assistant (z.B. Schalten von Somfy/FS20) und Verifikation des gesendeten Funksignals.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
 *   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (**v1.1.0-NG**) und Finalisierung der Endbenutzer-Dokumentation.
 *   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.
@@ -187,6 +193,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
     *   **Repository:** `https://github.com/tostmann/culfw-ng`
 *   **Build-System:** Umgestellt auf natives **ESP-IDF (`idf.py`)**.
     *   **Anforderung:** Benötigt eine korrekt konfigurierte ESP-IDF-Toolchain, inklusive `cmake` und der `export.sh` Umgebungsvariablen.
+    *   **Optimierung:** Das Build-Skript (`build_idf.sh`) wurde für schnellere, inkrementelle Builds optimiert.
 *   **Test-Umgebung (Systemebene):**
     *   **Technologie:** Docker und Docker Compose auf Raspberry Pi 5.
     *   **Services:**
