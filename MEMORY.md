@@ -162,12 +162,16 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Build-Skript (`build_idf.sh`) zur Unterstützung von Build-Profilen erweitert.
 *   **[DONE]** Ressourcenkonflikt (`modem_clock` crash) durch Deaktivierung von WiFi im Thread-Profil behoben.
 *   **[DONE]** Stabile Laufzeit für alle drei Build-Profile (WiFi, Thread, Serial) verifiziert.
+*   **[DONE]** Fehlerbehebung CC1101-Empfang: GDO0/GDO2 Pin-Konfiguration im Treiber korrigiert und damit Empfang von Rohdaten (Pulsen) ermöglicht.
 
 ## 4. Erkenntnisse & Gelöste Probleme
 
 *   **Gelöstes Problem: Laufzeit-Crash (`modem_clock`) bei simultaner Aktivierung von WiFi und Thread.**
     *   **Analyse:** Die ESP32-C6-Hardware teilt sich ein einziges 2.4-GHz-Funkmodul für WiFi (IEEE 802.11) und Thread (IEEE 802.15.4). Ein simultaner Betrieb ist nicht möglich. Der Absturz wurde durch eine Race Condition verursacht, bei der sowohl der WiFi-Treiber als auch der OpenThread-Stack versuchten, exklusive Kontrolle über das Funkmodul und dessen Taktgeber zu erlangen. Dies führte zu einer fatalen `assert failed: modem_clock_device_disable`-Fehlermeldung.
     *   **Lösung:** Eine grundlegende architektonische Umstellung auf **dedizierte, sich gegenseitig ausschließende Build-Profile**. Es wurden drei Konfigurationen (`sdkconfig.defaults.wifi`, `sdkconfig.defaults.thread`, `sdkconfig.defaults.serial`) erstellt. Je nach gewähltem Profil wird nur der WiFi-Stack ODER der Thread-Stack in die Firmware einkompiliert, aber niemals beide gleichzeitig. Dies eliminiert den Ressourcenkonflikt bereits zur Kompilierzeit und stellt einen stabilen Betrieb für jeden Anwendungsfall sicher.
+*   **Gelöstes Problem: Kein Empfang von RF-Signalen trotz korrekter Frequenz.**
+    *   **Analyse:** Der CC1101-Treiber (`cc1101.c`) hatte die Registerkonfiguration für `GDO0` (Daten-Interrupt-Pin) und `GDO2` (Carrier Sense Pin) vertauscht. Die Interrupt Service Routine wartete auf Pulse am `GDO0`-Pin, dieser war jedoch als Carrier-Sense konfiguriert und lieferte somit keine Datenflanken.
+    *   **Lösung:** Die Werte für die Register `IOCFG0` und `IOCFG2` wurden getauscht, sodass `GDO0` nun korrekterweise als "Serial Data Output" fungiert. Dies hat den Empfang von rohen Pulsfolgen (`P:...` und `MU;...`) freigeschaltet.
 *   **Gelöstes Problem: OpenThread-Funkmodul (ESP32-C6) war in permanenter Boot-Schleife.**
     *   **Analyse:** Der OpenThread Border Router (`otbr-agent`) konnte keine Verbindung zum Funkmodul (Radio Co-Processor, RCP) auf `/dev/ttyACM3` herstellen. Eine direkte Analyse der seriellen Schnittstelle des Moduls zeigte, dass dessen Firmware nicht startete, sondern sich der ESP32-C6 in einer permanenten Neustart-Schleife befand (`ESP-ROM:esp32c6...`).
     *   **Lösung:** Die fehlerhafte Firmware des RCP-Moduls wurde mittels `esptool.py` vollständig überschrieben. Eine stabile, vorkompilierte RCP-Firmware (`generic-esp32c6.bin`) wurde auf den ESP32-C6 geflasht. Unmittelbar danach startete das Modul korrekt und der `otbr-agent` im Docker-Container konnte die Verbindung erfolgreich herstellen.
@@ -177,11 +181,15 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **Erkenntnis: Irreversibilität von eFuses – Praxistest mit Konsequenzen.**
     *   **Analyse:** Das 868MHz-Board hat **permanent aktive `SECURE_BOOT_EN` eFuses** mit einem nicht mehr verfügbaren Schlüssel.
     *   **Konsequenz:** Dieses Board ist für die weitere Entwicklung effektiv unbrauchbar ("gebrickt"). Die Entwicklung wird **ausschließlich auf ungesicherter Hardware** (433MHz-Board) fortgesetzt.
+*   **Hypothese: WiFi-Interferenz stört CC1101-Empfang.**
+    *   **Analyse:** Trotz korrigierter GDO-Pins und verifiziertem RX-Modus des CC1101 wird nur Rauschen empfangen, aber keine Signale eines nahen Senders dekodiert. Es besteht der Verdacht, dass der aktive 2.4-GHz-WiFi-Funk des ESP32-C6 den empfindlichen 433-MHz-Empfänger des CC1101 stört (Jamming).
 
 ## 5. Nächste Schritte
 
-*   **Matter-over-Thread Validierung (Höchste Priorität):** Durchführung eines End-to-End-Tests der Kommunikation (RX und TX) über das nun auf dem Gerät aktive Thread-Netzwerk, um die hybride (WiFi & Thread) Funktionalität zu verifizieren.
-*   **End-to-End-Validierung der Matter-Bridge (TX-Pfad):** Senden von Befehlen aus Home Assistant (z.B. Schalten eines via RF erstellten FS20- oder Somfy-Endpoints) und Verifikation des am CC1101 korrekt generierten und gesendeten Funksignals über WiFi und Thread (in den jeweiligen Builds).
+*   **Validierung der RF-Empfangsstabilität (Höchste Priorität):** Testen der Firmware im **`serial`-Build-Profil** (ohne WiFi/Netzwerkstacks), um die Hypothese der 2,4-GHz-WiFi-Interferenz auf den 433-MHz-Empfang zu verifizieren. Ziel ist der saubere Empfang und die Dekodierung von Signalen eines Legacy-CULs.
+*   **End-to-End-Validierung des RX-Pfads (Matter-over-WiFi):** Nach erfolgreichem Empfang im `serial`-Modus, erneuter Test mit dem `wifi`-Profil. Validierung des vollständigen Pfades: RF-Signal -> CC1101 -> Decoder -> Matter-Bridge -> Attribut-Update in Home Assistant.
+*   **Matter-over-Thread Validierung:** Durchführung eines End-to-End-Tests der Kommunikation (RX und TX) über das Thread-Netzwerk, um die hybride Funktionalität zu verifizieren.
+*   **End-to-End-Validierung der Matter-Bridge (TX-Pfad):** Senden von Befehlen aus Home Assistant (z.B. Schalten eines via RF erstellten FS20- oder Somfy-Endpoints) und Verifikation des am CC1101 korrekt generierten Funksignals.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
 *   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.
 
