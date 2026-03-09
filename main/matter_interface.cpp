@@ -52,15 +52,20 @@ void matter_interface_init(void) {
     log_jtag("MATTER_IF: Initializing Node...\n");
     
     node::config_t node_config;
-    memset(&node_config, 0, sizeof(node_config));
+    // memset(&node_config, 0, sizeof(node_config)); // SDK might have defaults
 
     node_t *node = node::create(&node_config, app_attribute_update_cb, app_identification_cb);
     
     if (node) {
+        log_jtag("MATTER_IF: Node created. Initializing Aggregator...\n");
         endpoint::aggregator::config_t aggregator_config;
+        // The aggregator should be on endpoint 0 (root node) or as a separate endpoint
         s_aggregator_endpoint = endpoint::aggregator::create(node, &aggregator_config, ENDPOINT_FLAG_NONE, NULL);
         if (s_aggregator_endpoint) {
-            log_jtag("MATTER_IF: Aggregator created.\n");
+            uint16_t agg_id = endpoint::get_id(s_aggregator_endpoint);
+            char log_tmp[64];
+            snprintf(log_tmp, sizeof(log_tmp), "MATTER_IF: Aggregator created on EP %d.\n", agg_id);
+            log_jtag(log_tmp);
         } else {
             log_jtag("MATTER_IF: FAILED to create Aggregator!\n");
         }
@@ -69,7 +74,12 @@ void matter_interface_init(void) {
     }
 
     log_jtag("MATTER_IF: Starting ESP-Matter SDK...\n");
-    esp_matter::start(app_event_cb);
+    esp_err_t err = esp_matter::start(app_event_cb);
+    if (err != ESP_OK) {
+        log_jtag("MATTER_IF: FAILED to start Matter SDK!\n");
+    } else {
+        log_jtag("MATTER_IF: Matter SDK started successfully.\n");
+    }
 
     // Print actual commissioning information
     chip::PayloadContents payload;
