@@ -14,11 +14,12 @@ static matter_command_cb_t cmd_cb = NULL;
     #include <setup_payload/SetupPayload.h>
     #include <setup_payload/QRCodeSetupPayloadGenerator.h>
     #include <setup_payload/ManualSetupPayloadGenerator.h>
-    #include <setup_payload/QRCodeSetupPayloadGenerator.h>
     
     using namespace esp_matter;
     using namespace esp_matter::attribute;
     using namespace esp_matter::endpoint;
+
+    static endpoint_t *s_aggregator_endpoint = nullptr;
 
     // SDK-specific static functions would go here
     static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg) {
@@ -27,7 +28,8 @@ static matter_command_cb_t cmd_cb = NULL;
 
     static esp_err_t app_attribute_update_cb(attribute::callback_type_t type, uint16_t endpoint_id, uint32_t cluster_id, uint32_t attribute_id, esp_matter_attr_val_t *val, void *priv_data) {
         if (type == attribute::PRE_UPDATE) {
-            ESP_LOGI(TAG, "Attribute Update: EP %d Cluster %lX Attr %lX Val %d", endpoint_id, cluster_id, attribute_id, val->val.b);
+            // Log update - avoid b for float
+            ESP_LOGI(TAG, "Attribute Update: EP %d Cluster %lX Attr %lX", endpoint_id, cluster_id, attribute_id);
             if (cluster_id == chip::app::Clusters::OnOff::Id && attribute_id == chip::app::Clusters::OnOff::Attributes::OnOff::Id) {
                  matter_interface_simulate_command(endpoint_id, val->val.b ? 1.0f : 0.0f);
             }
@@ -49,7 +51,7 @@ void matter_interface_init(void) {
     
     if (node) {
         endpoint::aggregator::config_t aggregator_config;
-        endpoint::aggregator::create(node, &aggregator_config, ENDPOINT_FLAG_NONE, NULL);
+        s_aggregator_endpoint = endpoint::aggregator::create(node, &aggregator_config, ENDPOINT_FLAG_NONE, NULL);
         ESP_LOGI(TAG, "Node and Aggregator created.");
     } else {
         ESP_LOGE(TAG, "Failed to create Node!");
