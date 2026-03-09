@@ -112,7 +112,9 @@ static void generic_decoder_output_packet(rf_proto_internal_t *p, uint64_t data,
     }
 
     snprintf(id_str, sizeof(id_str), "%s_%llX", p->name, id_val);
+#if defined(CONFIG_ESP_MATTER_ENABLE_WIFI) || defined(CONFIG_ESP_MATTER_ENABLE_OPENTHREAD)
     matter_bridge_report_event(id_str, p->name, p->matter_type == 1 ? DEVICE_TYPE_TEMP_SENSOR : DEVICE_TYPE_SWITCH, val);
+#endif
 }
 
 // Helper to flatten JSON pairs into sequence
