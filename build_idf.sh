@@ -33,7 +33,7 @@ case "$CMD" in
         if [ "$PROFILE" == "serial" ]; then
             cp "sdkconfig.defaults.$PROFILE" sdkconfig
             # Force re-evaluation of dependencies
-            idf.py -DCONFIG_ESP_WIFI_ENABLED=n -DCONFIG_OPENTHREAD_ENABLED=n -DCONFIG_ESP_MATTER_ENABLE=n reconfigure
+            idf.py -DPROFILE_SERIAL=1 -DCONFIG_ESP_WIFI_ENABLED=n -DCONFIG_OPENTHREAD_ENABLED=n -DCONFIG_ESP_MATTER_ENABLE=n reconfigure
         else
             cat sdkconfig.defaults > sdkconfig
             if [ -f "sdkconfig.defaults.$PROFILE" ]; then
