@@ -41,6 +41,3 @@ services:
       - INFRA_IF_NAME=eth0
       - THREAD_IF_NAME=wpan0
       - RADIO_URL=spinel+hdlc:///dev/ttyACM3
-    # Use the default entrypoint but with these env vars set to 0 to bypass failures
-    entrypoint: /app/etc/docker/test_entrypoint.sh
-    command: ["spinel+hdlc:///dev/ttyACM3", "eth0"]
