@@ -1,12 +1,13 @@
 #include "matter_interface.h"
 #include "esp_log.h"
 #include <string.h>
+#include <string>
 
 static const char *TAG = "MATTER_IF";
 static matter_command_cb_t cmd_cb = NULL;
 
 // If the SDK is available, include it here
-#if defined(CONFIG_ESP_MATTER_ENABLE_DATA_MODEL_DATA_MODEL)
+#if defined(CONFIG_ESP_MATTER_ENABLE_DATA_MODEL)
     #include <esp_matter.h>
     #include <esp_matter_console.h>
     #include <esp_matter_ota.h>
