@@ -5,6 +5,8 @@ nutze Quellen von culfw oder SignalDunio und erzeuge eine Implementierung als RT
 Bedenke die spätere erweiterbarkeit auf andere culfw Protokolle.
 Bedenke die spätere nutzung als Thread oder/und Matter Gateway für diese Protokolle. 
 
+Wir wollen Matter entweder über Wifi ODER Thread - nicht gleichzeitig. Es soll je eine sdkconfig dafür existieren. Im Grundsatz später auch komplett eine Firmware ohne Matter, nur serielle culfw/Singaliduno emulation.
+
 *PLATFORM*
 
 nutze das native ESP-IDF Buildsystem insbesondere für offizielles Matter SDK und Thread

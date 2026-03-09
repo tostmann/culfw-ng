@@ -14,13 +14,37 @@ if [ -z "$IDF_EXPORT_QUIET" ]; then
     source $IDF_PATH/export.sh > /dev/null 2>&1
 fi
 
-# Determine command
+# Determine command and profile
+# Syntax: ./build_idf.sh <command> [profile]
+# Commands: build, flash, monitor
+# Profiles: wifi, thread, serial (default: wifi)
+
 CMD=$1
+PROFILE=${2:-wifi}
+
 if [ -z "$CMD" ]; then
     CMD="build"
 fi
 
-# Run idf.py with the provided arguments, but skip 'clean' unless explicitly requested
-# to avoid full recompiles on simple syntax errors.
-idf.py "$@"
+case "$CMD" in
+    build)
+        echo "Building profile: $PROFILE"
+        rm -f sdkconfig
+        cat sdkconfig.defaults > sdkconfig
+        if [ -f "sdkconfig.defaults.$PROFILE" ]; then
+            cat "sdkconfig.defaults.$PROFILE" >> sdkconfig
+        fi
+        idf.py reconfigure
+        idf.py build
+        ;;
+    flash|monitor)
+        # Shift arguments to pass remaining to idf.py (like -p /dev/...)
+        shift
+        if [ "$CMD" == "monitor" ]; then shift; fi # Monitor doesn't need profile arg
+        idf.py $CMD "$@"
+        ;;
+    *)
+        idf.py "$@"
+        ;;
+esac
 
