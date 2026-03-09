@@ -23,6 +23,11 @@ static void event_handler(void* arg, esp_event_base_t event_base,
         char ip_msg[64];
         snprintf(ip_msg, sizeof(ip_msg), "IP: " IPSTR, IP2STR(&event->ip_info.ip));
         slowrf_add_web_event(ip_msg);
+    } else if (event_base == IP_EVENT && event_id == IP_EVENT_GOT_IP6) {
+        ip_event_got_ip6_t *event = (ip_event_got_ip6_t *)event_data;
+        ESP_LOGI(TAG, "Got IPv6: " IPV6STR, IPV62STR(event->ip6_info.ip));
+    } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED) {
+        esp_netif_create_ip6_linklocal(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"));
     }
 }
 
@@ -36,6 +41,7 @@ void wifi_manager_init(void) {
 
     esp_event_handler_instance_t instance_any_id;
     esp_event_handler_instance_t instance_got_ip;
+    esp_event_handler_instance_t instance_got_ip6;
     ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
                                                         ESP_EVENT_ANY_ID,
                                                         &event_handler,
@@ -46,6 +52,11 @@ void wifi_manager_init(void) {
                                                         &event_handler,
                                                         NULL,
                                                         &instance_got_ip));
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT,
+                                                        IP_EVENT_GOT_IP6,
+                                                        &event_handler,
+                                                        NULL,
+                                                        &instance_got_ip6));
 
     wifi_config_t wifi_config = {
         .sta = {
