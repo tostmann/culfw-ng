@@ -145,34 +145,42 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** **Build-Skript optimiert:** Inkrementelles Kompilieren als Standard in `build_idf.sh` festgelegt, um Entwicklungszyklen zu beschleunigen.
 *   **[DONE]** **Thread-Sicherheit für Matter-Bridge gehärtet:** API-Aufrufe mit `chip_stack_lock` synchronisiert, um Race Conditions zu verhindern.
 *   **[DONE]** **Fehlerbehebung Web-Interface:** URL-Parsing für Befehle mit Leerzeichen (z.B. 'MT ...') korrigiert.
+*   **[DONE]** **Test-Infrastruktur erweitert:** OpenThread Border Router (OTBR) als Docker-Container (`openthread/otbr`) aufgesetzt und für Thread-Kommunikation konfiguriert.
+*   **[DONE]** **Fehlerbehebung Matter-Bridge-Absturz:** Behoben durch explizite Initialisierung der Endpoint-Konfigurationen (`config_t`), um kritische 'Cluster cannot be NULL'-Fehler im SDK zu vermeiden und die Stabilität bei der dynamischen Endpoint-Erstellung zu gewährleisten.
 
 ## 4. Erkenntnisse & Gelöste Probleme
 
+*   **Erkenntnis: SDK-Abstürze durch uninitialisierte Konfigurationen.**
+    *   **Analyse:** Die Firmware stürzte beim Erstellen dynamischer Matter-Endpoints (via `MT`-Kommando) ab. Die Ursache wurde auf eine `Cluster cannot be NULL`-Fehlermeldung im ESP-Matter SDK zurückgeführt. Das Übergeben eines `nullptr` für die Konfigurationsstruktur an die `create()`-Funktionen des SDK (z.B. `temperature_sensor::create`) ist nicht sicher und führt zu einem undefinierten Zustand und schließlich zum Absturz.
+    *   **Konsequenz:** Die `matter_interface.cpp` wurde gehärtet, indem für jeden Endpoint-Typ eine explizite, standard-initialisierte `config_t`-Struktur erzeugt und deren Adresse an die `create()`-Funktion übergeben wird. Dies stellt sicher, dass das SDK immer mit gültigen, initialisierten Daten arbeitet und hat den Absturz zuverlässig behoben.
+*   **Erkenntnis: Robuste Docker-basierte Thread-Infrastruktur.**
+    *   **Analyse:** Das empfohlene Home Assistant Docker-Image für den OpenThread Border Router (OTBR) war nicht erreichbar. Das offizielle `openthread/otbr`-Image ließ sich zwar pullen, scheiterte aber beim Start, da das interne Start-Skript versuchte, `ip6tables`-Firewall-Regeln zu setzen, was in der Host-Umgebung fehlschlug.
+    *   **Konsequenz:** Eine stabile Konfiguration wurde erreicht, indem die `docker-compose.yml` angepasst wurde. Das `entrypoint` des Containers wird nun überschrieben, um das problematische Skript zu umgehen und den `otbr-agent`-Dienst direkt mit den notwendigen Parametern zu starten. Dies ermöglicht einen stabilen OTBR-Betrieb für die Matter-over-Thread Kommunikation.
 *   **Erkenntnis: Der fest definierte manuelle Pairing-Code ist unzuverlässig.**
-    *   **Analyse:** Der Commissioning-Prozess schlug fehl, obwohl Passcode (`20202021`) und Discriminator (`3840`) fest in der `sdkconfig` verankert waren. Die finale Berechnung des manuellen Codes durch das SDK scheint zusätzliche Parameter (z.B. Vendor ID, Product ID, Commissioning Flow) zu berücksichtigen, was zu einem abweichenden Code führt.
+    *   **Analyse:** Der Commissioning-Prozess schlug fehl, obwohl Passcode (`20202021`) und Discriminator (`3840`) fest in der `sdkconfig` verankert waren. Die finale Berechnung des manuellen Codes durch das SDK scheint zusätzliche Parameter zu berücksichtigen, was zu einem abweichenden Code führt.
     *   **Konsequenz:** Statt einen Code manuell zu berechnen und zu dokumentieren, muss der **tatsächliche Code zur Laufzeit vom SDK generiert** und im seriellen Log ausgegeben werden. Die Firmware wurde entsprechend angepasst und validiert.
 *   **Erkenntnis: Kritische Debugging-Informationen durch Konsolen-Routing.**
-    *   **Analyse:** Wichtige Debug-Ausgaben des Matter-SDK, inklusive der generierten Pairing-Codes und Fehlermeldungen, wurden standardmäßig auf eine physische UART-Schnittstelle statt auf den für den Entwickler zugänglichen USB-JTAG-Port geroutet. Dies machte eine Fehleranalyse ohne physischen UART-Adapter unmöglich.
-    *   **Konsequenz:** Die primäre Systemkonsole wurde in der `sdkconfig` fest auf den USB-JTAG-Port umgeleitet, um vollständige Transparenz während des Boot- und Pairing-Vorgangs zu gewährleisten.
+    *   **Analyse:** Wichtige Debug-Ausgaben des Matter-SDK, inklusive der generierten Pairing-Codes, wurden standardmäßig auf eine physische UART-Schnittstelle statt auf den zugänglichen USB-JTAG-Port geroutet.
+    *   **Konsequenz:** Die primäre Systemkonsole wurde in der `sdkconfig` fest auf den USB-JTAG-Port umgeleitet, um vollständige Transparenz zu gewährleisten.
 *   **Erkenntnis: Notwendigkeit des Matter-Server-Resets ("Stale Session"-Problem).**
-    *   **Analyse:** Nach fehlgeschlagenen Commissioning-Versuchen behält der Matter-Server (z.B. in Home Assistant) gecachte Informationen über das Gerät. Selbst nach einem Firmware-Update kann ein erneuter Versuch scheitern, da der Server von veralteten Daten ausgeht.
-    *   **Konsequenz:** Eine zuverlässige Testprozedur muss das Löschen des alten Geräts aus dem Controller UND einen Neustart des Matter-Server-Dienstes beinhalten, um einen sauberen Zustand zu garantieren.
+    *   **Analyse:** Nach fehlgeschlagenen Commissioning-Versuchen behält der Matter-Server gecachte Informationen über das Gerät. Selbst nach einem Firmware-Update kann ein erneuter Versuch scheitern.
+    *   **Konsequenz:** Eine zuverlässige Testprozedur muss das Löschen des alten Geräts aus dem Controller UND einen Neustart des Matter-Server-Dienstes beinhalten.
 *   **Erkenntnis: Matter erfordert explizite IPv6 Link-Local Konfiguration.**
-    *   **Analyse:** Obwohl der Matter-Stack intern IPv6 nutzt, war das Gerät im Netzwerk nicht per IPv6 (Ping) erreichbar. Die grundlegende Kommunikation mit dem Controller war instabil.
-    *   **Konsequenz:** Die WiFi-Verbindungslogik wurde um einen expliziten Aufruf zur Erstellung der IPv6 Link-Local-Adresse (`esp_netif_create_ip6_linklocal`) erweitert. Dies stellt sicher, dass das Gerät eine standardkonforme, routing-unabhängige IPv6-Adresse für die lokale Kommunikation mit einem Matter-Controller besitzt. Die Erreichbarkeit wurde per Ping verifiziert.
+    *   **Analyse:** Obwohl der Matter-Stack intern IPv6 nutzt, war das Gerät im Netzwerk nicht per IPv6 erreichbar.
+    *   **Konsequenz:** Die WiFi-Verbindungslogik wurde um einen expliziten Aufruf zur Erstellung der IPv6 Link-Local-Adresse (`esp_netif_create_ip6_linklocal`) erweitert, um eine standardkonforme, lokale IPv6-Konnektivität sicherzustellen.
 *   **Erkenntnis: Matter-SDK-Aufrufe erfordern explizite Thread-Synchronisation.**
-    *   **Analyse:** Asynchrone Aufrufe der `matter_interface` aus anderen Tasks (z.B. `slowrf_task`) führten zu Race Conditions und instabilem Verhalten, da sie mit dem Haupt-Thread des Matter-Stacks kollidierten.
-    *   **Konsequenz:** Alle kritischen API-Aufrufe, die den Zustand des Matter-SDK verändern (z.B. `attribute::update`), wurden durch einen Mutex (`lock::chip_stack_lock`) abgesichert. Dies stellt die Integrität des Matter-Datenmodells sicher.
+    *   **Analyse:** Asynchrone Aufrufe der `matter_interface` aus anderen Tasks (z.B. `slowrf_task`) führten zu Race Conditions und instabilem Verhalten.
+    *   **Konsequenz:** Alle kritischen API-Aufrufe, die den Zustand des Matter-SDK verändern, wurden durch einen Mutex (`lock::chip_stack_lock`) abgesichert.
 *   **Erkenntnis: Unzuverlässigkeit von Legacy-Hardware als Test-Sender.**
-    *   **Analyse:** Wiederholte Versuche, komplexe Protokolle wie HMS oder FHT von einem Legacy-CUL zu senden, schlugen fehl. Dies deutet auf Timing-Probleme oder Inkompatibilitäten in der alten CUL-Firmware hin.
-    *   **Konsequenz:** Für die zuverlässige Validierung von Decodern wurde auf die direkte Puls-Injektion (`mi`-Kommando) umgestiegen. Dies entkoppelt die Decoder-Entwicklung von der unzuverlässigen Sender-Hardware und ermöglicht präzise, wiederholbare Tests.
+    *   **Analyse:** Tests mit komplexen Protokollen von einem Legacy-CUL schlugen aufgrund von Timing-Problemen fehl.
+    *   **Konsequenz:** Für die zuverlässige Validierung von Decodern wurde auf die direkte Puls-Injektion (`mi`-Kommando) umgestiegen, um präzise, wiederholbare Tests zu ermöglichen.
 *   **Erkenntnis: Irreversibilität von eFuses – Praxistest mit Konsequenzen.**
-    *   **Analyse:** Die Versuche, eine signierte Firmware zu flashen, haben gezeigt, dass das 868MHz-Board **permanent aktive `SECURE_BOOT_EN` eFuses** mit einem nicht mehr verfügbaren Schlüssel hat.
+    *   **Analyse:** Das 868MHz-Board hat **permanent aktive `SECURE_BOOT_EN` eFuses** mit einem nicht mehr verfügbaren Schlüssel.
     *   **Konsequenz:** Dieses Board ist für die weitere Entwicklung effektiv unbrauchbar ("gebrickt"). Die Entwicklung wird **ausschließlich auf ungesicherter Hardware** (433MHz-Board) fortgesetzt.
 
 ## 5. Nächste Schritte
 
-*   **End-to-End-Validierung der Matter-Bridge (Höchste Priorität):** Systematischer Test der bidirektionalen Funktionalität: (A) Empfang von SlowRF-Signalen (z.B. Intertechno-Sensor) und deren korrekte Darstellung als dynamischer Endpoint in Home Assistant; (B) Senden von Befehlen aus Home Assistant (z.B. Schalten von Somfy/FS20) und Verifikation des gesendeten Funksignals.
+*   **End-to-End-Validierung der Matter-Bridge (Höchste Priorität):** Der kritische Absturz bei der Endpoint-Erstellung ist behoben. Nun folgt der systematische Test der bidirektionalen Funktionalität: (A) Empfang von SlowRF-Signalen (z.B. Intertechno-Sensor) und deren korrekte Darstellung als dynamischer Endpoint in Home Assistant; (B) Senden von Befehlen aus Home Assistant (z.B. Schalten von Somfy/FS20) und Verifikation des gesendeten Funksignals.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
 *   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (**v1.1.0-NG**) und Finalisierung der Endbenutzer-Dokumentation.
 *   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.
@@ -205,5 +213,6 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
     *   **Services:**
         *   `homeassistant`: `ghcr.io/home-assistant/home-assistant:stable`
         *   `matter-server`: `ghcr.io/home-assistant-libs/python-matter-server:stable`
-    *   **Konfiguration:** Beide Container laufen im `host`-Netzwerkmodus, um mDNS-Discovery und direkte Kommunikation mit dem ESP32-C6 zu ermöglichen.
+        *   `otbr`: `openthread/otbr:latest` (OpenThread Border Router)
+    *   **Konfiguration:** Alle Container laufen im `host`-Netzwerkmodus. Der OTBR-Container hat ein angepasstes `entrypoint`, um Firewall-Konflikte zu umgehen, und erhält direkten Zugriff auf den als Thread-RCP fungierenden ESP32-Stick.
     *   **Test-Skripte:** Python-Skripte für automatisierte Tests, inkl. Factory-Reset (`force_reset.py`) und Log-Erfassung (`capture_boot.py`).
