@@ -44,8 +44,12 @@ void app_main(void) {
         .max_fds = 32,
     };
     esp_err_t err = esp_vfs_eventfd_register(&eventfd_config);
-    if (err != ESP_OK && err != ESP_ERR_INVALID_STATE) {
-        ESP_ERROR_CHECK(err);
+    if (err == ESP_OK) {
+        ESP_LOGI(TAG, "Eventfd VFS registered successfully.");
+    } else if (err == ESP_ERR_INVALID_STATE) {
+        ESP_LOGI(TAG, "Eventfd VFS already registered.");
+    } else {
+        ESP_LOGE(TAG, "Eventfd VFS registration FAILED: %d", err);
     }
 
     // Print Chip Info for protection binding
