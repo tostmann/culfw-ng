@@ -22,7 +22,7 @@ services:
 
   otbr:
     container_name: otbr
-    image: "ghcr.io/home-assistant/otbr-agent:latest"
+    image: "openthread/otbr:latest"
     volumes:
       - /run/dbus:/run/dbus:ro
     restart: unless-stopped
@@ -33,10 +33,9 @@ services:
       - NET_RAW
     devices:
       - /dev/ttyACM3:/dev/ttyACM3
-    command:
-      - --radio-url
-      - spinel+hdlc:///dev/ttyACM3
-      - --backbone-ifname
-      - eth0
-      - --thread-ifname
-      - wpan0
+    # openthread/otbr uses OTBR_AGENT_OPTS or similar
+    environment:
+      - OTBR_AGENT_OPTS="-I wpan0 spinel+hdlc:///dev/ttyACM3"
+    # Overriding the default entrypoint/command for openthread/otbr 
+    # to make sure it doesn't fail on missing interfaces
+    command: /usr/sbin/otbr-agent -I wpan0 spinel+hdlc:///dev/ttyACM3 eth0
