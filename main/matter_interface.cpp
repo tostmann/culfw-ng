@@ -88,13 +88,26 @@ uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_t
     uint16_t endpoint_id = 0xFFFF;
 
 #ifdef CONFIG_ESP_MATTER_ENABLE_DATA_MODEL
+    // Check if we are in the correct thread? 
+    // For now, let's just make sure node/aggregator are valid
     node_t *node = node::get();
+    if (!node) {
+        ESP_LOGE(TAG, "Node not initialized yet!");
+        return 0xFFFF;
+    }
+
     endpoint_t *endpoint = nullptr;
+    endpoint_t *parent = s_aggregator_endpoint; 
     
-    // Use aggregator as parent if available
-    endpoint_t *parent = s_aggregator_endpoint ? s_aggregator_endpoint : (endpoint_t*)node;
+    if (!parent) {
+        ESP_LOGW(TAG, "Aggregator not found, using node as parent");
+        parent = (endpoint_t*)node;
+    }
 
     // Create actual Matter Endpoint based on type
+    // Note: In a production environment, this should be done 
+    // via lock::chip_stack_lock() or ScheduleWork.
+    
     switch(type) {
         case DEVICE_TYPE_SWITCH:
             endpoint = on_off_light::create(parent, nullptr, ENDPOINT_FLAG_NONE, nullptr);
@@ -115,10 +128,11 @@ uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_t
 
     if (endpoint) {
         endpoint_id = endpoint::get_id(endpoint);
-        ESP_LOGI(TAG, "Created Matter Endpoint %d for device %s (Parent: %p)", endpoint_id, device_id, parent);
+        ESP_LOGI(TAG, "Created Matter Endpoint %d for device %s", endpoint_id, device_id);
+    } else {
+        ESP_LOGE(TAG, "Failed to create endpoint for %s", device_id);
     }
 #else
-    // Simulation: Generate pseudo-random ID based on string hash or counter
     static uint16_t counter = 10;
     endpoint_id = counter++;
     ESP_LOGI(TAG, "[SIMULATION] Created Endpoint %d for device %s (Type: %d)", endpoint_id, device_id, type);
