@@ -49,28 +49,26 @@ static matter_command_cb_t cmd_cb = NULL;
 
 void matter_interface_init(void) {
 #ifdef CONFIG_ESP_MATTER_ENABLE_DATA_MODEL
-    ESP_LOGI(TAG, "Initializing ESP-Matter Node...");
+    log_jtag("MATTER_IF: Initializing Node...\n");
     
     node::config_t node_config;
-    // node_config has no default constructor but can be zeroed
     memset(&node_config, 0, sizeof(node_config));
 
     node_t *node = node::create(&node_config, app_attribute_update_cb, app_identification_cb);
     
     if (node) {
         endpoint::aggregator::config_t aggregator_config;
-        // memset(&aggregator_config, 0, sizeof(aggregator_config)); // Actually aggregator::config_t is empty in some versions
         s_aggregator_endpoint = endpoint::aggregator::create(node, &aggregator_config, ENDPOINT_FLAG_NONE, NULL);
         if (s_aggregator_endpoint) {
-            ESP_LOGI(TAG, "Node and Aggregator created.");
+            log_jtag("MATTER_IF: Aggregator created.\n");
         } else {
-            ESP_LOGE(TAG, "Failed to create Aggregator!");
+            log_jtag("MATTER_IF: FAILED to create Aggregator!\n");
         }
     } else {
-        ESP_LOGE(TAG, "Failed to create Node!");
+        log_jtag("MATTER_IF: FAILED to create Node!\n");
     }
 
-    ESP_LOGI(TAG, "Starting ESP-Matter SDK...");
+    log_jtag("MATTER_IF: Starting ESP-Matter SDK...\n");
     esp_matter::start(app_event_cb);
 
     // Print actual commissioning information
