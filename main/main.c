@@ -117,7 +117,8 @@ void app_main(void) {
     wifi_manager_init();
     
     // Initialize Thread (if enabled in sdkconfig)
-    thread_manager_init();
+    // We disable our manual init to let Matter's OpenthreadLauncher handle it if needed
+    // thread_manager_init();
     
     // Initialize Web Server
     web_server_init();
