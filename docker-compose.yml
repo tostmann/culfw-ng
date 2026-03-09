@@ -41,12 +41,6 @@ services:
       - INFRA_IF_NAME=eth0
       - THREAD_IF_NAME=wpan0
       - HTTP_PORT=8081
+      - HTTP_HOST=0.0.0.0
       - REST_HOST=0.0.0.0
-    entrypoint: >
-      /bin/bash -c "
-      /app/script/server &
-      sleep 10;
-      pkill -f start-stop-daemon;
-      /usr/sbin/otbr-agent -I wpan0 -B eth0 -d7 --rest-listen-address 0.0.0.0 --rest-listen-port 8081 spinel+hdlc+uart:///dev/ttyACM3 &
-      /usr/sbin/otbr-web -I wpan0 -d7 -a 0.0.0.0 -p 80 &
-      sleep infinity"
+    command: ["--radio-url", "spinel+hdlc+uart:///dev/ttyACM3?uart-baudrate=460800&uart-reset", "-B", "eth0", "-I", "wpan0"]
