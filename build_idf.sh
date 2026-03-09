@@ -29,7 +29,7 @@ fi
 case "$CMD" in
     build)
         echo "Building profile: $PROFILE"
-        rm -rf sdkconfig build
+        rm -rf sdkconfig build managed_components dependencies.lock
         if [ "$PROFILE" == "serial" ]; then
             cp "sdkconfig.defaults.$PROFILE" sdkconfig
             # Force re-evaluation of dependencies
