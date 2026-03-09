@@ -174,7 +174,7 @@ void handle_command(char *cmd) {
             gpio_set_level(GPIO_LED, 1);
             len = snprintf(out, sizeof(out), "l00 OK\r\n");
         }
-#if defined(CONFIG_ESP_MATTER_ENABLE_WIFI) || defined(CONFIG_ESP_MATTER_ENABLE_OPENTHREAD)
+#if defined(CONFIG_ESP_MATTER_ENABLE) && (CONFIG_ESP_MATTER_ENABLE == 1)
     } else if (cmd[0] == 'M' && cmd[1] == 'T') { // MT <ID> <VAL> - Matter Test
         char mid[64];
         float mval = 0;
