@@ -175,13 +175,14 @@ void handle_command(char *cmd) {
             len = snprintf(out, sizeof(out), "l00 OK\r\n");
         }
     } else if (cmd[0] == 'M' && cmd[1] == 'T') { // MT <ID> <VAL> - Matter Test
-        char mid[17];
+        char mid[64];
         float mval = 0;
-        if(sscanf(cmd + 3, "%s %f", mid, &mval) == 2) {
+        ESP_LOGI(TAG, "MT Command: '%s'", cmd);
+        if(sscanf(cmd + 2, "%s %f", mid, &mval) == 2) {
              matter_bridge_report_event(mid, "Test", DEVICE_TYPE_TEMP_SENSOR, mval);
              len = snprintf(out, sizeof(out), "MT OK: %s -> %.1f\r\n", mid, mval);
         } else {
-             len = snprintf(out, sizeof(out), "MT ERR\r\n");
+             len = snprintf(out, sizeof(out), "MT ERR: %s\r\n", cmd);
         }
     } else if (cmd[0] == 'M' && cmd[1] == 'L') { // ML - Matter List
         matter_bridge_list_endpoints();
