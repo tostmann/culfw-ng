@@ -145,6 +145,7 @@ void matter_interface_update_attribute(uint16_t endpoint_id, float value) {
 #if defined(CONFIG_ESP_MATTER_ENABLE_DATA_MODEL)
     esp_matter_attr_val_t attr_val;
 
+    lock::chip_stack_lock();
     // 1. OnOff
     attr_val = esp_matter_bool(value > 0.5f);
     attribute::update(endpoint_id, chip::app::Clusters::OnOff::Id, chip::app::Clusters::OnOff::Attributes::OnOff::Id, &attr_val);
@@ -152,6 +153,7 @@ void matter_interface_update_attribute(uint16_t endpoint_id, float value) {
     // 2. Temperature (Value is in C, Matter expects 100 * C)
     attr_val = esp_matter_int16((int16_t)(value * 100));
     attribute::update(endpoint_id, chip::app::Clusters::TemperatureMeasurement::Id, chip::app::Clusters::TemperatureMeasurement::Attributes::MeasuredValue::Id, &attr_val);
+    lock::chip_stack_unlock();
 
 #else
     ESP_LOGI(TAG, "[SIMULATION] Updated Endpoint %d to value %.2f", endpoint_id, value);
