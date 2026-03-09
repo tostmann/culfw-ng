@@ -34,8 +34,19 @@ void led_task(void *pvParameters) {
     }
 }
 
+#include "esp_vfs_eventfd.h"
+
 void app_main(void) {
     ESP_LOGI(TAG, "Starting CUL32-C6 Firmware...");
+
+    // Initialize Eventfd VFS early as both Matter and OpenThread need it
+    esp_vfs_eventfd_config_t eventfd_config = {
+        .max_fds = 32,
+    };
+    esp_err_t err = esp_vfs_eventfd_register(&eventfd_config);
+    if (err != ESP_OK && err != ESP_ERR_INVALID_STATE) {
+        ESP_ERROR_CHECK(err);
+    }
 
     // Print Chip Info for protection binding
     uint8_t mac[6];
