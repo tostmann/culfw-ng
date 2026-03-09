@@ -114,18 +114,21 @@ void app_main(void) {
     duty_cycle_init();
 
     // Initialize WiFi (if enabled)
-#if CONFIG_ESP_WIFI_ENABLED
+#if defined(CONFIG_ESP_WIFI_ENABLED) && (CONFIG_ESP_WIFI_ENABLED == 1)
+    ESP_LOGI(TAG, "Starting WiFi and Web Server...");
     wifi_manager_init();
     web_server_init();
 #endif
     
     // Initialize Thread (if enabled)
-#if CONFIG_OPENTHREAD_ENABLED
+#if defined(CONFIG_OPENTHREAD_ENABLED) && (CONFIG_OPENTHREAD_ENABLED == 1)
+    ESP_LOGI(TAG, "Starting Thread Manager...");
     thread_manager_init();
 #endif
 
     // Initialize Matter Bridge Foundation (if enabled)
-#if CONFIG_ESP_MATTER_ENABLE_DATA_MODEL
+#if defined(CONFIG_ESP_MATTER_ENABLE_WIFI) || defined(CONFIG_ESP_MATTER_ENABLE_OPENTHREAD)
+    ESP_LOGI(TAG, "Starting Matter Bridge...");
     matter_bridge_init();
 #endif
 }
