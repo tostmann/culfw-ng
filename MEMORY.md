@@ -151,43 +151,41 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** **Sichtbarkeit dynamischer Endpoints:** Implementierung von `esp_matter::endpoint::enable()` nach der Erstellung, um die Endpoints im Matter-Netzwerk sichtbar zu machen.
 *   **[DONE]** **End-to-End-Validierung (RX-Pfad):** Erfolgreiche Erstellung, Aktivierung und Sichtbarmachung dynamischer Endpoints (Sensor/Schalter) im Matter-Netzwerk (Home Assistant) und korrekte Übermittlung der Attribut-Werte verifiziert.
 *   **[DONE]** **Thread-Infrastruktur (OTBR):** Die Docker-Konfiguration des OpenThread Border Router Containers wurde stabilisiert und gehärtet. Der Container startet nun zuverlässig.
+*   **[DONE]** **Fehlerbehebung OTBR-Hardware:** Das OpenThread RCP-Modul (ESP32-C6) wurde erfolgreich mit einer stabilen, vorkompilierten Firmware (`generic-esp32c6.bin`) neu geflasht. Der Bootloop wurde damit behoben und der `otbr-agent` kann nun stabil mit dem Modul kommunizieren.
 
 ## 4. Erkenntnisse & Gelöste Probleme
 
-*   **Erkenntnis: OpenThread-Funkmodul (ESP32-C6) in permanenter Boot-Schleife (Validiert).**
-    *   **Analyse:** Der OpenThread Border Router (`otbr-agent`) konnte keine Verbindung zum Funkmodul (Radio Co-Processor, RCP) auf `/dev/ttyACM3` herstellen, was zu Timeouts und einem Absturz des Dienstes führte. Eine direkte Analyse der seriellen Schnittstelle des Moduls zeigte, dass dessen Firmware nicht startete. Stattdessen befand sich der ESP32-C6 in einer permanenten Neustart-Schleife und gab kontinuierlich die BootROM-Meldung (`ESP-ROM:esp32c6...`) aus.
-    *   **Konsequenz:** Die Matter-over-Thread Funktionalität kann nicht validiert werden, bis die Firmware des RCP-Moduls repariert (neu geflasht) ist. Dieses Problem blockiert die weitere Systemintegration auf der Thread-Ebene.
+*   **Gelöstes Problem: OpenThread-Funkmodul (ESP32-C6) war in permanenter Boot-Schleife.**
+    *   **Analyse:** Der OpenThread Border Router (`otbr-agent`) konnte keine Verbindung zum Funkmodul (Radio Co-Processor, RCP) auf `/dev/ttyACM3` herstellen. Eine direkte Analyse der seriellen Schnittstelle des Moduls zeigte, dass dessen Firmware nicht startete, sondern sich der ESP32-C6 in einer permanenten Neustart-Schleife befand (`ESP-ROM:esp32c6...`).
+    *   **Lösung:** Die fehlerhafte Firmware des RCP-Moduls wurde mittels `esptool.py` vollständig überschrieben. Eine stabile, vorkompilierte RCP-Firmware (`generic-esp32c6.bin`) wurde auf den ESP32-C6 geflasht. Unmittelbar danach startete das Modul korrekt und der `otbr-agent` im Docker-Container konnte die Verbindung erfolgreich herstellen. **Der Blocker für die Matter-over-Thread-Validierung ist damit beseitigt.**
 *   **Erkenntnis: Docker-basierte OTBR-Instabilität durch Bug im Start-Skript und falsche API-Konfiguration (Validiert).**
     *   **Analyse:** Der `openthread/otbr` Docker-Container stürzte in einer Neustart-Schleife ab oder war für Home Assistant nicht erreichbar. Die Ursache war zweigeteilt:
-        1.  **Interner Start-Daemon Bug:** Das Standard-Startskript (`/app/script/server`) im Container verwendet einen fehlerhaften `start-stop-daemon`-Aufruf, der dazu führt, dass die `otbr-agent`- und `otbr-web`-Dienste nicht zuverlässig im Hintergrund gestartet werden und in einer 100%-CPU-Schleife hängen bleiben.
-        2.  **Falsche Listen-Adresse:** Selbst wenn der `otbr-agent` (die REST-API für Home Assistant) startet, lauscht er standardmäßig nur auf `127.0.0.1` (localhost). Dadurch kann der Home Assistant-Container nicht auf die API zugreifen, was zu einem "Verbindung fehlgeschlagen"-Fehler führt.
-    *   **Konsequenz:** Die Lösung war eine grundlegende Anpassung der `docker-compose.yml`, um das fehlerhafte Start-Skript des Containers komplett zu umgehen.
-        1.  **Workaround:** Der `entrypoint` bzw. `command` im `docker-compose.yml` wurde so geändert, dass die `otbr-agent`- und `otbr-web`-Dienste direkt aufgerufen werden.
-        2.  **API-Konfiguration:** Dem `otbr-agent` wird der kritische Parameter `--rest-listen-address 0.0.0.0` übergeben, damit die REST-API im gesamten Netzwerk erreichbar ist.
-    *   **Ergebnis:** Der OTBR-Container startet nun stabil, das Web-Interface ist auf Port 8081 erreichbar und die Home Assistant-Integration kann sich erfolgreich verbinden. Die Test-Infrastruktur für Matter-over-Thread ist voll funktionsfähig.
+        1.  **Interner Start-Daemon Bug:** Das Standard-Startskript (`/app/script/server`) im Container verwendet einen fehlerhaften `start-stop-daemon`-Aufruf.
+        2.  **Falsche Listen-Adresse:** Der `otbr-agent` lauscht standardmäßig nur auf `127.0.0.1` (localhost), was den Zugriff von anderen Containern verhindert.
+    *   **Konsequenz:** Die Lösung war eine grundlegende Anpassung der `docker-compose.yml`, um das fehlerhafte Start-Skript des Containers komplett zu umgehen und dem `otbr-agent` den kritischen Parameter `--rest-listen-address 0.0.0.0` zu übergeben. Der OTBR-Container startet nun stabil.
 *   **Erkenntnis: Dynamische Endpoints müssen explizit aktiviert werden (Validiert).**
-    *   **Analyse:** Dynamisch über `...::create()` erstellte Endpoints wurden vom SDK zwar intern verwaltet, aber nicht aktiv im Matter-Netzwerk publiziert. Sie blieben daher für Controller wie Home Assistant unsichtbar.
-    *   **Konsequenz:** In `matter_interface.cpp` wird nun direkt nach der Erstellung eines Endpoints die Funktion `esp_matter::endpoint::enable(endpoint)` aufgerufen. Dies stößt den notwendigen Prozess im SDK an, um den neuen Endpoint und seine Funktionen (Cluster) im Fabric bekannt zu machen. **Das Problem der Unsichtbarkeit ist damit nachweislich gelöst.**
+    *   **Analyse:** Dynamisch über `...::create()` erstellte Endpoints wurden vom SDK zwar intern verwaltet, aber nicht aktiv im Matter-Netzwerk publiziert.
+    *   **Konsequenz:** In `matter_interface.cpp` wird nun direkt nach der Erstellung eines Endpoints die Funktion `esp_matter::endpoint::enable(endpoint)` aufgerufen. **Das Problem der Unsichtbarkeit ist damit nachweislich gelöst.**
 *   **Erkenntnis: SDK-Abstürze durch uninitialisierte Konfigurationen (Validiert).**
-    *   **Analyse:** Die Firmware stürzte beim Erstellen dynamischer Matter-Endpoints (via `MT`-Kommando) mit einer `Cluster cannot be NULL`-Fehlermeldung ab. Das Übergeben eines `nullptr` für die Konfigurationsstruktur an die `create()`-Funktionen des SDK ist nicht sicher.
-    *   **Konsequenz:** Die `matter_interface.cpp` wurde gehärtet, indem für jeden Endpoint-Typ eine explizite, standard-initialisierte `config_t`-Struktur erzeugt und deren Adresse an die `create()`-Funktion übergeben wird. **Der Absturz konnte mit dieser Methode nachweislich behoben werden.** Die dynamische Endpoint-Erstellung ist nun stabil.
+    *   **Analyse:** Die Firmware stürzte beim Erstellen dynamischer Matter-Endpoints mit einer `Cluster cannot be NULL`-Fehlermeldung ab.
+    *   **Konsequenz:** Die `matter_interface.cpp` wurde gehärtet, indem für jeden Endpoint-Typ eine explizite, standard-initialisierte `config_t`-Struktur erzeugt wird. **Der Absturz konnte mit dieser Methode nachweislich behoben werden.**
 *   **Erkenntnis: ESP-Matter SDK API-Evolution.**
     *   **Analyse:** Ein Build-Fehler (`'get_root_node_endpoint' is not a member of ...`) zeigte, dass sich die API zur Erstellung und Verknüpfung von Endpoints in der verwendeten SDK-Version (`>=1.2.0`) geändert hat.
-    *   **Konsequenz:** Die Logik in `matter_interface.cpp` wurde umgestellt. Endpoints werden nun zuerst am Haupt-`node` erstellt und anschließend dem `aggregator`-Endpoint mittels `set_parent_endpoint` explizit untergeordnet. Dies stellt die Kompatibilität mit dem aktuellen SDK her und hat den Build-Fehler behoben.
+    *   **Konsequenz:** Die Logik in `matter_interface.cpp` wurde umgestellt. Endpoints werden nun zuerst am Haupt-`node` erstellt und anschließend dem `aggregator`-Endpoint mittels `set_parent_endpoint` explizit untergeordnet.
 *   **Erkenntnis: Der fest definierte manuelle Pairing-Code ist unzuverlässig.**
-    *   **Analyse:** Der Commissioning-Prozess schlug fehl, obwohl Passcode (`20202021`) und Discriminator (`3840`) fest in der `sdkconfig` verankert waren. Die finale Berechnung des manuellen Codes durch das SDK scheint zusätzliche Parameter zu berücksichtigen, was zu einem abweichenden Code führt.
-    *   **Konsequenz:** Statt einen Code manuell zu berechnen und zu dokumentieren, muss der **tatsächliche Code zur Laufzeit vom SDK generiert** und im seriellen Log ausgegeben werden. Die Firmware wurde entsprechend angepasst und validiert.
+    *   **Analyse:** Der Commissioning-Prozess schlug fehl, weil der vom SDK berechnete Pairing-Code von dem in der `sdkconfig` definierten abwich.
+    *   **Konsequenz:** Statt einen Code manuell zu berechnen, wird der **tatsächliche Code zur Laufzeit vom SDK generiert** und im seriellen Log ausgegeben.
 *   **Erkenntnis: Kritische Debugging-Informationen durch Konsolen-Routing.**
-    *   **Analyse:** Wichtige Debug-Ausgaben des Matter-SDK, inklusive der generierten Pairing-Codes, wurden standardmäßig auf eine physische UART-Schnittstelle statt auf den zugänglichen USB-JTAG-Port geroutet.
-    *   **Konsequenz:** Die primäre Systemkonsole wurde in der `sdkconfig` fest auf den USB-JTAG-Port umgeleitet, um vollständige Transparenz zu gewährleisten.
+    *   **Analyse:** Wichtige Debug-Ausgaben des Matter-SDK wurden auf eine physische UART statt auf den zugänglichen USB-JTAG-Port geroutet.
+    *   **Konsequenz:** Die primäre Systemkonsole wurde in der `sdkconfig` fest auf den USB-JTAG-Port umgeleitet.
 *   **Erkenntnis: Notwendigkeit des Matter-Server-Resets ("Stale Session"-Problem).**
-    *   **Analyse:** Nach fehlgeschlagenen Commissioning-Versuchen behält der Matter-Server gecachte Informationen über das Gerät. Selbst nach einem Firmware-Update kann ein erneuter Versuch scheitern.
+    *   **Analyse:** Nach fehlgeschlagenen Commissioning-Versuchen behält der Matter-Server gecachte Informationen über das Gerät.
     *   **Konsequenz:** Eine zuverlässige Testprozedur muss das Löschen des alten Geräts aus dem Controller UND einen Neustart des Matter-Server-Dienstes beinhalten.
 *   **Erkenntnis: Matter erfordert explizite IPv6 Link-Local Konfiguration.**
     *   **Analyse:** Obwohl der Matter-Stack intern IPv6 nutzt, war das Gerät im Netzwerk nicht per IPv6 erreichbar.
-    *   **Konsequenz:** Die WiFi-Verbindungslogik wurde um einen expliziten Aufruf zur Erstellung der IPv6 Link-Local-Adresse (`esp_netif_create_ip6_linklocal`) erweitert, um eine standardkonforme, lokale IPv6-Konnektivität sicherzustellen.
+    *   **Konsequenz:** Die WiFi-Verbindungslogik wurde um einen expliziten Aufruf zur Erstellung der IPv6 Link-Local-Adresse (`esp_netif_create_ip6_linklocal`) erweitert.
 *   **Erkenntnis: Matter-SDK-Aufrufe erfordern explizite Thread-Synchronisation.**
-    *   **Analyse:** Asynchrone Aufrufe der `matter_interface` aus anderen Tasks (z.B. `slowrf_task`) führten zu Race Conditions und instabilem Verhalten.
+    *   **Analyse:** Asynchrone Aufrufe der `matter_interface` aus anderen Tasks führten zu Race Conditions.
     *   **Konsequenz:** Alle kritischen API-Aufrufe, die den Zustand des Matter-SDK verändern, wurden durch einen Mutex (`lock::chip_stack_lock`) abgesichert.
 *   **Erkenntnis: Irreversibilität von eFuses – Praxistest mit Konsequenzen.**
     *   **Analyse:** Das 868MHz-Board hat **permanent aktive `SECURE_BOOT_EN` eFuses** mit einem nicht mehr verfügbaren Schlüssel.
@@ -195,8 +193,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **[BLOCKER] Fehlerbehebung des OpenThread RCP-Moduls (Höchste Priorität):** Neu-Flashen der OpenThread Radio Co-Processor (RCP) Firmware auf dem ESP32-C6-Modul (`/dev/ttyACM3`), um den Bootloop zu beheben und die Kommunikation mit dem OTBR-Container wiederherzustellen.
-*   **[GEBLOCKT] Matter-over-Thread Validierung:** Durchführung eines End-to-End-Tests der Kommunikation (RX und TX) über das Thread-Netzwerk (OTBR), um die hybride (WiFi & Thread) Funktionalität zu verifizieren. *Abhängig von der Behebung des RCP-Modul-Blockers.*
+*   **Matter-over-Thread Validierung (Höchste Priorität):** Durchführung eines End-to-End-Tests der Kommunikation (RX und TX) über das nun funktionale Thread-Netzwerk (OTBR), um die hybride (WiFi & Thread) Funktionalität zu verifizieren.
 *   **End-to-End-Validierung der Matter-Bridge (TX-Pfad):** Senden von Befehlen aus Home Assistant (z.B. Schalten eines via RF erstellten FS20- oder Somfy-Endpoints) und Verifikation des am CC1101 korrekt generierten und gesendeten Funksignals.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
 *   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (**v1.1.0-NG**) und Finalisierung der Endbenutzer-Dokumentation.
