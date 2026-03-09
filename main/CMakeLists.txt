@@ -12,12 +12,19 @@ set(app_sources
 )
 
 # Optional components based on configuration
-if (CONFIG_ESP_WIFI_ENABLED OR CONFIG_OPENTHREAD_ENABLED)
-    list(APPEND app_sources wifi_manager.c web_server.c matter_bridge.c matter_interface.cpp)
+if (CONFIG_ESP_WIFI_ENABLED)
+    message(STATUS "WiFi Enabled - adding WiFi sources")
+    list(APPEND app_sources wifi_manager.c web_server.c)
 endif()
 
 if (CONFIG_OPENTHREAD_ENABLED)
+    message(STATUS "Thread Enabled - adding Thread sources")
     list(APPEND app_sources thread_manager.c)
+endif()
+
+if (CONFIG_ESP_MATTER_ENABLE_WIFI OR CONFIG_ESP_MATTER_ENABLE_OPENTHREAD)
+    message(STATUS "Matter Enabled - adding Matter sources")
+    list(APPEND app_sources matter_bridge.c matter_interface.cpp)
 endif()
 
 idf_component_register(SRCS ${app_sources}
