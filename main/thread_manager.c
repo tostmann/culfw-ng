@@ -1,15 +1,18 @@
 #include "thread_manager.h"
 #include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
+#ifdef CONFIG_OPENTHREAD_ENABLED
 #include "esp_openthread.h"
 #include "esp_openthread_types.h"
 #include "esp_openthread_lock.h"
 #include "esp_openthread_netif_glue.h"
 #include "esp_vfs_eventfd.h"
 #include "driver/uart.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "openthread/instance.h"
 #include "openthread/thread.h"
+#endif
 
 static const char *TAG = "THREAD_MGR";
 
