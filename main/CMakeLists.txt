@@ -27,10 +27,20 @@ if (CONFIG_ESP_MATTER_ENABLE_WIFI OR CONFIG_ESP_MATTER_ENABLE_OPENTHREAD)
     list(APPEND app_sources matter_bridge.c matter_interface.cpp)
 endif()
 
+set(app_requires nvs_flash esp_partition spiffs driver esp_timer esp_netif esp_event json esp_driver_usb_serial_jtag)
+
+if (CONFIG_ESP_WIFI_ENABLED)
+    list(APPEND app_requires esp_wifi esp_http_server)
+endif()
+
+if (CONFIG_OPENTHREAD_ENABLED)
+    list(APPEND app_requires openthread)
+endif()
+
 idf_component_register(SRCS ${app_sources}
                        INCLUDE_DIRS ${include_dirs}
                        PRIV_INCLUDE_DIRS "."
-                       REQUIRES nvs_flash esp_partition spiffs driver esp_timer esp_netif esp_event esp_wifi esp_http_server json openthread esp_driver_usb_serial_jtag)
+                       REQUIRES ${app_requires})
 target_compile_definitions(${COMPONENT_LIB} PUBLIC 
     FW_VERSION="1.1.0-NG"
     BUILD_NUMBER=8
