@@ -22,7 +22,7 @@ services:
 
   otbr:
     container_name: otbr
-    image: "homeassistant/otbr-agent:latest"
+    image: "ghcr.io/home-assistant/otbr-agent:latest"
     volumes:
       - /run/dbus:/run/dbus:ro
     restart: unless-stopped
