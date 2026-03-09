@@ -131,7 +131,8 @@ void cc1101_set_rx_mode() {
     cc1101_lock();
     cc1101_cmd_strobe(CC1101_SIDLE);
     gpio_set_direction(GPIO_GDO0, GPIO_MODE_INPUT);
-    cc1101_write_reg(0x02, 0x0D); 
+    cc1101_write_reg(0x02, 0x0E); // GDO2 = Carrier Sense
+    cc1101_write_reg(0x00, 0x0D); // GDO0 = Serial Data (Async)
     cc1101_cmd_strobe(CC1101_SRX);
     gpio_intr_enable(GPIO_GDO0);
     cc1101_unlock();
@@ -142,7 +143,8 @@ void cc1101_set_tx_mode() {
     gpio_intr_disable(GPIO_GDO0);
     cc1101_cmd_strobe(CC1101_SIDLE);
     vTaskDelay(pdMS_TO_TICKS(1));
-    cc1101_write_reg(0x02, 0x0D); 
+    cc1101_write_reg(0x02, 0x0E); // GDO2 = Carrier Sense
+    cc1101_write_reg(0x00, 0x0D); // GDO0 = Serial Data
     gpio_set_direction(GPIO_GDO0, GPIO_MODE_OUTPUT);
     gpio_set_level(GPIO_GDO0, 0);
     cc1101_cmd_strobe(CC1101_STX);
