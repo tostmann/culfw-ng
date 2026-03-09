@@ -105,7 +105,7 @@ uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_t
     }
 
     // Create actual Matter Endpoint based on type
-    lock::chip_stack_lock();
+    lock::chip_stack_lock(portMAX_DELAY);
     switch(type) {
         case DEVICE_TYPE_SWITCH:
             endpoint = on_off_light::create(parent, nullptr, ENDPOINT_FLAG_NONE, nullptr);
