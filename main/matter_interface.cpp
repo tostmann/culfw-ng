@@ -1,9 +1,14 @@
 #include "matter_interface.h"
 #include "esp_log.h"
+#include "driver/usb_serial_jtag.h"
 #include <string.h>
 #include <string>
 
 static const char *TAG = "MATTER_IF";
+
+static void log_jtag(const char* msg) {
+    usb_serial_jtag_write_bytes(msg, strlen(msg), 0);
+}
 static matter_command_cb_t cmd_cb = NULL;
 
 // If the SDK is available, include it here
