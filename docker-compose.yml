@@ -19,3 +19,24 @@ services:
     network_mode: host
     environment:
       - MATTER_SERVER_STORAGE_DIR=/data
+
+  otbr:
+    container_name: otbr
+    image: "homeassistant/otbr-agent:latest"
+    volumes:
+      - /run/dbus:/run/dbus:ro
+    restart: unless-stopped
+    network_mode: host
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    devices:
+      - /dev/serial/by-id/usb-Espressif_USB_JTAG_serial_debug_unit_54:32:04:03:59:68-if00:/dev/ttyACM0
+    command:
+      - --radio-url
+      - spinel+hdlc:///dev/ttyACM0
+      - --backbone-ifname
+      - eth0
+      - --thread-ifname
+      - wpan0
