@@ -1,5 +1,7 @@
 set(include_dirs "../include" "include")
 
+message(STATUS "DEBUG: CONFIG_ESP_WIFI_ENABLED = '${CONFIG_ESP_WIFI_ENABLED}'")
+
 # Define mandatory sources
 set(app_sources
     main.c
