@@ -19,6 +19,7 @@
 #include "rom/ets_sys.h"
 #include "esp_netif.h"
 #include "culfw_duty_cycle.h"
+#include "wifi_manager.h"
 
 static const char *TAG = "CULFW_PARSER";
 static bool reporting_enabled = false;
