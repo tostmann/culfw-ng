@@ -148,6 +148,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** **Test-Infrastruktur erweitert:** OpenThread Border Router (OTBR) als Docker-Container (`openthread/otbr`) aufgesetzt und für Thread-Kommunikation konfiguriert.
 *   **[DONE]** **Fehlerbehebung Matter-Bridge-Absturz:** Behoben durch explizite Initialisierung der Endpoint-Konfigurationen (`config_t`), um kritische 'Cluster cannot be NULL'-Fehler im SDK zu vermeiden und die Stabilität bei der dynamischen Endpoint-Erstellung zu gewährleisten.
 *   **[DONE]** **API-Anpassung (Matter SDK):** Endpoint-Erstellungslogik an geänderte SDK-API angepasst (Verwendung von `set_parent_endpoint` anstelle veralteter Funktionen), um Kompilierung zu ermöglichen und Build-Fehler zu beheben.
+*   **[IN PROGRESS]** **Sichtbarkeit dynamischer Endpoints:** Implementierung von `esp_matter::endpoint::enable()` nach der Erstellung, um die Endpoints im Matter-Netzwerk sichtbar zu machen.
 *   **[PAUSED]** **Thread-Infrastruktur (OTBR):** Die Stabilisierung des OpenThread Border Router Docker-Containers ist fehlgeschlagen. Die Arbeiten hieran sind vorerst pausiert, um den Fokus auf die Matter-over-WiFi Funktionalität zu legen.
 
 ## 4. Erkenntnisse & Gelöste Probleme
@@ -155,12 +156,12 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **Erkenntnis: Instabile Docker-basierte Thread-Infrastruktur (Arbeit pausiert).**
     *   **Analyse:** Trotz wiederholter Versuche, den offiziellen `openthread/otbr`-Container durch Überschreiben des `entrypoint` zu stabilisieren, bleibt die Konfiguration unzuverlässig. Interne Start-Skripte des Containers verursachen weiterhin Konflikte mit dem Host-System (z.B. bei DBus, Firewall-Diensten), was zu einem instabilen Betrieb führt.
     *   **Konsequenz:** Die Arbeit an einer Matter-over-Thread-Lösung wird vorerst pausiert. Der Fokus liegt nun vollständig auf der Validierung der **Matter-over-WiFi Funktionalität**, welche die Kernanforderung des Projekts darstellt.
-*   **Erkenntnis: ESP-Matter SDK API-Evolution.**
-    *   **Analyse:** Ein Build-Fehler (`'get_root_node_endpoint' is not a member of ...`) zeigte, dass sich die API zur Erstellung und Verknüpfung von Endpoints in der verwendeten SDK-Version (`>=1.2.0`) geändert hat.
-    *   **Konsequenz:** Die Logik in `matter_interface.cpp` wurde umgestellt. Endpoints werden nun zuerst am Haupt-`node` erstellt und anschließend dem `aggregator`-Endpoint mittels `set_parent_endpoint` explizit untergeordnet. Dies stellt die Kompatibilität mit dem aktuellen SDK her und hat den Build-Fehler behoben.
 *   **Erkenntnis: SDK-Abstürze durch uninitialisierte Konfigurationen (Validiert).**
     *   **Analyse:** Die Firmware stürzte beim Erstellen dynamischer Matter-Endpoints (via `MT`-Kommando) mit einer `Cluster cannot be NULL`-Fehlermeldung ab. Das Übergeben eines `nullptr` für die Konfigurationsstruktur an die `create()`-Funktionen des SDK ist nicht sicher.
     *   **Konsequenz:** Die `matter_interface.cpp` wurde gehärtet, indem für jeden Endpoint-Typ eine explizite, standard-initialisierte `config_t`-Struktur erzeugt und deren Adresse an die `create()`-Funktion übergeben wird. **Der Absturz konnte mit dieser Methode nachweislich behoben werden.** Die dynamische Endpoint-Erstellung ist nun stabil.
+*   **Erkenntnis: ESP-Matter SDK API-Evolution.**
+    *   **Analyse:** Ein Build-Fehler (`'get_root_node_endpoint' is not a member of ...`) zeigte, dass sich die API zur Erstellung und Verknüpfung von Endpoints in der verwendeten SDK-Version (`>=1.2.0`) geändert hat.
+    *   **Konsequenz:** Die Logik in `matter_interface.cpp` wurde umgestellt. Endpoints werden nun zuerst am Haupt-`node` erstellt und anschließend dem `aggregator`-Endpoint mittels `set_parent_endpoint` explizit untergeordnet. Dies stellt die Kompatibilität mit dem aktuellen SDK her und hat den Build-Fehler behoben.
 *   **Erkenntnis: Der fest definierte manuelle Pairing-Code ist unzuverlässig.**
     *   **Analyse:** Der Commissioning-Prozess schlug fehl, obwohl Passcode (`20202021`) und Discriminator (`3840`) fest in der `sdkconfig` verankert waren. Die finale Berechnung des manuellen Codes durch das SDK scheint zusätzliche Parameter zu berücksichtigen, was zu einem abweichenden Code führt.
     *   **Konsequenz:** Statt einen Code manuell zu berechnen und zu dokumentieren, muss der **tatsächliche Code zur Laufzeit vom SDK generiert** und im seriellen Log ausgegeben werden. Die Firmware wurde entsprechend angepasst und validiert.
@@ -176,16 +177,14 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **Erkenntnis: Matter-SDK-Aufrufe erfordern explizite Thread-Synchronisation.**
     *   **Analyse:** Asynchrone Aufrufe der `matter_interface` aus anderen Tasks (z.B. `slowrf_task`) führten zu Race Conditions und instabilem Verhalten.
     *   **Konsequenz:** Alle kritischen API-Aufrufe, die den Zustand des Matter-SDK verändern, wurden durch einen Mutex (`lock::chip_stack_lock`) abgesichert.
-*   **Erkenntnis: Unzuverlässigkeit von Legacy-Hardware als Test-Sender.**
-    *   **Analyse:** Tests mit komplexen Protokollen von einem Legacy-CUL schlugen aufgrund von Timing-Problemen fehl.
-    *   **Konsequenz:** Für die zuverlässige Validierung von Decodern wurde auf die direkte Puls-Injektion (`mi`-Kommando) umgestiegen, um präzise, wiederholbare Tests zu ermöglichen.
 *   **Erkenntnis: Irreversibilität von eFuses – Praxistest mit Konsequenzen.**
     *   **Analyse:** Das 868MHz-Board hat **permanent aktive `SECURE_BOOT_EN` eFuses** mit einem nicht mehr verfügbaren Schlüssel.
     *   **Konsequenz:** Dieses Board ist für die weitere Entwicklung effektiv unbrauchbar ("gebrickt"). Die Entwicklung wird **ausschließlich auf ungesicherter Hardware** (433MHz-Board) fortgesetzt.
 
 ## 5. Nächste Schritte
 
-*   **End-to-End-Validierung der Matter-Bridge (Höchste Priorität):** Der kritische Absturz bei der Endpoint-Erstellung sowie Kompilierungsfehler sind behoben, die Matter-Bridge ist stabil. Der Fokus liegt nun auf dem systematischen Test der bidirektionalen Funktionalität über **WiFi**: (A) Empfang von SlowRF-Signalen (z.B. Intertechno-Sensor) und deren korrekte Darstellung als dynamischer Endpoint in Home Assistant; (B) Senden von Befehlen aus Home Assistant (z.B. Schalten von Somfy/FS20) und Verifikation des gesendeten Funksignals.
+*   **Validierung der Sichtbarkeit dynamischer Endpoints (Höchste Priorität):** Nachdem das Gateway erfolgreich provisioniert wurde, werden per RF erstellte dynamische Endpoints noch nicht im Matter-Netzwerk (z.B. Home Assistant) angezeigt. Der eingeleitete Fix durch explizites Aktivieren der Endpoints (`esp_matter::endpoint::enable()`) muss validiert werden. Ziel ist es, dass ein via `mi`-Kommando oder Funksignal erstellter Sensor/Schalter korrekt in Home Assistant erscheint und bedienbar ist.
+*   **End-to-End-Validierung der Matter-Bridge (TX-Pfad):** Senden von Befehlen aus Home Assistant (z.B. Schalten von Somfy/FS20) und Verifikation des gesendeten Funksignals.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
 *   **Release-Vorbereitung:** Erstellung eines Release-Kandidaten (**v1.1.0-NG**) und Finalisierung der Endbenutzer-Dokumentation.
 *   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.
