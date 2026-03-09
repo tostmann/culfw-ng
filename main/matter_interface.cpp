@@ -53,6 +53,11 @@ void matter_interface_init(void) {
         endpoint::aggregator::config_t aggregator_config;
         s_aggregator_endpoint = endpoint::aggregator::create(node, &aggregator_config, ENDPOINT_FLAG_NONE, NULL);
         ESP_LOGI(TAG, "Node and Aggregator created.");
+
+        // Create a static test endpoint to verify stack
+        endpoint::on_off_light::config_t light_config;
+        endpoint::on_off_light::create(node, &light_config, ENDPOINT_FLAG_NONE, NULL);
+        ESP_LOGI(TAG, "Static Test Endpoint created.");
     } else {
         ESP_LOGE(TAG, "Failed to create Node!");
     }
