@@ -30,7 +30,7 @@ endif()
 idf_component_register(SRCS ${app_sources}
                        INCLUDE_DIRS ${include_dirs}
                        PRIV_INCLUDE_DIRS "."
-                       REQUIRES nvs_flash esp_partition spiffs driver esp_timer esp_netif esp_event esp_wifi esp_http_server cJSON openthread esp_driver_usb_serial_jtag)
+                       REQUIRES nvs_flash esp_partition spiffs driver esp_timer esp_netif esp_event esp_wifi esp_http_server json openthread esp_driver_usb_serial_jtag)
 target_compile_definitions(${COMPONENT_LIB} PUBLIC 
     FW_VERSION="1.1.0-NG"
     BUILD_NUMBER=8
