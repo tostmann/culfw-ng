@@ -160,9 +160,15 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 4. Erkenntnisse & Gelöste Probleme
 
-*   **Neues Problem: Build-Fehler nach Aktivierung von OpenThread.**
-    *   **Analyse:** Der Build-Prozess bricht mit dem Fehler `fatal error: esp_openthread.h: No such file or directory` ab. Dies deutet darauf hin, dass die neuen Konfigurationseinstellungen aus `sdkconfig.defaults` noch nicht in der aktiven Build-Konfiguration (`sdkconfig`) übernommen wurden und das Build-System die Abhängigkeiten zur OpenThread-Komponente nicht korrekt auflöst.
-    *   **Lösungsstrategie:** Ausführen von `idf.py reconfigure`, um die Projektkonfiguration zu aktualisieren und die Inkludierung der OpenThread-Header zu erzwingen.
+*   **Neues Problem: Build-Fehler durch API-Inkompatibilität in `esp_vfs_eventfd_register`.**
+    *   **Analyse:** Der Build-Prozess bricht mit dem Fehler `error: too few arguments to function 'esp_vfs_eventfd_register'` ab. Die verwendete ESP-IDF Version (v5.5.2) erwartet für diese Funktion eine Konfigurationsstruktur (`esp_vfs_eventfd_config_t`), während der Code sie noch parameterlos aufruft, basierend auf älteren API-Versionen oder Beispielen.
+    *   **Lösungsstrategie:** Der Aufruf in `thread_manager.c` muss an die aktuelle API angepasst werden, indem eine `esp_vfs_eventfd_config_t`-Struktur mit Standardwerten übergeben wird.
+*   **Erkenntnis: OpenThread-Konfigurationsmakros sind nicht Teil der öffentlichen API.**
+    *   **Analyse:** Der Build schlug fehl, da Makros wie `ESP_OPENTHREAD_DEFAULT_RADIO_CONFIG()` nicht gefunden wurden. Eine Analyse der ESP-IDF-Beispiele zeigte, dass diese Makros in den Beispiel-Anwendungen selbst und nicht in den öffentlichen Headern der Komponente definiert sind.
+    *   **Konsequenz:** Die notwendigen Makro-Definitionen wurden aus den Beispielen extrahiert und lokal in `thread_manager.c` als `CUL_OPENTHREAD_DEFAULT_..._CONFIG()` implementiert, um eine stabile und von den Beispielen unabhängige Build-Konfiguration zu gewährleisten.
+*   **Gelöstes Problem: Build-Fehler `esp_openthread.h: No such file or directory` nach Aktivierung von Thread.**
+    *   **Analyse:** Die neuen Konfigurationseinstellungen aus `sdkconfig.defaults` wurden nicht in der aktiven Build-Konfiguration (`sdkconfig`) übernommen, weshalb das Build-System die Abhängigkeiten zur OpenThread-Komponente nicht auflöste.
+    *   **Lösung:** Ein `idf.py reconfigure` hat die Projektkonfiguration erzwungenermaßen aktualisiert und die `sdkconfig` neu generiert. Dies hat den Header-Fehler behoben und die Komponente korrekt eingebunden.
 *   **Gelöstes Problem: OpenThread-Funkmodul (ESP32-C6) war in permanenter Boot-Schleife.**
     *   **Analyse:** Der OpenThread Border Router (`otbr-agent`) konnte keine Verbindung zum Funkmodul (Radio Co-Processor, RCP) auf `/dev/ttyACM3` herstellen. Eine direkte Analyse der seriellen Schnittstelle des Moduls zeigte, dass dessen Firmware nicht startete, sondern sich der ESP32-C6 in einer permanenten Neustart-Schleife befand (`ESP-ROM:esp32c6...`).
     *   **Lösung:** Die fehlerhafte Firmware des RCP-Moduls wurde mittels `esptool.py` vollständig überschrieben. Eine stabile, vorkompilierte RCP-Firmware (`generic-esp32c6.bin`) wurde auf den ESP32-C6 geflasht. Unmittelbar danach startete das Modul korrekt und der `otbr-agent` im Docker-Container konnte die Verbindung erfolgreich herstellen. **Der Blocker für die Matter-over-Thread-Validierung ist damit beseitigt.**
@@ -186,7 +192,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **Behebung des Build-Fehlers (Höchste Priorität):** Die Projektkonfiguration mittels `idf.py reconfigure` erneuern, um die OpenThread-Abhängigkeiten korrekt aufzulösen und einen erfolgreichen Build der Firmware mit aktiviertem Thread-Stack zu ermöglichen.
+*   **Behebung des API-Fehlers (Höchste Priorität):** Den Aufruf von `esp_vfs_eventfd_register` in `thread_manager.c` an die aktuelle SDK-API anpassen, um den Build-Blocker zu beseitigen und einen erfolgreichen Build der Firmware mit aktiviertem Thread-Stack zu ermöglichen.
 *   **Matter-over-Thread Validierung:** Nach erfolgreichem Build: Durchführung eines End-to-End-Tests der Kommunikation (RX und TX) über das nun auf dem Gerät aktive Thread-Netzwerk, um die hybride (WiFi & Thread) Funktionalität zu verifizieren.
 *   **End-to-End-Validierung der Matter-Bridge (TX-Pfad):** Senden von Befehlen aus Home Assistant (z.B. Schalten eines via RF erstellten FS20- oder Somfy-Endpoints) und Verifikation des am CC1101 korrekt generierten und gesendeten Funksignals über WiFi und Thread.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
