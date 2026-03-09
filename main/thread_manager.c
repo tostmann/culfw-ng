@@ -14,11 +14,29 @@
 static const char *TAG = "THREAD_MGR";
 
 #ifdef CONFIG_OPENTHREAD_ENABLED
+
+#define CUL_OPENTHREAD_DEFAULT_RADIO_CONFIG() \
+    {                                         \
+        .radio_mode = RADIO_MODE_NATIVE,      \
+    }
+
+#define CUL_OPENTHREAD_DEFAULT_HOST_CONFIG()                \
+    {                                                       \
+        .host_connection_mode = HOST_CONNECTION_MODE_NONE,  \
+    }
+
+#define CUL_OPENTHREAD_DEFAULT_PORT_CONFIG()    \
+    {                                           \
+        .storage_partition_name = "nvs",        \
+        .netif_queue_size = 10,                 \
+        .task_queue_size = 10,                  \
+    }
+
 static void ot_task_worker(void *aContext) {
     esp_openthread_platform_config_t config = {
-        .radio_config = ESP_OPENTHREAD_DEFAULT_RADIO_CONFIG(),
-        .host_config = ESP_OPENTHREAD_DEFAULT_HOST_CONFIG(),
-        .port_config = ESP_OPENTHREAD_DEFAULT_PORT_CONFIG(),
+        .radio_config = CUL_OPENTHREAD_DEFAULT_RADIO_CONFIG(),
+        .host_config = CUL_OPENTHREAD_DEFAULT_HOST_CONFIG(),
+        .port_config = CUL_OPENTHREAD_DEFAULT_PORT_CONFIG(),
     };
 
     // Initialize the OpenThread stack
