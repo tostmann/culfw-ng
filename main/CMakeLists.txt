@@ -12,7 +12,7 @@ set(app_sources
 )
 
 # Optional components based on configuration
-if (CONFIG_ESP_WIFI_ENABLED)
+if (CONFIG_ESP_WIFI_ENABLED STREQUAL "y" OR CONFIG_ESP_WIFI_ENABLED EQUAL 1)
     message(STATUS "WiFi Enabled - adding WiFi sources")
     list(APPEND app_sources wifi_manager.c web_server.c)
 endif()
