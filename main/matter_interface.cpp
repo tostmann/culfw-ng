@@ -105,9 +105,7 @@ uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_t
     }
 
     // Create actual Matter Endpoint based on type
-    // Note: In a production environment, this should be done 
-    // via lock::chip_stack_lock() or ScheduleWork.
-    
+    lock::chip_stack_lock();
     switch(type) {
         case DEVICE_TYPE_SWITCH:
             endpoint = on_off_light::create(parent, nullptr, ENDPOINT_FLAG_NONE, nullptr);
@@ -123,8 +121,10 @@ uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_t
             break;
         default:
             ESP_LOGE(TAG, "Unknown device type: %d", type);
+            lock::chip_stack_unlock();
             return 0xFFFF;
     }
+    lock::chip_stack_unlock();
 
     if (endpoint) {
         endpoint_id = endpoint::get_id(endpoint);
