@@ -44,7 +44,3 @@ target_compile_definitions(${COMPONENT_LIB} PUBLIC
     GPIO_SW=9
     GPIO_433MARKER=4
 )
-# Only enable Matter macro if WIFI or THREAD is enabled
-if (CONFIG_ESP_WIFI_ENABLED OR CONFIG_OPENTHREAD_ENABLED)
-    target_compile_definitions(${COMPONENT_LIB} PUBLIC CONFIG_ESP_MATTER_ENABLE=1)
-endif()
