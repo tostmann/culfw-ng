@@ -19,6 +19,10 @@ timeout 3s cat /dev/ttyACM0
 startet auch DOCKER container NICHT blockierend! Nutze docker log!
 timeout 10s docker exec ...
 
+*ESP-TOOLS*
+
+is in $HOME/.platformio/penv/bin
+
 *HARDWARE SETUP*
 
 CC1101 gekoppelt an ESP32-C6-NINI
