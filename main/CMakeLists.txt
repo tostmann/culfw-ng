@@ -1,6 +1,24 @@
 set(include_dirs "../include" "include")
 
-file(GLOB_RECURSE app_sources *.c *.cpp)
+# Define mandatory sources
+set(app_sources
+    main.c
+    cc1101.c
+    slowrf.c
+    culfw_parser.c
+    culfw_duty_cycle.c
+    config_loader.c
+    generic_decoder.c
+)
+
+# Optional components based on configuration
+if (CONFIG_ESP_WIFI_ENABLED OR CONFIG_OPENTHREAD_ENABLED)
+    list(APPEND app_sources wifi_manager.c web_server.c matter_bridge.c matter_interface.cpp)
+endif()
+
+if (CONFIG_OPENTHREAD_ENABLED)
+    list(APPEND app_sources thread_manager.c)
+endif()
 
 idf_component_register(SRCS ${app_sources}
                        INCLUDE_DIRS ${include_dirs}
