@@ -51,9 +51,13 @@ static void ot_task_worker(void *aContext) {
     esp_netif_t *openthread_netif = esp_netif_new(&cfg);
     assert(openthread_netif);
     
-    // Create the eventfd for VFS
-    esp_vfs_eventfd_config_t eventfd_config = ESP_VFS_EVENTD_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_vfs_eventfd_register(&eventfd_config));
+    // Create the eventfd for VFS (only once)
+    static bool eventfd_registered = false;
+    if (!eventfd_registered) {
+        esp_vfs_eventfd_config_t eventfd_config = ESP_VFS_EVENTD_CONFIG_DEFAULT();
+        ESP_ERROR_CHECK(esp_vfs_eventfd_register(&eventfd_config));
+        eventfd_registered = true;
+    }
 
     // Join the openthread and netif
     esp_openthread_netif_glue_init(&config);
