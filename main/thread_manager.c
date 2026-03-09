@@ -55,7 +55,7 @@ static void ot_task_worker(void *aContext) {
     esp_openthread_netif_glue_init(&config);
     
     // The main loop for OpenThread
-    esp_openthread_launch_main_loop();
+    esp_openthread_launch_mainloop();
 
     // Clean up
     esp_openthread_netif_glue_deinit();
