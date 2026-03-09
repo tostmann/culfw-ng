@@ -32,16 +32,15 @@ case "$CMD" in
         rm -rf sdkconfig build
         if [ "$PROFILE" == "serial" ]; then
             cp "sdkconfig.defaults.$PROFILE" sdkconfig
-            # Explicitly disable things from the main defaults
-            echo "CONFIG_ESP_MATTER_ENABLE=n" >> sdkconfig
-            echo "CONFIG_ESP_WIFI_ENABLED=n" >> sdkconfig
+            # Force re-evaluation of dependencies
+            idf.py -DCONFIG_ESP_WIFI_ENABLED=n -DCONFIG_OPENTHREAD_ENABLED=n -DCONFIG_ESP_MATTER_ENABLE=n reconfigure
         else
             cat sdkconfig.defaults > sdkconfig
             if [ -f "sdkconfig.defaults.$PROFILE" ]; then
                 cat "sdkconfig.defaults.$PROFILE" >> sdkconfig
             fi
+            idf.py reconfigure
         fi
-        idf.py reconfigure
         idf.py build
         ;;
     flash|monitor)
