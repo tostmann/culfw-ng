@@ -100,24 +100,25 @@ esp_err_t cc1101_init() {
         cc1101_write_reg(0x0F, 0x6A); 
     }
     
-    cc1101_write_reg(0x10, 0x58); 
-    cc1101_write_reg(0x11, 0x93); 
-    cc1101_write_reg(0x12, 0x30); 
-    cc1101_write_reg(0x13, 0x22); 
-    cc1101_write_reg(0x14, 0xF8); 
-    cc1101_write_reg(0x15, 0x15); 
-    cc1101_write_reg(0x18, 0x18); 
-    cc1101_write_reg(0x19, 0x16); 
-    cc1101_write_reg(0x1A, 0x6C); 
-    cc1101_write_reg(0x1B, 0x07); 
-    cc1101_write_reg(0x1C, 0x00); 
-    cc1101_write_reg(0x1D, 0x91); 
-    cc1101_write_reg(0x21, 0x56); 
-    cc1101_write_reg(0x22, 0x11); 
-    cc1101_write_reg(0x23, 0xE9); 
-    cc1101_write_reg(0x24, 0x2A); 
-    cc1101_write_reg(0x25, 0x00); 
-    cc1101_write_reg(0x26, 0x1F); 
+    cc1101_write_reg(0x10, 0x08); // MDMCFG4: BW 812kHz (Maximum)
+    cc1101_write_reg(0x11, 0x93); // MDMCFG3: DRATE
+    cc1101_write_reg(0x12, 0x30); // MDMCFG2: ASK/OOK, No preamble/sync
+    cc1101_write_reg(0x13, 0x22); // MDMCFG1
+    cc1101_write_reg(0x14, 0xF8); // MDMCFG0
+    cc1101_write_reg(0x15, 0x15); // DEVIATN
+    cc1101_write_reg(0x17, 0x30); // MCSM1: Always stay in RX after packet
+    cc1101_write_reg(0x18, 0x18); // MCSM0
+    cc1101_write_reg(0x19, 0x16); // FOCCFG
+    cc1101_write_reg(0x1A, 0x6C); // BSCFG
+    cc1101_write_reg(0x1B, 0x07); // AGCCTRL2: Max Gain
+    cc1101_write_reg(0x1C, 0x40); // AGCCTRL1: LNA Gain
+    cc1101_write_reg(0x1D, 0x91); // AGCCTRL0
+    cc1101_write_reg(0x21, 0x56); // FREND1
+    cc1101_write_reg(0x22, 0x11); // FREND0
+    cc1101_write_reg(0x23, 0xE9); // FSCAL3
+    cc1101_write_reg(0x24, 0x2A); // FSCAL2
+    cc1101_write_reg(0x25, 0x00); // FSCAL1
+    cc1101_write_reg(0x26, 0x1F); // FSCAL0
 
     uint8_t patable[8] = {0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     cc1101_write_burst(0x3E, patable, 8);
