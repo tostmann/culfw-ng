@@ -154,14 +154,14 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 4. Erkenntnisse & Gelöste Probleme
 
-*   **Erkenntnis: Docker-basierte OTBR-Instabilität durch fehlende Host-Kernel-Module und Bug im Start-Skript (Validiert).**
-    *   **Analyse:** Der `openthread/otbr` Docker-Container stürzte in einer Neustart-Schleife ab. Die Ursache war zweigeteilt:
-        1.  **Fehlende Kernel-Module:** Das interne Start-Skript scheiterte beim Versuch, IPv6-Firewall-Regeln via `ip6tables` zu setzen, da dem Host-System die notwendigen Kernel-Module (`ip6table_filter`, `ip6_tables`) fehlten.
-        2.  **Interner Start-Daemon Bug:** Selbst nach dem Laden der Module führte der Standard-`entrypoint` des Containers (`/app/script/server`) zu einem instabilen Zustand, bei dem die `otbr-agent` und `otbr-web` Dienste durch einen fehlerhaften `start-stop-daemon` Aufruf nicht zuverlässig im Hintergrund gestartet wurden.
-    *   **Konsequenz:** Die Lösung besteht aus zwei Schritten:
-        1.  **Host-Vorbereitung:** Manuelles Laden der benötigten Kernel-Module auf dem Host (`sudo modprobe ip6table_filter ip6_tables`).
-        2.  **Compose-Datei-Anpassung:** Die `docker-compose.yml` wurde angepasst, um den problematischen `start-stop-daemon` zu umgehen und einen stabilen Betrieb sicherzustellen.
-    *   **Ergebnis:** Der OTBR-Container startet nun stabil, das Web-Interface ist auf Port 8081 erreichbar und die Test-Infrastruktur für Matter-over-Thread ist voll funktionsfähig.
+*   **Erkenntnis: Docker-basierte OTBR-Instabilität durch Bug im Start-Skript und falsche API-Konfiguration (Validiert).**
+    *   **Analyse:** Der `openthread/otbr` Docker-Container stürzte in einer Neustart-Schleife ab oder war für Home Assistant nicht erreichbar. Die Ursache war zweigeteilt:
+        1.  **Interner Start-Daemon Bug:** Das Standard-Startskript (`/app/script/server`) im Container verwendet einen fehlerhaften `start-stop-daemon`-Aufruf, der dazu führt, dass die `otbr-agent`- und `otbr-web`-Dienste nicht zuverlässig im Hintergrund gestartet werden und in einer 100%-CPU-Schleife hängen bleiben.
+        2.  **Falsche Listen-Adresse:** Selbst wenn der `otbr-agent` (die REST-API für Home Assistant) startet, lauscht er standardmäßig nur auf `127.0.0.1` (localhost). Dadurch kann der Home Assistant-Container nicht auf die API zugreifen, was zu einem "Verbindung fehlgeschlagen"-Fehler führt.
+    *   **Konsequenz:** Die Lösung war eine grundlegende Anpassung der `docker-compose.yml`, um das fehlerhafte Start-Skript des Containers komplett zu umgehen.
+        1.  **Workaround:** Der `entrypoint` bzw. `command` im `docker-compose.yml` wurde so geändert, dass die `otbr-agent`- und `otbr-web`-Dienste direkt aufgerufen werden.
+        2.  **API-Konfiguration:** Dem `otbr-agent` wird der kritische Parameter `--rest-listen-address 0.0.0.0` übergeben, damit die REST-API im gesamten Netzwerk erreichbar ist.
+    *   **Ergebnis:** Der OTBR-Container startet nun stabil, das Web-Interface ist auf Port 8081 erreichbar und die Home Assistant-Integration kann sich erfolgreich verbinden. Die Test-Infrastruktur für Matter-over-Thread ist voll funktionsfähig.
 *   **Erkenntnis: Dynamische Endpoints müssen explizit aktiviert werden (Validiert).**
     *   **Analyse:** Dynamisch über `...::create()` erstellte Endpoints wurden vom SDK zwar intern verwaltet, aber nicht aktiv im Matter-Netzwerk publiziert. Sie blieben daher für Controller wie Home Assistant unsichtbar.
     *   **Konsequenz:** In `matter_interface.cpp` wird nun direkt nach der Erstellung eines Endpoints die Funktion `esp_matter::endpoint::enable(endpoint)` aufgerufen. Dies stößt den notwendigen Prozess im SDK an, um den neuen Endpoint und seine Funktionen (Cluster) im Fabric bekannt zu machen. **Das Problem der Unsichtbarkeit ist damit nachweislich gelöst.**
@@ -227,5 +227,5 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
         *   `homeassistant`: `ghcr.io/home-assistant/home-assistant:stable`
         *   `matter-server`: `ghcr.io/home-assistant-libs/python-matter-server:stable`
         *   `otbr`: `openthread/otbr:latest` (OpenThread Border Router)
-    *   **Konfiguration:** Alle Container laufen im `host`-Netzwerkmodus. Die Stabilität des OTBR-Containers wurde durch eine Kombination aus dem Laden der Kernel-Module `ip6table_filter` und `ip6_tables` auf dem Host-System und einer angepassten `docker-compose.yml` zur Umgehung von internen Start-Skript-Fehlern sichergestellt. Das OTBR Web-Interface ist auf Port **8081** erreichbar.
+    *   **Konfiguration:** Alle Container laufen im `host`-Netzwerkmodus. Die Stabilität des `otbr`-Containers wurde durch eine **grundlegend modifizierte `docker-compose.yml`** sichergestellt. Diese umgeht das fehlerhafte interne Start-Skript (`start-stop-daemon`-Bug) und startet die `otbr-agent`- und `otbr-web`-Dienste direkt. Kritisch ist hierbei, dass der `otbr-agent` explizit mit dem Parameter `--rest-listen-address 0.0.0.0` gestartet wird, um die REST-API für Home Assistant im Netzwerk verfügbar zu machen. Das Web-Interface ist auf Port **8081** erreichbar.
     *   **Test-Skripte:** Python-Skripte für automatisierte Tests, inkl. Factory-Reset (`force_reset.py`) und Log-Erfassung (`capture_boot.py`).
