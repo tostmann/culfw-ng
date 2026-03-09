@@ -117,9 +117,8 @@ uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_t
         parent = (endpoint_t*)node;
     }
 
-    log_jtag("MATTER_IF: Locking Chip Stack...\n");
-    esp_err_t l_res = lock::chip_stack_lock(portMAX_DELAY);
-    log_jtag("MATTER_IF: Lock acquired, calling SDK create...\n");
+    // Note: Removed manual lock as esp_matter::create calls seem to handle it internally
+    // and manual locking from external task might cause issues if not recursive.
     
     switch(type) {
         case DEVICE_TYPE_SWITCH: {
@@ -144,11 +143,8 @@ uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_t
         }
         default:
             log_jtag("MATTER_IF: Unknown device type!\n");
-            lock::chip_stack_unlock();
             return 0xFFFF;
     }
-    log_jtag("MATTER_IF: Unlocking Chip Stack...\n");
-    lock::chip_stack_unlock();
 
     if (endpoint) {
         endpoint_id = endpoint::get_id(endpoint);
