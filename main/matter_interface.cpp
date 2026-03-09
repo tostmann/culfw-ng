@@ -123,8 +123,8 @@ uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_t
     endpoint_t *parent = s_aggregator_endpoint; 
     
     if (!parent) {
-        log_jtag("MATTER_IF: Aggregator not found, using node as parent\n");
-        parent = (endpoint_t*)node;
+        log_jtag("MATTER_IF: Aggregator not found, using root endpoint as parent\n");
+        parent = endpoint::get_root_node_endpoint(node);
     }
 
     // Lock the CHIP stack for thread-safe endpoint creation
