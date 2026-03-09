@@ -6,7 +6,7 @@ static const char *TAG = "MATTER_IF";
 static matter_command_cb_t cmd_cb = NULL;
 
 // If the SDK is available, include it here
-#ifdef CONFIG_ESP_MATTER_ENABLE
+#if defined(CONFIG_ESP_MATTER_ENABLE_DATA_MODEL)
     #include <esp_matter.h>
     #include <esp_matter_console.h>
     #include <esp_matter_ota.h>
