@@ -99,10 +99,13 @@ uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_t
     uint16_t endpoint_id = 0xFFFF;
 
 #ifdef CONFIG_ESP_MATTER_ENABLE_DATA_MODEL
-    ESP_LOGI(TAG, "Creating Matter Endpoint for %s (type %d)...", device_id, type);
+    char log_buf[128];
+    snprintf(log_buf, sizeof(log_buf), "MATTER_IF: Create EP for %s (type %d)...\n", device_id, type);
+    log_jtag(log_buf);
+
     node_t *node = node::get();
     if (!node) {
-        ESP_LOGE(TAG, "Node not initialized yet!");
+        log_jtag("MATTER_IF: Node not initialized yet!\n");
         return 0xFFFF;
     }
 
@@ -110,13 +113,13 @@ uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_t
     endpoint_t *parent = s_aggregator_endpoint; 
     
     if (!parent) {
-        ESP_LOGW(TAG, "Aggregator not found, using node as parent");
+        log_jtag("MATTER_IF: Aggregator not found, using node as parent\n");
         parent = (endpoint_t*)node;
     }
 
-    ESP_LOGI(TAG, "Locking Chip Stack...");
+    log_jtag("MATTER_IF: Locking Chip Stack...\n");
     esp_err_t l_res = lock::chip_stack_lock(portMAX_DELAY);
-    ESP_LOGI(TAG, "Lock acquired (%d), creating endpoint...", l_res);
+    log_jtag("MATTER_IF: Lock acquired, calling SDK create...\n");
     
     switch(type) {
         case DEVICE_TYPE_SWITCH:
@@ -132,18 +135,19 @@ uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_t
             endpoint = window_covering_device::create(parent, nullptr, ENDPOINT_FLAG_NONE, nullptr);
             break;
         default:
-            ESP_LOGE(TAG, "Unknown device type: %d", type);
+            log_jtag("MATTER_IF: Unknown device type!\n");
             lock::chip_stack_unlock();
             return 0xFFFF;
     }
-    ESP_LOGI(TAG, "Unlocking Chip Stack...");
+    log_jtag("MATTER_IF: Unlocking Chip Stack...\n");
     lock::chip_stack_unlock();
 
     if (endpoint) {
         endpoint_id = endpoint::get_id(endpoint);
-        ESP_LOGI(TAG, "Created Matter Endpoint %d for device %s", endpoint_id, device_id);
+        snprintf(log_buf, sizeof(log_buf), "MATTER_IF: Created Matter Endpoint %d\n", endpoint_id);
+        log_jtag(log_buf);
     } else {
-        ESP_LOGE(TAG, "Failed to create endpoint for %s", device_id);
+        log_jtag("MATTER_IF: FAILED to create endpoint!\n");
     }
 #else
     static uint16_t counter = 10;
