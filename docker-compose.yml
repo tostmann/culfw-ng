@@ -32,10 +32,10 @@ services:
       - NET_ADMIN
       - NET_RAW
     devices:
-      - /dev/serial/by-id/usb-Espressif_USB_JTAG_serial_debug_unit_54:32:04:03:59:68-if00:/dev/ttyACM0
+      - /dev/ttyACM3:/dev/ttyACM3
     command:
       - --radio-url
-      - spinel+hdlc:///dev/ttyACM0
+      - spinel+hdlc:///dev/ttyACM3
       - --backbone-ifname
       - eth0
       - --thread-ifname
