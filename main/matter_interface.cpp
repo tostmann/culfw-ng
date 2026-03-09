@@ -6,7 +6,7 @@ static const char *TAG = "MATTER_IF";
 static matter_command_cb_t cmd_cb = NULL;
 
 // If the SDK is available, include it here
-#if defined(CONFIG_ESP_MATTER_ENABLE_DATA_MODEL)
+#if defined(CONFIG_ESP_MATTER_ENABLE_DATA_MODEL_DATA_MODEL)
     #include <esp_matter.h>
     #include <esp_matter_console.h>
     #include <esp_matter_ota.h>
@@ -40,7 +40,7 @@ static matter_command_cb_t cmd_cb = NULL;
 #endif
 
 void matter_interface_init(void) {
-#ifdef CONFIG_ESP_MATTER_ENABLE
+#ifdef CONFIG_ESP_MATTER_ENABLE_DATA_MODEL
     ESP_LOGI(TAG, "Initializing ESP-Matter Node...");
     
     node::config_t node_config;
@@ -84,7 +84,7 @@ void matter_interface_init(void) {
 uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_type_t type) {
     uint16_t endpoint_id = 0xFFFF;
 
-#ifdef CONFIG_ESP_MATTER_ENABLE
+#ifdef CONFIG_ESP_MATTER_ENABLE_DATA_MODEL
     node_t *node = node::get();
     endpoint_t *endpoint = nullptr;
     
@@ -122,19 +122,16 @@ uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_t
 }
 
 void matter_interface_update_attribute(uint16_t endpoint_id, float value) {
-#ifdef CONFIG_ESP_MATTER_ENABLE
-    // Update actual Matter Attribute
-    // This part requires mapping the type to the correct cluster/attribute ID
-    // simplified example:
-    esp_matter_attr_val_t val = esp_matter_bool(value > 0);
-    attribute::update(endpoint_id, chip::app::Clusters::OnOff::Id, chip::app::Clusters::OnOff::Attributes::OnOff::Id, &val);
+#if defined(CONFIG_ESP_MATTER_ENABLE_DATA_MODEL)
+    esp_matter_attr_val_t attr_val = esp_matter_bool(value > 0.5f);
+    attribute::update(endpoint_id, chip::app::Clusters::OnOff::Id, chip::app::Clusters::OnOff::Attributes::OnOff::Id, &attr_val);
 #else
     ESP_LOGI(TAG, "[SIMULATION] Updated Endpoint %d to value %.2f", endpoint_id, value);
 #endif
 }
 
 const char* matter_interface_get_status(void) {
-#ifdef CONFIG_ESP_MATTER_ENABLE
+#ifdef CONFIG_ESP_MATTER_ENABLE_DATA_MODEL
     return "REAL";
 #else
     return "SIMULATED";
