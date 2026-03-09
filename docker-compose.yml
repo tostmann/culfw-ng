@@ -44,7 +44,8 @@ services:
       /bin/bash -c "
       /app/script/server &
       sleep 10;
-      pkill -f start-stop-daemon;
+      pkill -f otbr-agent;
+      pkill -f otbr-web;
       /usr/sbin/otbr-agent -I wpan0 -B eth0 -d7 -s --rest-listen-address 0.0.0.0 --rest-listen-port 8081 'spinel+hdlc+uart:///dev/ttyACM3?uart-baudrate=460800' &
       /usr/sbin/otbr-web -I wpan0 -d7 -a 0.0.0.0 -p 80 &
       sleep infinity"
