@@ -58,9 +58,9 @@ void matter_interface_init(void) {
     esp_matter::start(app_event_cb);
 
     // Print actual commissioning information
-    chip::SetupPayload payload;
+    chip::PayloadContents payload;
     payload.version = 0;
-    payload.discriminator = 3840;
+    payload.discriminator.SetLongValue(3840);
     payload.setUpPINCode = 20202021;
     payload.vendorID = 0xFFF1;
     payload.productID = 0x8000;
