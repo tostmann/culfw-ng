@@ -42,8 +42,9 @@ services:
       - THREAD_IF_NAME=wpan0
     entrypoint: >
       /bin/bash -c "
-      sed -i 's|/dev/ttyACM0|/dev/ttyACM3?uart-baudrate=460800|g' /etc/default/otbr-agent;
-      if ! grep -q 'rest-listen-address' /etc/default/otbr-agent; then sed -i 's|OTBR_AGENT_OPTS=\"|OTBR_AGENT_OPTS=\"--rest-listen-address 0.0.0.0 |g' /etc/default/otbr-agent; fi;
-      /app/script/server &
-      sleep 10;
+      service rsyslog start;
+      service dbus start;
+      /usr/sbin/otbr-agent -I wpan0 -B eth0 --rest-listen-address 0.0.0.0 'spinel+hdlc+uart:///dev/ttyACM3?uart-baudrate=460800' &
+      sleep 2;
+      /usr/sbin/otbr-web -I wpan0 -a 0.0.0.0 -p 80 &
       sleep infinity"
