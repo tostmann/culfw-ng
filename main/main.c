@@ -70,6 +70,9 @@ void app_main(void) {
     // Initialize WiFi
     wifi_manager_init();
     
+    // Initialize Thread (if enabled in sdkconfig)
+    thread_manager_init();
+    
     // Initialize Web Server
     web_server_init();
 
