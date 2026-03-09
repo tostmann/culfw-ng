@@ -157,6 +157,7 @@ uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_t
             esp_matter::endpoint::set_parent_endpoint(endpoint, s_aggregator_endpoint);
         }
         endpoint_id = endpoint::get_id(endpoint);
+        esp_matter::endpoint::enable(endpoint);
     }
     
     lock::chip_stack_unlock();

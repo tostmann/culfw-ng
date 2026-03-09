@@ -11,12 +11,13 @@ nutze das native ESP-IDF Buildsystem insbesondere für offizielles Matter SDK un
 # source /root/.platformio/packages/framework-espidf/export.sh
 # ./build_idf.sh
 
-*TESTING*
+*AVOID RUNNIG POTENTIAL BLOCKING COMMANDS!!!*
 
 BEFOLGE STRICT: dass Du keine blockierenden Kommandos senden darfst um unseren Dialog flüssig fortzusetzen, füge im Zweifel immer "timeout" voran zur Prüfung:
 timeout 3s pio monitor
 timeout 3s cat /dev/ttyACM0
 startet auch DOCKER container NICHT blockierend! Nutze docker log!
+timeout 10s docker exec ...
 
 *HARDWARE SETUP*
 
