@@ -308,5 +308,5 @@ direct_dependencies:
 - espressif/esp_matter
 - espressif/esp_rainmaker
 manifest_hash: 22867bca0844c171b64c442a4e3fd4d9932994bb390c50eefff9b52f31d085fc
-target: esp32c6
+target: esp32
 version: 2.0.0
