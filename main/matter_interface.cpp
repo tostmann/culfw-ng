@@ -88,8 +88,7 @@ uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_t
     uint16_t endpoint_id = 0xFFFF;
 
 #ifdef CONFIG_ESP_MATTER_ENABLE_DATA_MODEL
-    // Check if we are in the correct thread? 
-    // For now, let's just make sure node/aggregator are valid
+    ESP_LOGI(TAG, "Creating Matter Endpoint for %s (type %d)...", device_id, type);
     node_t *node = node::get();
     if (!node) {
         ESP_LOGE(TAG, "Node not initialized yet!");
@@ -104,8 +103,10 @@ uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_t
         parent = (endpoint_t*)node;
     }
 
-    // Create actual Matter Endpoint based on type
-    lock::chip_stack_lock(portMAX_DELAY);
+    ESP_LOGI(TAG, "Locking Chip Stack...");
+    esp_err_t l_res = lock::chip_stack_lock(portMAX_DELAY);
+    ESP_LOGI(TAG, "Lock acquired (%d), creating endpoint...", l_res);
+    
     switch(type) {
         case DEVICE_TYPE_SWITCH:
             endpoint = on_off_light::create(parent, nullptr, ENDPOINT_FLAG_NONE, nullptr);
@@ -124,6 +125,7 @@ uint16_t matter_interface_create_endpoint(const char* device_id, matter_device_t
             lock::chip_stack_unlock();
             return 0xFFFF;
     }
+    ESP_LOGI(TAG, "Unlocking Chip Stack...");
     lock::chip_stack_unlock();
 
     if (endpoint) {
