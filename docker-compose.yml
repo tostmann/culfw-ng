@@ -33,9 +33,6 @@ services:
       - NET_RAW
     devices:
       - /dev/ttyACM3:/dev/ttyACM3
-    # openthread/otbr uses OTBR_AGENT_OPTS or similar
     environment:
-      - OTBR_AGENT_OPTS="-I wpan0 spinel+hdlc:///dev/ttyACM3"
-    # Overriding the default entrypoint/command for openthread/otbr 
-    # to make sure it doesn't fail on missing interfaces
-    command: /usr/sbin/otbr-agent -I wpan0 spinel+hdlc:///dev/ttyACM3 eth0
+      - OTBR_AGENT_OPTS="-I wpan0 -B eth0 spinel+hdlc:///dev/ttyACM3"
+    entrypoint: ["/usr/sbin/otbr-agent", "-I", "wpan0", "-B", "eth0", "spinel+hdlc:///dev/ttyACM3"]
