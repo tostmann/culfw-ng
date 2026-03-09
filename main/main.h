@@ -3,7 +3,7 @@
 
 #include "sdkconfig.h"
 
-#if defined(CONFIG_ESP_WIFI_ENABLED) || defined(CONFIG_OPENTHREAD_ENABLED)
+#if (defined(CONFIG_ESP_WIFI_ENABLED) && (CONFIG_ESP_WIFI_ENABLED == 1 || defined(CONFIG_ESP_WIFI_ENABLED_SET))) || defined(CONFIG_OPENTHREAD_ENABLED)
 #define APP_MATTER_ENABLED 1
 #else
 #define APP_MATTER_ENABLED 0
