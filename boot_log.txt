@@ -1,276 +1,188 @@
 ESP-ROM:esp32c6-20220919
 Build:Sep 19 2022
-rst:0x15 (USB_UART_HPSYS),boot:0x1d (SPI_FAST_FLASH_BOOT)
-Saved PC:0x4080bd50
+rst:0x15 (USB_UART_HPSYS),boot:0x1c (SPI_FAST_FLASH_BOOT)
+Saved PC:0x4080bd2e
 SPIWP:0xee
 mode:DIO, clock div:2
-load:0x40875730,len:0x16f4
-load:0x4086b910,len:0xed0
-load:0x4086e610,len:0x3198
+load:0x40875730,len:0x1734
+load:0x4086b910,len:0xe78
+load:0x4086e610,len:0x31a8
 entry 0x4086b91a
 I (23) boot: ESP-IDF 5.5.2.260206 2nd stage bootloader
-I (23) boot: compile time Mar  8 2026 12:59:29
+I (23) boot: compile time Mar  8 2026 19:57:14
 I (24) boot: chip revision: v0.2
-I (25) boot: efuse block revision: v0.3
-I (27) boot.esp32c6: SPI Speed      : 80MHz
-I (31) boot.esp32c6: SPI Mode       : DIO
-I (35) boot.esp32c6: SPI Flash Size : 4MB
-I (38) boot: Enabling RNG early entropy source...
-I (43) boot: Partition Table:
-I (45) boot: ## Label            Usage          Type ST Offset   Length
-I (52) boot:  0 nvs              WiFi data        01 02 00009000 00004000
-I (58) boot:  1 otadata          OTA data         01 00 0000d000 00002000
-I (65) boot:  2 phy_init         RF data          01 01 0000f000 00001000
-I (71) boot:  3 factory          factory app      00 00 00010000 00200000
-I (78) boot:  4 storage          Unknown data     01 82 00210000 00100000
-I (84) boot:  5 fctry_dat        Unknown data     01 99 00310000 00004000
-I (91) boot: End of partition table
-I (94) boot: Defaulting to factory image
-I (98) esp_image: segment 0: paddr=00010020 vaddr=42160020 size=3f5b8h (259512) map
-I (154) esp_image: segment 1: paddr=0004f5e0 vaddr=40800000 size=00a38h (  2616) load
-I (156) esp_image: segment 2: paddr=00050020 vaddr=42000020 size=15d184h (1429892) map
-I (426) esp_image: segment 3: paddr=001ad1ac vaddr=40800a38 size=21eb0h (138928) load
-I (457) esp_image: segment 4: paddr=001cf064 vaddr=408228f0 size=043c8h ( 17352) load
-I (470) boot: Loaded app from partition at offset 0x10000
-I (470) boot: Disabling RNG early entropy source...
-I (480) cpu_start: Unicore app
-I (489) cpu_start: GPIO 17 and 16 are used as console UART I/O pins
-I (490) cpu_start: Pro cpu start user code
-I (490) cpu_start: cpu freq: 160000000 Hz
-I (491) app_init: Application information:
-I (495) app_init: Project name:     CULFW-NG
-I (499) app_init: App version:      v1.0.1-359-gb720c74
-I (504) app_init: Compile time:     Mar  8 2026 17:27:17
-I (509) app_init: ELF file SHA256:  690e91c5c...
-I (513) app_init: ESP-IDF:          5.5.2.260206
-I (518) efuse_init: Min chip rev:     v0.0
-I (521) efuse_init: Max chip rev:     v0.99
-I (525) efuse_init: Chip rev:         v0.2
-I (529) heap_init: Initializing. RAM available for dynamic allocation:
-I (536) heap_init: At 4083BEF0 len 00040720 (257 KiB): RAM
-I (541) heap_init: At 4087C610 len 00002F54 (11 KiB): RAM
-I (546) heap_init: At 50000000 len 00003FE8 (15 KiB): RTCRAM
-I (552) spi_flash: detected chip: generic
-I (555) spi_flash: flash io: dio
-I (560) sleep_gpio: Configure to isolate all GPIO pins in sleep state
-I (564) sleep_gpio: Enable automatic switching of GPIO sleep configuration
-I (579) main_task: Started on CPU0
-I (581) main_task: Calling app_main()
-I (585) CUL32-C6: Starting CUL32-C6 Firmware...
-I (589) CUL32-C6: Device-UID (MAC): 58:E6:C5:E6:90:B0
-I (713) CONFIG: Initializing SPIFFS
-I (745) CONFIG: Partition size: total: 956561, used: 1255
-I (766) CONFIG: Found encrypted protocol database.
-I (767) CONFIG: Processing encrypted protocol database (759 bytes)
-I (768) GEN_DEC: Parsing JSON config...
-I (770) GEN_DEC: Loaded: TEST_SW (Short: 500 us, SyncLen: 2)
-I (775) GEN_DEC: Loaded: TEST_SN (Short: 400 us, SyncLen: 2)
-I (782) pp: pp rom version: 5b8dcfa
-I (783) net80211: net80211 rom version: 5b8dcfa
-I (789) wifi:wifi driver task: 408459c0, prio:23, stack:6656, core=0
-I (800) wifi:wifi firmware version: 1ac82cd
-I (800) wifi:wifi certification version: v7.0
-I (801) wifi:config NVS flash: enabled
-I (805) wifi:config nano formatting: disabled
-I (809) wifi:mac_version:HAL_MAC_ESP32AX_761,ut_version:N, band mode:0x1
-I (816) wifi:Init data frame dynamic rx buffer num: 32
-I (820) wifi:Init static rx mgmt buffer num: 5
-I (824) wifi:Init management short buffer num: 32
-I (829) wifi:Init dynamic tx buffer num: 32
-I (833) wifi:Init static tx FG buffer num: 2
-I (837) wifi:Init static rx buffer size: 1700 (rxctrl:92, csi:512)
-I (843) wifi:Init static rx buffer num: 10
-I (846) wifi:Init dynamic rx buffer num: 32
-I (851) wifi_init: rx ba win: 6
-I (853) wifi_init: accept mbox: 6
-I (856) wifi_init: tcpip mbox: 32
-I (859) wifi_init: udp mbox: 6
-I (862) wifi_init: tcp mbox: 6
-I (865) wifi_init: tcp tx win: 5760
-I (868) wifi_init: tcp rx win: 5760
-I (871) wifi_init: tcp mss: 1440
-I (874) wifi_init: WiFi IRAM OP enabled
-I (878) wifi_init: WiFi RX IRAM OP enabled
-I (882) wifi_init: WiFi SLP IRAM OP enabled
-W (1027) wifi:(agc)0x600a7128:0xd20949f8, min.avgNF:0xce->0xd2(dB), RCalCount:0x94, min.RRssi:0x9f8(-96.50)
-I (1037) wifi:11ax coex: WDEVAX_PTI0(0x55777555), WDEVAX_PTI1(0x00003377).
-I (1044) wifi:mode : sta (58:e6:c5:e6:90:b0)
-I (1047) wifi:enable tsf
-I (1052) WIFI: WiFi initialization finished.
-I (1054) WEB_SERVER: Starting Web Server on port: '80'
-I (1060) MATTER_BRIDGE: Initializing Matter Bridge Logic...
-I (1064) MATTER_IF: Initializing ESP-Matter Node...
-I (1072) MATTER_IF: Node and Aggregator created.
-I (1073) MATTER_IF: Starting ESP-Matter SDK...
-I (1088) chip[DL]: NVS set: chip-counters/reboot-count = 2 (0x2)
-I (1090) chip[DL]: Real time clock set to 946684800 (2000-01-01 00:00:00 UTC)
-I (1091) BLE_INIT: Using main XTAL as clock source, chip ver: 2
-I (1096) BLE_INIT: ble controller commit:[17fdc66]
-I (1094) wifi:new:<6,0>, old:<1,0>, ap:<255,255>, sta:<6,0>, prof:1, snd_ch_cfg:0x0
-I (1109) wifi:(connect)dot11_authmode:0x3, pairwise_cipher:0x3, group_cipher:0x3
-I (1115) wifi:state: init -> auth (0xb0)
-I (1110) BLE_INIT: Bluetooth MAC: 58:e6:c5:e6:90:b2
-I (1127) wifi:state: auth -> assoc (0x0)
-I (1130) phy: libbtbb version: c493933, Nov 14 2025, 16:34:25
-I (1137) wifi:(assoc)RESP, Extended Capabilities length:8, operating_mode_notification:0
-I (1140) wifi:(assoc)RESP, Extended Capabilities, MBSSID:0, TWT Responder:0, OBSS Narrow Bandwidth RU In OFDMA Tolerance:0
-I (1151) wifi:Extended Capabilities length:8, operating_mode_notification:1
-I (1158) wifi:state: assoc -> run (0x10)
-I (1161) wifi:(trc)phytype:CBW20-SGI, snr:26, maxRate:144, highestRateIdx:0
-W (1168) wifi:(trc)band:2G, phymode:3, highestRateIdx:0, lowestRateIdx:11, dataSchedTableSize:14
-I (1176) wifi:(trc)band:2G, rate(L-MCS4, rateIdx:4), ampdu(rate:L-MCS4, schedIdx(4, stop:8)), snr:26, ampduState:wait operational
-I (1188) wifi:ifidx:0, rssi:-70, nf:-96, phytype(0x3, CBW20-SGI), phymode(0x3, 11bgn), max_rate:144, he:0, vht:0, ht:1
-I (1198) wifi:(ht)max.RxAMPDULenExponent:3(65535 bytes), MMSS:6(8 us)
-I (1207) NimBLE: GAP procedure initiated: stop advertising.
-I (1210) CHIP[DL]: BLE host-controller synced
-I (1214) chip[DL]: Posting ESPSystemEvent: Wifi Event with eventId : 43
-I (1224) wifi:connected with PalmBeach WiFi, aid = 1, channel 6, BW20, bssid = 9c:53:22:22:4e:e6
-I (1229) wifi:security: WPA2-PSK, phy:bgn, rssi:-70, cipher(pairwise:0x3, group:0x3), pmf:0,
-I (1238) wifi:pm start, type: 1, twt_start:0
-I (1241) wifi:pm start, type:1, aid:0x1, trans-BSSID:9c:53:22:22:4e:e6, BSSID[5]:0xe6, mbssid(max-indicator:0, index:0), he:0
-I (1252) wifi:dp: 1, bi: 102400, li: 3, scale listen interval from 307200 us to 307200 us
-I (1260) wifi:set rx beacon pti, rx_bcn_pti: 10, bcn_timeout: 25000, mt_pti: 10, mt_time: 10000
-I (1268) wifi:[ADDBA]TX addba request, tid:0, dialogtoken:1, bufsize:64, A-MSDU:0(not supported), policy:1(IMR), ssn:0(0x0)
-I (1279) wifi:[ADDBA]TX addba request, tid:7, dialogtoken:2, bufsize:64, A-MSDU:0(not supported), policy:1(IMR), ssn:0(0x20)
-I (1290) wifi:[ADDBA]TX addba request, tid:5, dialogtoken:3, bufsize:64, A-MSDU:0(not supported), policy:1(IMR), ssn:0(0x0)
-I (1301) wifi:AP's beacon interval = 102400 us, DTIM period = 1
-I (1309) chip[DL]: Posting ESPSystemEvent: Wifi Event with eventId : 4
-I (1323) wifi:[ADDBA]RX addba response, status:0, tid:0/tb:1(0xa1), bufsize:64, batimeout:0, txa_wnd:64
-I (1330) wifi:[ADDBA]RX addba response, status:0, tid:7/tb:1(0xa1), bufsize:64, batimeout:0, txa_wnd:64
-I (1331) wifi:[ADDBA]RX addba response, status:0, tid:5/tb:1(0xa1), bufsize:64, batimeout:0, txa_wnd:64
-I (1714) chip[DL]: WiFi station state change: NotConnected -> Connected
-I (1715) chip[DL]: WiFi station interface connected
-I (1715) chip[DL]: Done driving station state, nothing else to do...
-I (1721) chip[SVR]: Initializing subscription resumption storage...
-I (1728) chip[SVR]: Server initializing...
-I (1730) chip[TS]: Last Known Good Time: 2026-03-08T16:27:15
-I (1738) chip[FP]: Fabric index 0x1 was retrieved from storage. Compressed FabricId 0x8D60325BD0DE313A, FabricId 0x0000000000000001, NodeId 0x0000000000000005, VendorId 0xFFF1
-I (1751) chip[DMG]: AccessControl: initializing
-I (1755) chip[DMG]: Examples::AccessControlDelegate::Init
-I (1760) chip[DMG]: AccessControl: setting
-I (1764) chip[DMG]: DefaultAclStorage: initializing
-I (1769) chip[DMG]: DefaultAclStorage: 1 entries loaded
-I (1773) chip[SVR]: WARNING: mTestEventTriggerDelegate is null
-I (1788) chip[ZCL]: Using ZAP configuration...
-I (1788) esp_matter_cluster: Cluster plugin init common callback
-I (1790) chip[DMG]: AccessControlCluster: initializing
-I (1794) chip[ZCL]: WRITE ERR: ep 0 clus 0x0000_0030 attr 0x0000_0000 not supported
-I (1802) chip[SVR]: Fabric already commissioned. Disabling BLE advertisement
-I (1810) chip[IN]: CASE Server enabling CASE session setups
-I (1814) chip[SVR]: Joining Multicast groups
-I (1818) chip[SVR]: Server Listening...
-I (1823) esp_matter_attribute: ********** R : Endpoint 0x0000's Cluster 0x0000003C's Attribute 0x0000FFFC is 0 **********
-I (1832) data_model: Dynamic endpoint 0 added
-E (1835) data_model: Cluster cannot be NULL.
-I (1840) data_model: Dynamic endpoint 1 added
-E (1844) data_model: Cluster cannot be NULL.
+I (24) boot: efuse block revision: v0.3
+I (25) boot.esp32c6: SPI Speed      : 80MHz
+I (25) boot.esp32c6: SPI Mode       : DIO
+I (26) boot.esp32c6: SPI Flash Size : 4MB
+I (27) boot: Enabling RNG early entropy source...
+I (28) boot: Partition Table:
+I (29) boot: ## Label            Usage          Type ST Offset   Length
+I (30) boot:  0 nvs              WiFi data        01 02 00009000 00004000
+I (31) boot:  1 otadata          OTA data         01 00 0000d000 00002000
+I (32) boot:  2 phy_init         RF data          01 01 0000f000 00001000
+I (33) boot:  3 factory          factory app      00 00 00010000 00200000
+I (34) boot:  4 storage          Unknown data     01 82 00210000 00100000
+I (35) boot:  5 fctry_dat        Unknown data     01 99 00310000 00004000
+I (36) boot: End of partition table
+I (36) boot: Defaulting to factory image
+I (37) esp_image: segment 0: paddr=00010020 vaddr=42160020 size=3f3e4h (259044) map
+I (86) esp_image: segment 1: paddr=0004f40c vaddr=40800000 size=00c0ch (  3084) load
+I (88) esp_image: segment 2: paddr=00050020 vaddr=42000020 size=15b68ch (1422988) map
+I (351) esp_image: segment 3: paddr=001ab6b4 vaddr=40800c0c size=21c5ch (138332) load
+I (381) esp_image: segment 4: paddr=001cd318 vaddr=40822870 size=042d8h ( 17112) load
+I (393) boot: Loaded app from partition at offset 0x10000
+I (393) boot: Disabling RNG early entropy source...
+I (395) cpu_start: Unicore app
+I (403) cpu_start: Pro cpu start user code
+I (403) cpu_start: cpu freq: 160000000 Hz
+I (404) app_init: Application information:
+I (404) app_init: Project name:     CULFW-NG
+I (405) app_init: App version:      v1.0.1-434-g44e9a65
+I (405) app_init: Compile time:     Mar  9 2026 09:11:05
+I (406) app_init: ELF file SHA256:  a2a9a4b9c...
+I (406) app_init: ESP-IDF:          5.5.2.260206
+I (407) efuse_init: Min chip rev:     v0.0
+I (407) efuse_init: Max chip rev:     v0.99
+I (408) efuse_init: Chip rev:         v0.2
+I (408) heap_init: Initializing. RAM available for dynamic allocation:
+I (410) heap_init: At 4083BD60 len 000408B0 (258 KiB): RAM
+I (410) heap_init: At 4087C610 len 00002F54 (11 KiB): RAM
+I (411) heap_init: At 50000000 len 00003FE8 (15 KiB): RTCRAM
+I (412) spi_flash: detected chip: generic
+I (412) spi_flash: flash io: dio
+I (414) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+I (415) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+I (416) main_task: Started on CPU0
+I (416) main_task: Calling app_main()
+I (416) CUL32-C6: Starting CUL32-C6 Firmware...
+I (417) CUL32-C6: Device-UID (MAC): 58:E6:C5:E6:90:B0
+I (533) CONFIG: Initializing SPIFFS
+I (565) CONFIG: Partition size: total: 956561, used: 1255
+I (586) CONFIG: Found encrypted protocol database.
+I (587) CONFIG: Processing encrypted protocol database (759 bytes)
+I (588) GEN_DEC: Parsing JSON config...
+I (589) GEN_DEC: Loaded: TEST_SW (Short: 500 us, SyncLen: 2)
+I (589) GEN_DEC: Loaded: TEST_SN (Short: 400 us, SyncLen: 2)
+I (592) pp: pp rom version: 5b8dcfa
+I (592) net80211: net80211 rom version: 5b8dcfa
+I (593) wifi:wifi driver task: 40845754, prio:23, stack:6656, core=0
+I (599) wifi:wifi firmware version: 1ac82cd
+I (599) wifi:wifi certification version: v7.0
+I (600) wifi:config NVS flash: enabled
+I (600) wifi:config nano formatting: disabled
+I (600) wifi:mac_version:HAL_MAC_ESP32AX_761,ut_version:N, band mode:0x1
+I (601) wifi:Init data frame dynamic rx buffer num: 32
+I (601) wifi:Init static rx mgmt buffer num: 5
+I (602) wifi:Init management short buffer num: 32
+I (602) wifi:Init dynamic tx buffer num: 32
+I (602) wifi:Init static tx FG buffer num: 2
+I (603) wifi:Init static rx buffer size: 1700 (rxctrl:92, csi:512)
+I (604) wifi:Init static rx buffer num: 10
+I (604) wifi:Init dynamic rx buffer num: 32
+I (605) wifi_init: rx ba win: 6
+I (605) wifi_init: accept mbox: 6
+I (606) wifi_init: tcpip mbox: 32
+I (606) wifi_init: udp mbox: 6
+I (606) wifi_init: tcp mbox: 6
+I (606) wifi_init: tcp tx win: 5760
+I (607) wifi_init: tcp rx win: 5760
+I (607) wifi_init: tcp mss: 1440
+I (607) wifi_init: WiFi IRAM OP enabled
+I (607) wifi_init: WiFi RX IRAM OP enabled
+I (608) wifi_init: WiFi SLP IRAM OP enabled
+W (608) wifi:Password length matches WPA2 standards, authmode threshold changes from OPEN to WPA2
+I (609) phy_init: phy_version 343,b513b46,Nov 14 2025,16:34:12
+I (1253) chip[DL]: WiFi station state change: NotConnected -> Connected
+I (1254) chip[DL]: WiFi station interface connected
+I (1254) chip[DL]: Done driving station state, nothing else to do...
+I (1255) chip[SVR]: Initializing subscription resumption storage...
+I (1257) chip[SVR]: Server initializing...
+I (1257) chip[TS]: Last Known Good Time: 2026-03-09T08:11:02
+I (1258) chip[DMG]: AccessControl: initializing
+I (1258) chip[DMG]: Examples::AccessControlDelegate::Init
+I (1258) chip[DMG]: AccessControl: setting
+I (1258) chip[DMG]: DefaultAclStorage: initializing
+I (1259) chip[DMG]: DefaultAclStorage: 0 entries loaded
+I (1260) chip[SVR]: WARNING: mTestEventTriggerDelegate is null
+I (1267) chip[ZCL]: Using ZAP configuration...
+I (1268) esp_matter_cluster: Cluster plugin init common callback
+I (1268) chip[DMG]: AccessControlCluster: initializing
+I (1268) chip[ZCL]: WRITE ERR: ep 0 clus 0x0000_0030 attr 0x0000_0000 not supported
+I (1270) chip[DIS]: Updating services using commissioning mode 1
+I (1271) chip[DIS]: CHIP minimal mDNS started advertising.
+I (1272) chip[DIS]: Advertise commission parameter vendorID=65521 productID=32768 discriminator=3840/15 cm=1 cp=0
+I (1272) chip[DIS]: CHIP minimal mDNS configured as 'Commissionable node device'; instance name: D645C65BD168BA17.
+I (1273) chip[DIS]: mDNS service published: _matterc._udp
+I (1273) chip[IN]: CASE Server enabling CASE session setups
+I (1274) chip[SVR]: Joining Multicast groups
+I (1274) chip[SVR]: Server Listening...
+I (1276) esp_matter_attribute: ********** R : Endpoint 0x0000's Cluster 0x0000003C's Attribute 0x0000FFFC is 0 **********
+I (1277) data_model: Dynamic endpoint 0 added
+E (1277) data_model: Cluster cannot be NULL.
+I (1278) data_model: Dynamic endpoint 1 added
+E (1278) data_model: Cluster cannot be NULL.
+E (1280) usb_serial_jtag: usb_serial_jtag_write_bytes(268): driver is not initialized yet
+W (1281) MATTER_SETUP: ========================================
+W (1282) MATTER_SETUP: Manual Code: 34970112332
+W (1282) MATTER_SETUP: Passcode: 20202021
+W (1282) MATTER_SETUP: Discriminator: 3840
+W (1282) MATTER_SETUP: ========================================
+I (1281) chip[DL]: WIFI_EVENT_STA_CONNECTED
+I (1284) chip[DL]: Done driving station state, nothing else to do...
 CUL32-C6 READY
-I (1848) chip[DL]: WIFI_EVENT_STA_CONNECTED
-I (1850) CUL32-C6: Hardware detection: 433 MHz
-I (1856) CC1101: Initializing SPI...
-I (1854) chip[DL]: Done driving station state, nothing else to do...
-I (1866) chip[DL]: Updating advertising data
-I (1869) NimBLE: GAP procedure initiated: stop advertising.
-I (1912) CC1101: CC1101 Version: 0x14
-I (1924) CUL32-C6: CC1101 initialized successfully
-I (1924) GEN_DEC: Generic decoder state initialized.
-I (1925) CULFW_PARSER: Loaded reporting state: 0
-I (1926) SLOWRF: Switched to mode X21
-I (1930) CULFW_PARSER: Loaded RF mode: X21
-I (1934) main_task: Returned from app_main()
-I (2781) chip[DL]: Posting ESPSystemEvent: IP Event with eventId : 3
-I (2782) chip[DL]: IP_EVENT_GOT_IP6
-I (2782) chip[DL]: IPv6 addr available. Ready on WIFI_STA_DEF interface: fe80:0000:0000:0000:5ae6:c5ff:fee6:90b0
-I (2790) chip[DIS]: Updating services using commissioning mode 0
-I (2796) chip[DIS]: CHIP minimal mDNS started advertising.
-I (2801) chip[DIS]: Advertise operational node 8D60325BD0DE313A-0000000000000005
-I (2808) chip[DIS]: CHIP minimal mDNS configured as 'Operational device'; instance name: 8D60325BD0DE313A-0000000000000005.
-I (2820) chip[DIS]: mDNS service published: _matter._tcp
-I (2824) chip[DIS]: Updating services using commissioning mode 0
-I (2829) chip[DIS]: CHIP minimal mDNS started advertising.
-I (2837) chip[DIS]: Advertise operational node 8D60325BD0DE313A-0000000000000005
-I (2842) chip[DIS]: CHIP minimal mDNS configured as 'Operational device'; instance name: 8D60325BD0DE313A-0000000000000005.
-I (2854) chip[DIS]: mDNS service published: _matter._tcp
-I (2857) chip[SVR]: Server initialization complete
-I (2864) chip[IM]: Resuming 1 subscriptions in 1 seconds
-W (3372) wifi:<ba-add>idx:0, ifx:0, tid:0, TAHI:0x100e64e, TALO:0x2222539c, (ssn:1, win:64, cur_ssn:1), CONF:0xc0000005
-I (3869) chip[DIS]: Lookup started for 8D60325BD0DE313A-000000000001B669
-I (3874) chip[DIS]: UDP:[FE80::8D41:827A:7993:D286%st1]:41421: new best score: 7 (for 8D60325BD0DE313A-000000000001B669)
-I (3876) chip[DIS]: Checking node lookup status for 8D60325BD0DE313A-000000000001B669 after 8 ms
-I (3884) chip[DIS]: Keeping DNSSD lookup active
-I (3888) chip[DL]: BLE deinit successful and memory reclaimed
-I (4068) chip[DIS]: Checking node lookup status for 8D60325BD0DE313A-000000000001B669 after 200 ms
-I (4069) chip[SC]: Initiating session on local FabricIndex 1 from 0x0000000000000005 -> 0x000000000001B669
-I (4088) chip[EM]: <<< [E:53454i S:0 M:188673597] (U) Msg TX from 3CC0B180F59D42DF to 0:0000000000000000 [0000] [UDP:[FE80::8D41:827A:7993:D286%st1]:41421] --- Type 0000:30 (SecureChannel:CASE_Sigma1) (B:234)
-I (4098) chip[EM]: ??1 [E:53454i S:0 M:188673597] (U) Msg Retransmission to 0:0000000000000000 scheduled for 412ms from now [State:Active II:500 AI:300 AT:4000]
-I (4110) chip[SC]: Sent Sigma1 msg to <000000000001B669, 1> [II:500ms AI:300ms AT:4000ms]
-I (4151) chip[EM]: >>> [E:53454i S:0 M:87443333 (Ack:188673597)] (U) Msg RX from 0:0000000000000000 [0000] to 3CC0B180F59D42DF --- Type 0000:33 (SecureChannel:CASE_Sigma2Resume) (B:100)
-I (4157) chip[EM]: <<< [E:53454i S:0 M:188673598 (Ack:87443333)] (U) Msg TX from 3CC0B180F59D42DF to 0:0000000000000000 [0000] [UDP:[FE80::8D41:827A:7993:D286%st1]:41421] --- Type 0000:10 (SecureChannel:StandaloneAck) (B:26)
-I (4183) chip[EM]: <<< [E:53454i S:0 M:188673599 (Ack:87443333)] (U) Msg TX from 3CC0B180F59D42DF to 0:0000000000000000 [0000] [UDP:[FE80::8D41:827A:7993:D286%st1]:41421] --- Type 0000:40 (SecureChannel:StatusReport) (B:34)
-I (4197) chip[EM]: ??1 [E:53454i S:0 M:188673599] (U) Msg Retransmission to 0:0000000000000000 scheduled for 400ms from now [State:Active II:500 AI:300 AT:4000]
-I (4210) chip[SC]: SecureSession[0x4082a708, LSID:46877]: State change 'kEstablishing' --> 'kActive'
-I (4219) chip[DMG]: Registered a ReadHandler that will schedule a report between system Timestamp: 0x000000000000123D and system Timestamp 0x000000000000F8B5.
-I (4239) chip[EM]: >>> [E:53454i S:0 M:87443334 (Ack:188673599)] (U) Msg RX from 0:0000000000000000 [0000] to 3CC0B180F59D42DF --- Type 0000:10 (SecureChannel:StandaloneAck) (B:26)
-I (4375) esp_netif_handlers: sta ip: 192.168.1.57, mask: 255.255.255.0, gw: 192.168.1.1
-I (4376) WIFI: Got IP: 192.168.1.57
-I (4376) chip[DL]: Posting ESPSystemEvent: IP Event with eventId : 0
-I (4381) chip[DL]: IP_EVENT_STA_GOT_IP
-I (4384) chip[DL]: IPv4 address changed on WiFi station interface: 192.168.1.57/255.255.255.0 gateway 192.168.1.1
-I (4395) chip[DL]: IPv4 Internet connectivity ESTABLISHED
-I (4400) chip[DIS]: Updating services using commissioning mode 0
-I (4407) chip[DIS]: CHIP minimal mDNS started advertising.
-I (4415) chip[DIS]: Advertise operational node 8D60325BD0DE313A-0000000000000005
-I (4418) chip[DIS]: CHIP minimal mDNS configured as 'Operational device'; instance name: 8D60325BD0DE313A-0000000000000005.
-I (4431) chip[DIS]: mDNS service published: _matter._tcp
-I (5236) chip[EM]: <<< [E:53455i S:46877 M:203910022] (S) Msg TX from 0000000000000005 to 1:000000000001B669 [313A] [UDP:[FE80::8D41:827A:7993:D286%st1]:41421] --- Type 0001:05 (IM:ReportData) (B:1192)
-I (5244) chip[EM]: ??1 [E:53455i S:46877 M:203910022] (S) Msg Retransmission to 1:000000000001B669 scheduled for 365ms from now [State:Active II:500 AI:300 AT:4000]
-I (5313) chip[EM]: >>> [E:53455i S:46877 M:91404764 (Ack:203910022)] (S) Msg RX from 1:000000000001B669 [313A] to 0000000000000005 --- Type 0001:01 (IM:StatusResponse) (B:42)
-I (5318) chip[IM]: Received status response, status is 0x00
-I (5326) esp_matter_attribute: ********** R : Endpoint 0x0000's Cluster 0x00000028's Attribute 0x0000FFFC is 0 **********
-I (5339) esp_matter_attribute: ********** R : Endpoint 0x0000's Cluster 0x00000028's Attribute 0x00000005 is (empty) **********
-I (5349) esp_matter_attribute: ********** R : Endpoint 0x0000's Cluster 0x00000030's Attribute 0x00000000 is 0 **********
-I (5365) chip[EM]: <<< [E:53455i S:46877 M:203910023 (Ack:91404764)] (S) Msg TX from 0000000000000005 to 1:000000000001B669 [313A] [UDP:[FE80::8D41:827A:7993:D286%st1]:41421] --- Type 0001:05 (IM:ReportData) (B:1206)
-I (5376) chip[EM]: ??1 [E:53455i S:46877 M:203910023] (S) Msg Retransmission to 1:000000000001B669 scheduled for 389ms from now [State:Active II:500 AI:300 AT:4000]
-I (5407) chip[EM]: >>> [E:53455i S:46877 M:91404765 (Ack:203910023)] (S) Msg RX from 1:000000000001B669 [313A] to 0000000000000005 --- Type 0001:01 (IM:StatusResponse) (B:42)
-I (5412) chip[IM]: Received status response, status is 0x00
-I (5421) esp_matter_attribute: ********** R : Endpoint 0x0000's Cluster 0x0000003E's Attribute 0x0000FFFC is 0 **********
-I (5438) chip[EM]: <<< [E:53455i S:46877 M:203910024 (Ack:91404765)] (S) Msg TX from 0000000000000005 to 1:000000000001B669 [313A] [UDP:[FE80::8D41:827A:7993:D286%st1]:41421] --- Type 0001:05 (IM:ReportData) (B:1068)
-I (5448) chip[EM]: ??1 [E:53455i S:46877 M:203910024] (S) Msg Retransmission to 1:000000000001B669 scheduled for 394ms from now [State:Active II:500 AI:300 AT:4000]
-I (5539) chip[EM]: >>> [E:53455i S:46877 M:91404766 (Ack:203910024)] (S) Msg RX from 1:000000000001B669 [313A] to 0000000000000005 --- Type 0001:01 (IM:StatusResponse) (B:42)
-I (5544) chip[IM]: Received status response, status is 0x00
-I (5557) esp_matter_attribute: ********** R : Endpoint 0x0000's Cluster 0x00000036's Attribute 0x0000FFFC is 0 **********
-I (5561) chip[ZCL]: Node is currently connected to Wi-Fi network with BSSID:
-I (5567) chip[ZCL]: The current type of Wi-Fi security used: 0
-I (5573) chip[ZCL]: The current 802.11 standard version in use by the Node: 3
-I (5579) chip[ZCL]: The channel that Wi-Fi communication is currently operating on is: 6
-I (5587) chip[ZCL]: The current RSSI of the Node’s Wi-Fi radio in dB: -71
-I (5594) esp_matter_attribute: ********** R : Endpoint 0x0000's Cluster 0x00000036's Attribute 0x0000FFFD is 1 **********
-I (5607) esp_matter_attribute: ********** R : Endpoint 0x0000's Cluster 0x00000035's Attribute 0x0000FFFC is 0 **********
-E (5615) chip[DMG]: Fail to retrieve data, roll back and encode status on clusterId: 0x0000_0035, attributeId: 0x0000_0000err = 2d
-E (5627) chip[DMG]: Fail to retrieve data, roll back and encode status on clusterId: 0x0000_0035, attributeId: 0x0000_0001err = 2d
-E (5638) chip[DMG]: Fail to retrieve data, roll back and encode status on clusterId: 0x0000_0035, attributeId: 0x0000_0002err = 2d
-E (5649) chip[DMG]: Fail to retrieve data, roll back and encode status on clusterId: 0x0000_0035, attributeId: 0x0000_0003err = 2d
-E (5661) chip[DMG]: Fail to retrieve data, roll back and encode status on clusterId: 0x0000_0035, attributeId: 0x0000_0004err = 2d
-I (5679) chip[EM]: <<< [E:53455i S:46877 M:203910025 (Ack:91404766)] (S) Msg TX from 0000000000000005 to 1:000000000001B669 [313A] [UDP:[FE80::8D41:827A:7993:D286%st1]:41421] --- Type 0001:05 (IM:ReportData) (B:1189)
-I (5693) chip[EM]: ??1 [E:53455i S:46877 M:203910025] (S) Msg Retransmission to 1:000000000001B669 scheduled for 390ms from now [State:Active II:500 AI:300 AT:4000]
-I (5748) chip[EM]: >>> [E:53455i S:46877 M:91404767 (Ack:203910025)] (S) Msg RX from 1:000000000001B669 [313A] to 0000000000000005 --- Type 0001:01 (IM:StatusResponse) (B:42)
-I (5753) chip[IM]: Received status response, status is 0x00
-E (5759) chip[DMG]: Fail to retrieve data, roll back and encode status on clusterId: 0x0000_0035, attributeId: 0x0000_0004err = 2d
-E (5769) chip[DMG]: Fail to retrieve data, roll back and encode status on clusterId: 0x0000_0035, attributeId: 0x0000_0005err = 2d
-E (5782) chip[DMG]: Fail to retrieve data, roll back and encode status on clusterId: 0x0000_0035, attributeId: 0x0000_0007err = 2d
-E (5792) chip[DMG]: Fail to retrieve data, roll back and encode status on clusterId: 0x0000_0035, attributeId: 0x0000_0008err = 2d
-E (5805) chip[DMG]: Fail to retrieve data, roll back and encode status on clusterId: 0x0000_0035, attributeId: 0x0000_0009err = 2d
-E (5815) chip[DMG]: Fail to retrieve data, roll back and encode status on clusterId: 0x0000_0035, attributeId: 0x0000_000Aerr = 2d
-E (5827) chip[DMG]: Fail to retrieve data, roll back and encode status on clusterId: 0x0000_0035, attributeId: 0x0000_000Berr = 2d
-E (5838) chip[DMG]: Fail to retrieve data, roll back and encode status on clusterId: 0x0000_0035, attributeId: 0x0000_000Cerr = 2d
-E (5850) chip[DMG]: Fail to retrieve data, roll back and encode status on clusterId: 0x0000_0035, attributeId: 0x0000_000Derr = 2d
-E (5861) chip[DMG]: Fail to retrieve data, roll back and encode status on clusterId: 0x0000_0035, attributeId: 0x0000_003Berr = 2d
-E (5873) chip[DMG]: Fail to retrieve data, roll back and encode status on clusterId: 0x0000_0035, attributeId: 0x0000_003Cerr = 2d
-E (5884) chip[DMG]: Fail to retrieve data, roll back and encode status on clusterId: 0x0000_0035, attributeId: 0x0000_003Derr = 2d
-E (5895) chip[DMG]: Fail to retrieve data, roll back and encode status on clusterId: 0x0000_0035, attributeId: 0x0000_003Eerr = 2d
-I (5909) esp_matter_attribute: ********** R : Endpoint 0x0000's Cluster 0x00000035's Attribute 0x0000FFFD is 3 **********
-I (5926) chip[EM]: <<< [E:53455i S:46877 M:203910026 (Ack:91404767)] (S) Msg TX from 0000000000000005 to 1:000000000001B669 [313A] [UDP:[FE80::8D41:827A:7993:D286%st1]:41421] --- Type 0001:05 (IM:ReportData) (B:776)
-I (5938) chip[EM]: ??1 [E:53455i S:46877 M:203910026] (S) Msg Retransmission to 1:000000000001B669 scheduled for 381ms from now [State:Active II:500 AI:300 AT:4000]
-I (6011) chip[EM]: >>> [E:53455i S:46877 M:91404768 (Ack:203910026)] (S) Msg RX from 1:000000000001B669 [313A] to 0000000000000005 --- Type 0001:01 (IM:StatusResponse) (B:42)
-I (6016) chip[IM]: Received status response, status is 0x00
-I (6021) chip[EM]: <<< [E:53455i S:46877 M:203910027 (Ack:91404768)] (S) Msg TX from 0000000000000005 to 1:000000000001B669 [313A] [UDP:[FE80::8D41:827A:7993:D286%st1]:41421] --- Type 0000:10 (SecureChannel:StandaloneAck) (B:34)
+I (1284) MATTER_IF: Matter Event: 49152
+I (1285) chip[DL]: Updating advertising data
+I (1285) CUL32-C6: Hardware detection: 433 MHz
+I (1286) CC1101: Initializing SPI...
+I (1287) chip[DL]: Configuring CHIPoBLE advertising (interval 25 ms, connectable)
+I (1288) NimBLE: GAP procedure initiated: advertise;
+I (1288) NimBLE: disc_mode=2
+I (1289) NimBLE:  adv_channel_map=0 own_addr_type=1 adv_filter_policy=0 adv_itvl_min=40 adv_itvl_max=40
+I (1290) NimBLE:
+I (1291) chip[DL]: CHIPoBLE advertising started
+I (1291) MATTER_IF: Matter Event: 32768
+I (1292) MATTER_IF: Matter Event: 53250
+I (1292) MATTER_IF: Matter Event: 32781
+I (1340) CC1101: CC1101 Version: 0x14
+I (1352) CUL32-C6: CC1101 initialized successfully
+I (1353) GEN_DEC: Generic decoder state initialized.
+I (1353) CULFW_PARSER: Loaded reporting state: 1
+I (1354) SLOWRF: Switched to mode X21
+I (1354) CULFW_PARSER: Loaded RF mode: X21
+I (1355) main_task: Returned from app_main()
+I (2591) WIFI: Got IPv6: fe80:0000:0000:0000:5ae6:c5ff:fee6:90b0
+I (2592) chip[DL]: Posting ESPSystemEvent: IP Event with eventId : 3
+I (2593) chip[DL]: IP_EVENT_GOT_IP6
+I (2593) chip[DL]: IPv6 addr available. Ready on WIFI_STA_DEF interface: fe80:0000:0000:0000:5ae6:c5ff:fee6:90b0
+I (2594) MATTER_IF: Matter Event: 49152
+I (2594) MATTER_IF: Matter Event: 32782
+I (2595) chip[DIS]: Updating services using commissioning mode 1
+I (2597) chip[DIS]: CHIP minimal mDNS started advertising.
+I (2602) chip[DIS]: Advertise commission parameter vendorID=65521 productID=32768 discriminator=3840/15 cm=1 cp=0
+I (2603) chip[DIS]: CHIP minimal mDNS configured as 'Commissionable node device'; instance name: D645C65BD168BA17.
+I (2606) chip[DIS]: mDNS service published: _matterc._udp
+I (2606) chip[SVR]: Server initialization complete
+I (2607) chip[DIS]: Updating services using commissioning mode 1
+I (2608) chip[DIS]: CHIP minimal mDNS started advertising.
+I (2612) chip[DIS]: Advertise commission parameter vendorID=65521 productID=32768 discriminator=3840/15 cm=1 cp=0
+I (2614) chip[DIS]: CHIP minimal mDNS configured as 'Commissionable node device'; instance name: D645C65BD168BA17.
+I (2616) chip[DIS]: mDNS service published: _matterc._udp
+I (2616) MATTER_IF: Matter Event: 32786
+I (2619) chip[IM]: No subscriptions to resume
+I (2619) MATTER_IF: Matter Event: 32790
+W (2776) wifi:<ba-add>idx:0, ifx:0, tid:0, TAHI:0x10040bb, TALO:0xb14bde30, (ssn:0, win:64, cur_ssn:0), CONF:0xc0000005
+I (3904) esp_netif_handlers: sta ip: 192.168.1.59, mask: 255.255.255.0, gw: 192.168.1.1
+I (3905) WIFI: Got IP: 192.168.1.59
+I (3905) chip[DL]: Posting ESPSystemEvent: IP Event with eventId : 0
+I (3906) chip[DL]: IP_EVENT_STA_GOT_IP
+I (3906) chip[DL]: IPv4 address changed on WiFi station interface: 192.168.1.59/255.255.255.0 gateway 192.168.1.1
+I (3907) chip[DL]: IPv4 Internet connectivity ESTABLISHED
+I (3907) MATTER_IF: Matter Event: 49152
+I (3908) MATTER_IF: Matter Event: 32770
+I (3908) MATTER_IF: Matter Event: 32782
+I (3908) chip[DIS]: Updating services using commissioning mode 1
+I (3910) chip[DIS]: CHIP minimal mDNS started advertising.
+I (3919) chip[DIS]: Advertise commission parameter vendorID=65521 productID=32768 discriminator=3840/15 cm=1 cp=0
+I (3920) chip[DIS]: CHIP minimal mDNS configured as 'Commissionable node device'; instance name: D645C65BD168BA17.
+I (3925) chip[DIS]: mDNS service published: _matterc._udp
