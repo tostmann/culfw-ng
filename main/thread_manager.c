@@ -54,9 +54,19 @@ static void ot_task_worker(void *aContext) {
     // Create the eventfd for VFS (only once)
     static bool eventfd_registered = false;
     if (!eventfd_registered) {
-        esp_vfs_eventfd_config_t eventfd_config = ESP_VFS_EVENTD_CONFIG_DEFAULT();
-        ESP_ERROR_CHECK(esp_vfs_eventfd_register(&eventfd_config));
-        eventfd_registered = true;
+        esp_vfs_eventfd_config_t eventfd_config = {
+            .max_fds = 32, // Increased from 5
+        };
+        esp_err_t err = esp_vfs_eventfd_register(&eventfd_config);
+        if (err == ESP_OK) {
+            ESP_LOGI(TAG, "Eventfd VFS registered with 32 FDs");
+            eventfd_registered = true;
+        } else if (err == ESP_ERR_INVALID_STATE) {
+            ESP_LOGI(TAG, "Eventfd VFS already registered");
+            eventfd_registered = true;
+        } else {
+            ESP_ERROR_CHECK(err);
+        }
     }
 
     // Join the openthread and netif
