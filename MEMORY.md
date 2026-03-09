@@ -158,42 +158,30 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Build-Konfiguration für Thread: `sdkconfig.defaults` um `CONFIG_OPENTHREAD_ENABLED=y` und `CONFIG_ESP_MATTER_ENABLE_OPENTHREAD=y` erweitert.
 *   **[DONE]** Firmware-Speicher erweitert: Partitionsschema (`partitions.csv`) angepasst, um die durch den Thread-Stack vergrößerte Firmware aufzunehmen (Factory-Partition auf 2.5MB vergrößert).
 *   **[DONE]** Behebung von Build-Fehlern bei Thread-Aktivierung: API-Inkompatibilitäten (`esp_vfs_eventfd_register`), fehlende Makro-Definitionen und Tippfehler (`esp_openthread_launch_mainloop`) korrigiert.
-*   **[FAILED]** Laufzeit-Validierung (Thread): Die Firmware stürzt nach dem Boot in einer Schleife ab, wenn der Thread-Stack initialisiert wird.
+*   **[DONE]** Architektur auf getrennte Build-Profile (WiFi, Thread, Serial) umgestellt.
+*   **[DONE]** Build-Skript (`build_idf.sh`) zur Unterstützung von Build-Profilen erweitert.
+*   **[DONE]** Ressourcenkonflikt (`modem_clock` crash) durch Deaktivierung von WiFi im Thread-Profil behoben.
+*   **[DONE]** Stabile Laufzeit für alle drei Build-Profile (WiFi, Thread, Serial) verifiziert.
 
 ## 4. Erkenntnisse & Gelöste Probleme
 
-*   **Neues Problem: Laufzeit-Crash bei Initialisierung des Thread-Stacks.**
-    *   **Fehler-Kette:** Die Log-Analyse zeigt eine klare Kausal-Kette:
-        1.  `E (...) OPENTHREAD: ... Failed to create OpenThread task queue event fd`
-        2.  `E (...) OPENTHREAD: ... esp_openthread_platform_init failed`
-        3.  `assert failed: modem_clock_device_disable modem_clock.c:277`
-    *   **Analyse:** Der eigentliche Crash im `modem_clock` ist ein Folgefehler, ausgelöst durch das Scheitern der OpenThread-Initialisierung. Der Kern des Problems ist der erste Fehler: Dem System gelingt es nicht, die notwendigen Systemressourcen (`eventfd`, ein Mechanismus zur Task-Benachrichtigung) für OpenThread bereitzustellen.
-    *   **Hypothese:** Dies deutet auf einen tiefgreifenden Ressourcenkonflikt hin. Da die Option `CONFIG_ESP_MATTER_ENABLE_OPENTHREAD` aktiv ist, versucht das Matter-SDK den Thread-Stack automatisch zu starten. Unsere manuelle Initialisierung in `thread_manager.c` führt zu einer Kollision (Race Condition) bei der Registrierung des `eventfd`-VFS und der Beanspruchung des 2.4-GHz-Funkmoduls. Obwohl Versuche unternommen wurden, das VFS frühzeitig und zentral zu registrieren, bleibt der Konflikt bestehen.
-*   **Gelöstes Problem: Build-Fehler bei Thread-Aktivierung.**
-    *   **Analyse:** Der Build-Prozess schlug aufgrund mehrerer Probleme fehl, nachdem der Thread-Stack aktiviert wurde. Dazu gehörten API-Änderungen (`esp_vfs_eventfd_register` erwartet nun eine Konfigurationsstruktur), fehlende Header-Dateien durch nicht aktualisierte Konfigurationen, nicht-öffentliche Makros und Tippfehler in Funktionsaufrufen (`esp_openthread_launch_mainloop`).
-    *   **Lösung:** Die `sdkconfig` wurde mit `idf.py reconfigure` erneuert, der Code an die neue API angepasst, notwendige Makros wurden aus Beispielen extrahiert und Tippfehler korrigiert. Der Build-Prozess für die Thread-fähige Firmware ist nun stabil.
+*   **Gelöstes Problem: Laufzeit-Crash (`modem_clock`) bei simultaner Aktivierung von WiFi und Thread.**
+    *   **Analyse:** Die ESP32-C6-Hardware teilt sich ein einziges 2.4-GHz-Funkmodul für WiFi (IEEE 802.11) und Thread (IEEE 802.15.4). Ein simultaner Betrieb ist nicht möglich. Der Absturz wurde durch eine Race Condition verursacht, bei der sowohl der WiFi-Treiber als auch der OpenThread-Stack versuchten, exklusive Kontrolle über das Funkmodul und dessen Taktgeber zu erlangen. Dies führte zu einer fatalen `assert failed: modem_clock_device_disable`-Fehlermeldung.
+    *   **Lösung:** Eine grundlegende architektonische Umstellung auf **dedizierte, sich gegenseitig ausschließende Build-Profile**. Es wurden drei Konfigurationen (`sdkconfig.defaults.wifi`, `sdkconfig.defaults.thread`, `sdkconfig.defaults.serial`) erstellt. Je nach gewähltem Profil wird nur der WiFi-Stack ODER der Thread-Stack in die Firmware einkompiliert, aber niemals beide gleichzeitig. Dies eliminiert den Ressourcenkonflikt bereits zur Kompilierzeit und stellt einen stabilen Betrieb für jeden Anwendungsfall sicher.
 *   **Gelöstes Problem: OpenThread-Funkmodul (ESP32-C6) war in permanenter Boot-Schleife.**
     *   **Analyse:** Der OpenThread Border Router (`otbr-agent`) konnte keine Verbindung zum Funkmodul (Radio Co-Processor, RCP) auf `/dev/ttyACM3` herstellen. Eine direkte Analyse der seriellen Schnittstelle des Moduls zeigte, dass dessen Firmware nicht startete, sondern sich der ESP32-C6 in einer permanenten Neustart-Schleife befand (`ESP-ROM:esp32c6...`).
-    *   **Lösung:** Die fehlerhafte Firmware des RCP-Moduls wurde mittels `esptool.py` vollständig überschrieben. Eine stabile, vorkompilierte RCP-Firmware (`generic-esp32c6.bin`) wurde auf den ESP32-C6 geflasht. Unmittelbar danach startete das Modul korrekt und der `otbr-agent` im Docker-Container konnte die Verbindung erfolgreich herstellen. **Der Blocker für die Matter-over-Thread-Validierung ist damit beseitigt.**
+    *   **Lösung:** Die fehlerhafte Firmware des RCP-Moduls wurde mittels `esptool.py` vollständig überschrieben. Eine stabile, vorkompilierte RCP-Firmware (`generic-esp32c6.bin`) wurde auf den ESP32-C6 geflasht. Unmittelbar danach startete das Modul korrekt und der `otbr-agent` im Docker-Container konnte die Verbindung erfolgreich herstellen.
 *   **Gelöstes Problem: Docker-basierte OTBR-Instabilität durch Bug im Start-Skript und falsche API-Konfiguration.**
-    *   **Analyse:** Der `openthread/otbr` Docker-Container stürzte in einer Neustart-Schleife ab oder war für Home Assistant nicht erreichbar. Die Ursache war zweigeteilt:
-        1.  **Interner Start-Daemon Bug:** Das Standard-Startskript (`/app/script/server`) im Container verwendet einen fehlerhaften `start-stop-daemon`-Aufruf, der bei wiederholten Starts zu einem instabilen Zustand führt.
-        2.  **Falsche Listen-Adresse:** Der `otbr-agent` lauscht standardmäßig nur auf `127.0.0.1` (localhost), was den Zugriff von anderen Containern (z.B. Home Assistant Matter Server) verhindert.
-    *   **Lösung:** Eine grundlegende Anpassung der `docker-compose.yml`. Das fehlerhafte Start-Skript des Containers wird komplett umgangen, indem der `entrypoint` des Containers überschrieben wird. Die Dienste (`rsyslog`, `dbus`, `otbr-agent`, `otbr-web`) werden nun direkt und in der korrekten Reihenfolge gestartet. Dem `otbr-agent` wird dabei der kritische Parameter `--rest-listen-address 0.0.0.0` übergeben. **Der OTBR-Container startet nun stabil und ist im Netzwerk voll funktionsfähig.**
+    *   **Analyse:** Der `openthread/otbr` Docker-Container stürzte in einer Neustart-Schleife ab oder war für Home Assistant nicht erreichbar. Die Ursache war zweigeteilt: ein interner `start-stop-daemon`-Bug im Startskript und eine falsche `otbr-agent`-Konfiguration (lauschte nur auf `localhost`).
+    *   **Lösung:** Eine grundlegende Anpassung der `docker-compose.yml`. Das fehlerhafte Start-Skript wird umgangen, indem der `entrypoint` des Containers überschrieben und die Dienste direkt mit korrekten Parametern (`--rest-listen-address 0.0.0.0`) gestartet werden. Der OTBR-Container startet nun stabil und ist im Netzwerk voll funktionsfähig.
 *   **Erkenntnis: Irreversibilität von eFuses – Praxistest mit Konsequenzen.**
     *   **Analyse:** Das 868MHz-Board hat **permanent aktive `SECURE_BOOT_EN` eFuses** mit einem nicht mehr verfügbaren Schlüssel.
     *   **Konsequenz:** Dieses Board ist für die weitere Entwicklung effektiv unbrauchbar ("gebrickt"). Die Entwicklung wird **ausschließlich auf ungesicherter Hardware** (433MHz-Board) fortgesetzt.
 
 ## 5. Nächste Schritte
 
-*   **Analyse und Behebung des Laufzeit-Absturzes (Höchste Priorität):** Systematische Lösung des Ressourcen-Konflikts zwischen dem Matter SDK und der manuellen Thread-Initialisierung.
-    *   **Hypothese:** Das Matter-SDK verwaltet den Start des OpenThread-Stacks selbst, wenn `CONFIG_ESP_MATTER_ENABLE_OPENTHREAD=y` gesetzt ist. Unsere manuelle Initialisierung in `thread_manager.c` führt zu einer fatalen Kollision.
-    *   **Strategie:**
-        1.  **Kontrollierte Initialisierung:** Die manuelle Initialisierung in `thread_manager.c` und der zugehörige Task werden vollständig entfernt. Die Verantwortung für den Start des Thread-Stacks wird dem ESP-Matter SDK überlassen.
-        2.  **Zentrale Ressourcen-Verwaltung:** Sicherstellen, dass der `eventfd`-VFS nur einmalig und sehr früh in `app_main` initialisiert wird, bevor das Matter-SDK die Kontrolle übernimmt.
-        3.  **Tiefenanalyse:** Untersuchung des `OpenthreadLauncher.cpp`-Codes im ESP-Matter SDK, um dessen genauen Initialisierungsablauf und Ressourcenbedarf zu verstehen.
-*   **Matter-over-Thread Validierung:** **[Blockiert]** Nach Behebung des Absturzes: Durchführung eines End-to-End-Tests der Kommunikation (RX und TX) über das nun auf dem Gerät aktive Thread-Netzwerk, um die hybride (WiFi & Thread) Funktionalität zu verifizieren.
-*   **End-to-End-Validierung der Matter-Bridge (TX-Pfad):** **[Blockiert]** Senden von Befehlen aus Home Assistant (z.B. Schalten eines via RF erstellten FS20- oder Somfy-Endpoints) und Verifikation des am CC1101 korrekt generierten und gesendeten Funksignals über WiFi und Thread.
+*   **Matter-over-Thread Validierung (Höchste Priorität):** Durchführung eines End-to-End-Tests der Kommunikation (RX und TX) über das nun auf dem Gerät aktive Thread-Netzwerk, um die hybride (WiFi & Thread) Funktionalität zu verifizieren.
+*   **End-to-End-Validierung der Matter-Bridge (TX-Pfad):** Senden von Befehlen aus Home Assistant (z.B. Schalten eines via RF erstellten FS20- oder Somfy-Endpoints) und Verifikation des am CC1101 korrekt generierten und gesendeten Funksignals über WiFi und Thread (in den jeweiligen Builds).
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
 *   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.
 
@@ -217,9 +205,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 *   **Versionskontrolle:** Das Projekt wird auf GitHub verwaltet.
     *   **Repository:** `https://github.com/tostmann/culfw-ng`
-*   **Build-System:** Umgestellt auf natives **ESP-IDF (`idf.py`)**.
-    *   **Anforderung:** Benötigt eine korrekt konfigurierte ESP-IDF-Toolchain, inklusive `cmake` und der `export.sh` Umgebungsvariablen.
-    *   **Optimierung:** Das Build-Skript (`build_idf.sh`) wurde für schnellere, inkrementelle Builds optimiert.
+*   **Build-System:** Umgestellt auf natives **ESP-IDF (`idf.py`)**. Das Build-Skript (`build_idf.sh`) wurde erweitert und unterstützt nun **dedizierte Build-Profile (`wifi`, `thread`, `serial`)**, die über separate `sdkconfig.defaults.<profil>`-Dateien gesteuert werden. Dies stellt sicher, dass je nach Anwendungsfall nur die notwendigen Komponenten (WiFi oder Thread) kompiliert werden, um Ressourcenkonflikte zu vermeiden.
 *   **Test-Umgebung (Systemebene):**
     *   **Technologie:** Docker und Docker Compose auf Raspberry Pi 5.
     *   **Services:**
