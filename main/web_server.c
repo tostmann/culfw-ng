@@ -49,7 +49,7 @@ static esp_err_t index_get_handler(httpd_req_t *req) {
         "<style>body { font-family: -apple-system, system-ui, sans-serif; margin: 20px; background: #f4f7f6; color: #444; }"
         ".card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }"
         "h1 { color: #2c3e50; font-weight: 300; } h3 { color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-top: 0; }"
-        ".log { font-family: 'Courier New', Courier, monospace; background: #2b2b2b; color: #a9b7c6; padding: 15px; border-radius: 8px; max-height: 250px; overflow-y: auto; line-height: 1.4; }"
+        ".log { font-family: 'Courier New', Courier, monospace; background: #2b2b2b; color: #a9b7c6; padding: 15px; border-radius: 8px; max-height: 250px; overflow-y: auto; line-height: 1.4; white-space: pre-wrap; }"
         "a { text-decoration: none; color: white; background: #3498db; padding: 3px 8px; border-radius: 4px; font-size: 0.9em; }"
         "a:hover { background: #2980b9; }"
         "ul { list-style: none; padding: 0; } li { padding: 8px 0; border-bottom: 1px solid #eee; }"
