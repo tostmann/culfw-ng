@@ -9,6 +9,7 @@ set(app_sources
     culfw_duty_cycle.c
     config_loader.c
     generic_decoder.c
+    rolling_code.c
 )
 
 if (NOT PROFILE_SERIAL)
