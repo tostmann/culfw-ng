@@ -100,11 +100,11 @@ esp_err_t cc1101_init() {
         cc1101_write_reg(0x0F, 0x6A); 
     }
     
-    cc1101_write_reg(0x10, 0x55); // MDMCFG4: BW 325kHz
-    cc1101_write_reg(0x11, 0x93); // MDMCFG3: DRATE
+    cc1101_write_reg(0x10, 0x57); // MDMCFG4: BW 325kHz (culfw)
+    cc1101_write_reg(0x11, 0xC4); // MDMCFG3: DRATE (culfw)
     cc1101_write_reg(0x12, 0x30); // MDMCFG2: ASK/OOK, No preamble/sync
-    cc1101_write_reg(0x13, 0x22); // MDMCFG1
-    cc1101_write_reg(0x14, 0xF8); // MDMCFG0
+    cc1101_write_reg(0x13, 0x23); // MDMCFG1 (culfw)
+    cc1101_write_reg(0x14, 0xB9); // MDMCFG0 (culfw)
     cc1101_write_reg(0x15, 0x15); // DEVIATN
     cc1101_write_reg(0x17, 0x30); // MCSM1: Always stay in RX after packet
     cc1101_write_reg(0x18, 0x18); // MCSM0
