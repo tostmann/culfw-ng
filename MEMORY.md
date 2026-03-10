@@ -168,17 +168,18 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** **TX-Pfad-Diagnose implementiert:** Die Sende-Routine prüft nun aktiv den `MARCSTATE` des CC1101, um sicherzustellen, dass der Chip vor dem Senden in den TX-Zustand (`0x13`) wechselt. Dies wurde per Log-Ausgabe verifiziert.
 *   **[DONE]** **TX-Pfad gehärtet:** Die Sende-Routine wartet nun aktiv auf den korrekten TX-Zustand und führt bei Bedarf einen Retry durch.
 *   **[DONE]** **Sendeleistung maximiert:** Die Sendeleistung (PA_TABLE) wurde auf den Maximalwert (0xC6, ca. +12dBm) konfiguriert, um die Reichweite zu optimieren.
-*   **[DONE]** **RX-Decoder gehärtet:** Die Timing-Toleranzen für die Intertechno-Decoder wurden erweitert, um den Interrupt-Jitter des ESP32-C6 besser zu kompensieren.
-*   **[DONE]** **Diagnose-Toolkit erweitert:** Implementierung eines `MREG`-Kommandos zum vollständigen Dump aller CC1101-Konfigurations- und Statusregister über die serielle Schnittstelle.
+*   **[DONE]** **RX-Decoder gehärtet:** Die Timing-Toleranzen für die Intertechno-Decoder wurden erweitert und die Logik auf eine robustere **State-Machine** umgestellt, um den Interrupt-Jitter des ESP32-C6 besser zu kompensieren.
+*   **[DONE]** **Diagnose-Toolkit erweitert:** Implementierung eines `MREG`-Kommandos zum **vollständigen Dump aller CC1101-Konfigurations- und Statusregister**, was einen direkten Abgleich mit Referenz-Implementierungen ermöglicht.
+*   **[DONE]** **RF-Frontend optimiert:** Die Modem-Konfigurationsregister des CC1101 (`MDMCFG4` bis `MDMCFG0` etc.) wurden an die bewährten Standardwerte von `a-culfw` angepasst, um die Empfangskompatibilität zu maximieren.
 
 ## 4. Erkenntnisse & Offene Probleme
 
 *   **Hypothese: FreeRTOS-Jitter erfordert extrem tolerante Decoder.**
     *   **Analyse:** Das FreeRTOS-Scheduling auf dem Single-Core RISC-V des ESP32-C6 führt zu signifikantem Interrupt-Jitter. Dies macht Decoder mit engen Timing-Fenstern, die für Bare-Metal-Systeme (wie AVRs) konzipiert wurden, unzuverlässig. Die `MU;`-Ausgaben bestätigen den Empfang von Rohdaten, während die Dekodierung fehlschlägt. Das `MREG`-Kommando hat die korrekte SPI-Kommunikation (`VERSION=0x14`) verifiziert und schließt somit grundlegende Hardwarefehler aus.
-    *   **Maßnahme (Architekturentscheidung):** Die Timing-Fenster in den Decodern (`slowrf.c`) wurden **drastisch erweitert** (z.B. Intertechno T-Puls: 100-600µs, 3T-Puls: 600-2200µs), um diese systembedingte Ungenauigkeit zu kompensieren. Die Hardware-Rauschunterdrückung (Carrier Sense) wurde für Tests temporär deaktiviert, um keine schwachen, aber validen Signale zu verwerfen.
+    *   **Maßnahme (Architekturentscheidung):** Anstelle von einfachen, breiten Timing-Fenstern wurde eine robustere **zustandsbehaftete (State-Machine) Dekodierungslogik** für Intertechno implementiert. Diese sammelt ein ganzes Bit-Symbol (z.B. 4 Pulse für IT-V1) bevor eine Entscheidung getroffen wird, was die Anfälligkeit für einzelnen Puls-Jitter massiv reduziert.
 *   **Problem: RF-Senden (TX) wird nicht zuverlässig empfangen.**
-    *   **Analyse:** Die internen Diagnosen sind erschöpft. Es ist verifiziert, dass der CC1101 korrekt in den TX-Zustand (`MARCSTATE=0x13`) wechselt und die Sendeleistung maximiert ist (`PATABLE=0xC6`). Das Problem liegt somit nicht im Kontrollfluss oder der Leistung, sondern mit hoher Wahrscheinlichkeit an der durch den RTOS beeinflussten Mikrosekunden-Präzision der Pulserzeugung (`ets_delay_us`) oder an einer minimalen Frequenzabweichung des Quarzes.
-    *   **Maßnahme:** Die Sendeleistung wurde maximiert. Der nächste Schritt muss die externe Verifizierung mit einem SDR sein, da softwareseitig alle Parameter optimiert wurden.
+    *   **Analyse:** Die softwareseitigen Diagnosen sind erschöpft. Es ist verifiziert, dass die Sende-Routine korrekt durchlaufen wird, der CC1101 in den TX-Zustand (`MARCSTATE=0x13`) wechselt und die Sendeleistung maximiert ist (`PATABLE=0xC6`). Das Problem liegt somit nicht mehr im Software-Kontrollfluss, sondern mit hoher Wahrscheinlichkeit an der durch den RTOS beeinflussten Mikrosekunden-Präzision der Pulserzeugung (`ets_delay_us`) oder an einer minimalen Frequenzabweichung des Quarzes.
+    *   **Maßnahme:** Der nächste Schritt muss die externe Verifizierung mit einem SDR sein, um das Timing und die Frequenz des ausgesendeten Signals objektiv zu analysieren.
 *   **Verifizierte Hypothese: WiFi-Interferenz stört CC1101-Empfang.**
     *   **Analyse:** Mit der nun funktionierenden `serial`-Firmware (ohne aktivierten 2.4-GHz-Funk) ist der Empfang von 433-MHz-Signalen möglich, was im `wifi`-Profil zuvor nicht der Fall war. Dies bestätigt die starke Vermutung, dass der aktive WiFi-Stack den empfindlichen RF-Empfänger stört.
     *   **Konsequenz:** Die Entwicklung und das Fine-Tuning der RF-Schicht muss primär mit dem `serial`-Build erfolgen. Die Integration mit WiFi/Matter kann erst nach Sicherstellung eines stabilen RF-Layers erfolgen.
@@ -189,7 +190,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 ## 5. Nächste Schritte
 
 *   **Analyse und Behebung des TX-Pfads (Höchste Priorität):** Verifizierung der Frequenzgenauigkeit und des Puls-Timings mit einem SDR, da die Sendeleistung bereits maximiert wurde.
-*   **Validierung des RF-Empfangs:** Systematischer Test (z.B. mit `test_rf_rx_loop.py`), ob die **drastisch erweiterten Timing-Toleranzen** nun zu einer zuverlässigen Dekodierung von Signalen eines Referenz-Senders führen. Bei Bedarf weiteres Fine-Tuning der Puls-Schwellenwerte.
+*   **Validierung des RF-Empfangs:** Systematischer Test (z.B. mit `test_rf_rx_loop.py`), ob der **neue, zustandsbehaftete ITv1-Decoder** nun zu einer zuverlässigen Dekodierung von Signalen eines Referenz-Senders führt. Bei Bedarf weiteres Fine-Tuning der Puls-Schwellenwerte.
 *   **End-to-End-Validierung des RX-Pfads (Matter-over-WiFi):** Nach erfolgreichem Empfang im `serial`-Modus, erneuter Test mit dem `wifi`-Profil. Validierung des vollständigen Pfades: RF-Signal -> CC1101 -> Decoder -> Matter-Bridge -> Attribut-Update in Home Assistant.
 *   **Matter-over-Thread Validierung:** Durchführung eines End-to-End-Tests der Kommunikation (RX und TX) über das Thread-Netzwerk, um die hybride Funktionalität zu verifizieren.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
