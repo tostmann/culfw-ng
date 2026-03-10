@@ -13,17 +13,17 @@ set(app_sources
 
 if (NOT PROFILE_SERIAL)
     # Optional components based on configuration
-    if (CONFIG_ESP_WIFI_ENABLED STREQUAL "y" OR CONFIG_ESP_WIFI_ENABLED EQUAL 1)
+    if (CONFIG_ESP_WIFI_ENABLED)
         message(STATUS "WiFi Enabled - adding WiFi sources")
         list(APPEND app_sources wifi_manager.c web_server.c)
     endif()
 
-    if (CONFIG_OPENTHREAD_ENABLED STREQUAL "y" OR CONFIG_OPENTHREAD_ENABLED EQUAL 1)
+    if (CONFIG_OPENTHREAD_ENABLED)
         message(STATUS "Thread Enabled - adding Thread sources")
         list(APPEND app_sources thread_manager.c)
     endif()
 
-    if ((CONFIG_ESP_MATTER_ENABLE_WIFI STREQUAL "y") OR (CONFIG_ESP_MATTER_ENABLE_OPENTHREAD STREQUAL "y"))
+    if (CONFIG_ESP_MATTER_ENABLE_WIFI OR CONFIG_ESP_MATTER_ENABLE_OPENTHREAD)
         message(STATUS "Matter Enabled - adding Matter sources")
         list(APPEND app_sources matter_bridge.c matter_interface.cpp)
     endif()
