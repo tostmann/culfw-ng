@@ -141,14 +141,8 @@ void handle_command(char *cmd) {
             len = snprintf(out, sizeof(out), "F OK (raw)\r\n");
         }
     } else if (cmd[0] == 'M' && cmd[1] == 'R' && cmd[2] == 'E' && cmd[3] == 'G') {
-        char dump[1500];
+        char dump[2048];
         cc1101_get_register_dump(dump, sizeof(dump));
-        // Replace <br> with \n for serial output
-        char *p = dump;
-        while ((p = strstr(p, "<br>"))) {
-            p[0] = '\r'; p[1] = '\n';
-            memmove(p + 2, p + 4, strlen(p + 4) + 1);
-        }
         usb_serial_jtag_write_bytes("CC1101 Registers:\r\n", 19, portMAX_DELAY);
         usb_serial_jtag_write_bytes(dump, strlen(dump), portMAX_DELAY);
         usb_serial_jtag_write_bytes("\r\n", 2, portMAX_DELAY);
