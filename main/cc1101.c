@@ -252,10 +252,12 @@ void cc1101_send_it_v1(const char* data) {
     // Check MARCSTATE
     uint8_t marc = cc1101_read_reg(0x35 | CC1101_READ_BURST);
     if ((marc & 0x1F) != 0x13) { // 0x13 is TX
-        // Try again
+        ESP_LOGE(TAG, "TX failed to enter TX state (MARCSTATE: 0x%02X)", marc);
         cc1101_cmd_strobe(CC1101_SIDLE);
         cc1101_cmd_strobe(CC1101_STX);
         vTaskDelay(pdMS_TO_TICKS(2));
+    } else {
+        ESP_LOGI(TAG, "TX entered TX state successfully (MARCSTATE: 0x%02X)", marc);
     }
 
     for (int repeat = 0; repeat < 6; repeat++) {
