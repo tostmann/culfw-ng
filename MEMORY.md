@@ -30,7 +30,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
     *   **Task-Management auf Core 0:** Alle Tasks (`slowrf_task`, `culfw_parser_task`, `thread_manager_task`, Management-Tasks) laufen auf dem einzigen verfügbaren **Core 0**.
     *   **Echtzeit-Absicherung durch Priorisierung:** Die `slowrf_task` besitzt eine hohe Priorität, um die Echtzeit-Verarbeitung von Funksignalen (RX/TX) vor weniger zeitkritischen Tasks (z.B. WiFi, Web-Server, Kommando-Parsing) zu schützen und Jitter zu minimieren.
     *   **Thread-Sicherheit:** Alle Zugriffe auf den CC1101-Treiber sind durch einen **rekursiven Mutex (Semaphore)** geschützt. Dies verhindert Race Conditions und Datenkorruption.
-    *   **Stabilität:** Der Stack für den `culfw_parser_task` wurde auf 8192 Bytes erhöht, um Stack Overflows bei der Verarbeitung sehr langer serieller Kommandos (z.B. via `mi`-Kommando) zu verhindern.
+    *   **Stabilität:** Der Stack für den `culfw_parser_task` wurde auf 8192 Bytes erhöht, um Stack Overflows bei der Verarbeitung sehr langer serieller Kommandos (z.B. via `MREG`-Kommando) zu verhindern.
 *   **On-Board Intelligence & Matter-Gateway:**
     *   **Dateisystem:** Integration eines **SPIFFS-Dateisystems** zur Speicherung einer flexiblen, **verschlüsselten** Protokoll-Datenbank (`protocols.enc`). Ein Fallback-Mechanismus lädt einen hartcodierten Default, falls die Datei fehlt.
     *   **Table-Driven Decoding Engine:** Anstelle von fest einkompilierten Decodern wird eine generische Engine (`generic_decoder.c`) die Pulsfolgen mit den in der Protokolldatenbank definierten Mustern abgleichen. Die JSON-Definition unterstützt Schlüsselfelder wie `"type"` (`"switch"`, `"sensor"`) zur korrekten Zuordnung im Gateway, `id_ignore_bits` zur Trennung von Geräte-ID und Statuswert sowie `scale`/`offset` zur Konvertierung von Sensor-Rohdaten in physikalische Einheiten. Die Datenbank kann zur Laufzeit über `GR` (Generic Reload) neu geladen werden.
@@ -168,9 +168,12 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** **TX-Pfad-Diagnose implementiert:** Die Sende-Routine prüft nun aktiv den `MARCSTATE` des CC1101, um sicherzustellen, dass der Chip vor dem Senden in den TX-Zustand (`0x13`) wechselt. Dies wurde per Log-Ausgabe verifiziert.
 *   **[DONE]** **TX-Pfad gehärtet:** Die Sende-Routine wartet nun aktiv auf den korrekten TX-Zustand und führt bei Bedarf einen Retry durch.
 *   **[DONE]** **Sendeleistung maximiert:** Die Sendeleistung (PA_TABLE) wurde auf den Maximalwert (0xC6, ca. +12dBm) konfiguriert, um die Reichweite zu optimieren.
+*   **[DONE]** **RF-Frontend optimiert:** Die Modem-Konfigurationsregister des CC1101 (`MDMCFG4` bis `MDMCFG0` etc.) wurden an die bewährten Standardwerte von `a-culfw` angepasst, um die Empfangskompatibilität zu maximieren.
 *   **[DONE]** **RX-Decoder gehärtet:** Die Timing-Toleranzen für die Intertechno-Decoder wurden erweitert und die Logik auf eine robustere **State-Machine** umgestellt, um den Interrupt-Jitter des ESP32-C6 besser zu kompensieren.
 *   **[DONE]** **Diagnose-Toolkit erweitert:** Implementierung eines `MREG`-Kommandos zum **vollständigen Dump aller CC1101-Konfigurations- und Statusregister**, was einen direkten Abgleich mit Referenz-Implementierungen ermöglicht.
-*   **[DONE]** **RF-Frontend optimiert:** Die Modem-Konfigurationsregister des CC1101 (`MDMCFG4` bis `MDMCFG0` etc.) wurden an die bewährten Standardwerte von `a-culfw` angepasst, um die Empfangskompatibilität zu maximieren.
+*   **[DONE]** **TX-Timing präzisiert:** Das Sende-Timing für Intertechno V1 wurde auf den Industriestandard von 420µs korrigiert, um die Kompatibilität mit Legacy-Empfängern zu maximieren.
+*   **[DONE]** **Diagnose-Toolkit verbessert (MREG):** Die Ausgabe des `MREG`-Kommandos wurde für die serielle Konsole (Puffer auf 2048 Bytes erhöht) und das Web-Interface (CSS-Formatierung) optimiert, um eine vollständige und lesbare Register-Analyse zu ermöglichen.
+*   **[DONE]** **Sync-Erkennung verfeinert:** Die Pakettrennungs-Schwelle (`SLOWRF_SYNC_MIN`) wurde auf 4000µs gesenkt, um die Decoder-Resets zwischen den Telegrammen zu stabilisieren.
 
 ## 4. Erkenntnisse & Offene Probleme
 
@@ -178,7 +181,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
     *   **Analyse:** Das FreeRTOS-Scheduling auf dem Single-Core RISC-V des ESP32-C6 führt zu signifikantem Interrupt-Jitter. Dies macht Decoder mit engen Timing-Fenstern, die für Bare-Metal-Systeme (wie AVRs) konzipiert wurden, unzuverlässig. Die `MU;`-Ausgaben bestätigen den Empfang von Rohdaten, während die Dekodierung fehlschlägt. Das `MREG`-Kommando hat die korrekte SPI-Kommunikation (`VERSION=0x14`) verifiziert und schließt somit grundlegende Hardwarefehler aus.
     *   **Maßnahme (Architekturentscheidung):** Anstelle von einfachen, breiten Timing-Fenstern wurde eine robustere **zustandsbehaftete (State-Machine) Dekodierungslogik** für Intertechno implementiert. Diese sammelt ein ganzes Bit-Symbol (z.B. 4 Pulse für IT-V1) bevor eine Entscheidung getroffen wird, was die Anfälligkeit für einzelnen Puls-Jitter massiv reduziert.
 *   **Problem: RF-Senden (TX) wird nicht zuverlässig empfangen.**
-    *   **Analyse:** Die softwareseitigen Diagnosen sind erschöpft. Es ist verifiziert, dass die Sende-Routine korrekt durchlaufen wird, der CC1101 in den TX-Zustand (`MARCSTATE=0x13`) wechselt und die Sendeleistung maximiert ist (`PATABLE=0xC6`). Das Problem liegt somit nicht mehr im Software-Kontrollfluss, sondern mit hoher Wahrscheinlichkeit an der durch den RTOS beeinflussten Mikrosekunden-Präzision der Pulserzeugung (`ets_delay_us`) oder an einer minimalen Frequenzabweichung des Quarzes.
+    *   **Analyse:** Die softwareseitigen Diagnosen sind erschöpft. Es ist verifiziert, dass die Sende-Routine korrekt durchlaufen wird, der CC1101 in den TX-Zustand (`MARCSTATE=0x13`) wechselt, die Sendeleistung maximiert ist (`PATABLE=0xC6`) und das Puls-Timing für IT-V1 auf den Standardwert (420µs) korrigiert wurde. Das Problem liegt somit nicht mehr im Software-Kontrollfluss, sondern mit hoher Wahrscheinlichkeit an der durch den RTOS beeinflussten Mikrosekunden-Präzision der Pulserzeugung (`ets_delay_us`) oder an einer minimalen Frequenzabweichung des Quarzes.
     *   **Maßnahme:** Der nächste Schritt muss die externe Verifizierung mit einem SDR sein, um das Timing und die Frequenz des ausgesendeten Signals objektiv zu analysieren.
 *   **Verifizierte Hypothese: WiFi-Interferenz stört CC1101-Empfang.**
     *   **Analyse:** Mit der nun funktionierenden `serial`-Firmware (ohne aktivierten 2.4-GHz-Funk) ist der Empfang von 433-MHz-Signalen möglich, was im `wifi`-Profil zuvor nicht der Fall war. Dies bestätigt die starke Vermutung, dass der aktive WiFi-Stack den empfindlichen RF-Empfänger stört.
@@ -189,7 +192,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **Analyse und Behebung des TX-Pfads (Höchste Priorität):** Verifizierung der Frequenzgenauigkeit und des Puls-Timings mit einem SDR, da die Sendeleistung bereits maximiert wurde.
+*   **Analyse und Behebung des TX-Pfads (Höchste Priorität):** Verifizierung der Frequenzgenauigkeit und des korrigierten 420µs Puls-Timings mit einem SDR, da die Sendeleistung bereits maximiert wurde.
 *   **Validierung des RF-Empfangs:** Systematischer Test (z.B. mit `test_rf_rx_loop.py`), ob der **neue, zustandsbehaftete ITv1-Decoder** nun zu einer zuverlässigen Dekodierung von Signalen eines Referenz-Senders führt. Bei Bedarf weiteres Fine-Tuning der Puls-Schwellenwerte.
 *   **End-to-End-Validierung des RX-Pfads (Matter-over-WiFi):** Nach erfolgreichem Empfang im `serial`-Modus, erneuter Test mit dem `wifi`-Profil. Validierung des vollständigen Pfades: RF-Signal -> CC1101 -> Decoder -> Matter-Bridge -> Attribut-Update in Home Assistant.
 *   **Matter-over-Thread Validierung:** Durchführung eines End-to-End-Tests der Kommunikation (RX und TX) über das Thread-Netzwerk, um die hybride Funktionalität zu verifizieren.
