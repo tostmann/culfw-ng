@@ -141,11 +141,13 @@ void handle_command(char *cmd) {
             len = snprintf(out, sizeof(out), "F OK (raw)\r\n");
         }
     } else if (cmd[0] == 'M' && cmd[1] == 'R' && cmd[2] == 'E' && cmd[3] == 'G') {
+        len = snprintf(out, sizeof(out), "REGS: DUMP_START\r\n");
+        usb_serial_jtag_write_bytes(out, len, portMAX_DELAY);
         char dump[1024];
         cc1101_get_register_dump(dump, sizeof(dump));
-        // Replace <br> with space for serial
         for(int i=0; dump[i]; i++) if(dump[i]=='<' && dump[i+1]=='b' && dump[i+2]=='r' && dump[i+3]=='>') { dump[i]=' '; dump[i+1]=' '; dump[i+2]=' '; dump[i+3]=' '; }
-        len = snprintf(out, sizeof(out), "REGS: %s\r\n", dump);
+        usb_serial_jtag_write_bytes(dump, strlen(dump), portMAX_DELAY);
+        len = snprintf(out, sizeof(out), "\r\nREGS: DUMP_END\r\n");
     } else if (cmd[0] == 'i' && cmd[1] == 's') {
         const char* is_data = cmd + 2;
         if (strlen(is_data) == 32) {
