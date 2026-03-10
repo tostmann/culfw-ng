@@ -174,15 +174,17 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** **TX-Timing präzisiert:** Das Sende-Timing für Intertechno V1 wurde auf den Industriestandard von 420µs korrigiert, um die Kompatibilität mit Legacy-Empfängern zu maximieren.
 *   **[DONE]** **Diagnose-Toolkit verbessert (MREG):** Die Ausgabe des `MREG`-Kommandos wurde für die serielle Konsole (Puffer auf 2048 Bytes erhöht) und das Web-Interface (CSS-Formatierung) optimiert, um eine vollständige und lesbare Register-Analyse zu ermöglichen.
 *   **[DONE]** **Sync-Erkennung verfeinert:** Die Pakettrennungs-Schwelle (`SLOWRF_SYNC_MIN`) wurde auf 4000µs gesenkt, um die Decoder-Resets zwischen den Telegrammen zu stabilisieren.
+*   **[DONE]** **Build-System (WiFi-Profil) stabilisiert:** Diverse Linker-Fehler und SDK-Inkompatibilitäten (GCC 14 Toolchain) wurden durch Anpassungen in `CMakeLists.txt` und Deaktivierung problematischer Matter-Cluster behoben.
+*   **[DONE]** **Erfolgreicher Build und Flash des WiFi-Profils:** Die Firmware mit aktivem WiFi- und Matter-Stack wurde erfolgreich kompiliert und auf der Zielhardware in Betrieb genommen.
 
 ## 4. Erkenntnisse & Offene Probleme
 
 *   **Hypothese: FreeRTOS-Jitter erfordert extrem tolerante Decoder.**
     *   **Analyse:** Das FreeRTOS-Scheduling auf dem Single-Core RISC-V des ESP32-C6 führt zu signifikantem Interrupt-Jitter. Dies macht Decoder mit engen Timing-Fenstern, die für Bare-Metal-Systeme (wie AVRs) konzipiert wurden, unzuverlässig. Die `MU;`-Ausgaben bestätigen den Empfang von Rohdaten, während die Dekodierung fehlschlägt. Das `MREG`-Kommando hat die korrekte SPI-Kommunikation (`VERSION=0x14`) verifiziert und schließt somit grundlegende Hardwarefehler aus.
     *   **Maßnahme (Architekturentscheidung):** Anstelle von einfachen, breiten Timing-Fenstern wurde eine robustere **zustandsbehaftete (State-Machine) Dekodierungslogik** für Intertechno implementiert. Diese sammelt ein ganzes Bit-Symbol (z.B. 4 Pulse für IT-V1) bevor eine Entscheidung getroffen wird, was die Anfälligkeit für einzelnen Puls-Jitter massiv reduziert.
-*   **Problem: RF-Senden (TX) wird nicht zuverlässig empfangen.**
-    *   **Analyse:** Die softwareseitigen Diagnosen sind erschöpft. Es ist verifiziert, dass die Sende-Routine korrekt durchlaufen wird, der CC1101 in den TX-Zustand (`MARCSTATE=0x13`) wechselt, die Sendeleistung maximiert ist (`PATABLE=0xC6`) und das Puls-Timing für IT-V1 auf den Standardwert (420µs) korrigiert wurde. Das Problem liegt somit nicht mehr im Software-Kontrollfluss, sondern mit hoher Wahrscheinlichkeit an der durch den RTOS beeinflussten Mikrosekunden-Präzision der Pulserzeugung (`ets_delay_us`) oder an einer minimalen Frequenzabweichung des Quarzes.
-    *   **Maßnahme:** Der nächste Schritt muss die externe Verifizierung mit einem SDR sein, um das Timing und die Frequenz des ausgesendeten Signals objektiv zu analysieren.
+*   **Erkenntnis: SDK-/Toolchain-Inkompatibilität erfordert pragmatische Workarounds.**
+    *   **Analyse:** Die Kombination aus der aktuellen ESP-IDF Version und dem neuen GCC 14 Toolchain führte zu C++ Kompilierungsfehlern innerhalb des ESP-Matter SDKs (`std::optional`-Operatorüberladung). Dies betraf spezifische, für das Projekt nicht kritische Matter-Cluster (z.B. `ClosureControl`).
+    *   **Maßnahme (Architekturentscheidung):** Anstatt den Toolchain-Release abzuwarten, wurden die betroffenen Cluster gezielt in der `sdkconfig` deaktiviert. Dies ermöglichte einen erfolgreichen Build der Kernfunktionalität (Bridge, Sensoren, Schalter), ohne das Projekt zu blockieren.
 *   **Verifizierte Hypothese: WiFi-Interferenz stört CC1101-Empfang.**
     *   **Analyse:** Mit der nun funktionierenden `serial`-Firmware (ohne aktivierten 2.4-GHz-Funk) ist der Empfang von 433-MHz-Signalen möglich, was im `wifi`-Profil zuvor nicht der Fall war. Dies bestätigt die starke Vermutung, dass der aktive WiFi-Stack den empfindlichen RF-Empfänger stört.
     *   **Konsequenz:** Die Entwicklung und das Fine-Tuning der RF-Schicht muss primär mit dem `serial`-Build erfolgen. Die Integration mit WiFi/Matter kann erst nach Sicherstellung eines stabilen RF-Layers erfolgen.
@@ -192,12 +194,13 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **Analyse und Behebung des TX-Pfads (Höchste Priorität):** Verifizierung der Frequenzgenauigkeit und des korrigierten 420µs Puls-Timings mit einem SDR, da die Sendeleistung bereits maximiert wurde.
-*   **Validierung des RF-Empfangs:** Systematischer Test (z.B. mit `test_rf_rx_loop.py`), ob der **neue, zustandsbehaftete ITv1-Decoder** nun zu einer zuverlässigen Dekodierung von Signalen eines Referenz-Senders führt. Bei Bedarf weiteres Fine-Tuning der Puls-Schwellenwerte.
-*   **End-to-End-Validierung des RX-Pfads (Matter-over-WiFi):** Nach erfolgreichem Empfang im `serial`-Modus, erneuter Test mit dem `wifi`-Profil. Validierung des vollständigen Pfades: RF-Signal -> CC1101 -> Decoder -> Matter-Bridge -> Attribut-Update in Home Assistant.
-*   **Matter-over-Thread Validierung:** Durchführung eines End-to-End-Tests der Kommunikation (RX und TX) über das Thread-Netzwerk, um die hybride Funktionalität zu verifizieren.
-*   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
-*   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der Komplexität und der "gebrickten" Hardware vorerst zurückgestellt.
+*   **Matter-Commissioning & End-to-End-Validierung (WiFi-Profil, Höchste Priorität):** Inbetriebnahme des Geräts in Home Assistant über das `wifi`-Profil. Validierung des vollständigen Signalpfades:
+    *   **RX-Pfad:** Empfang eines SlowRF-Signals (z.B. Intertechno-Sensor) und Verifizierung des korrekten Attribut-Updates im Matter-Netzwerk.
+    *   **TX-Pfad:** Senden eines Matter-Befehls (z.B. Schalter an/aus) aus Home Assistant und Verifizierung, dass der physische Aktor korrekt über den CC1101 geschaltet wird.
+*   **Analyse des TX-Signals mit SDR (falls Validierung fehlschlägt):** Falls der TX-Pfad im End-to-End-Test weiterhin unzuverlässig ist, muss eine externe Verifizierung der Signalintegrität (Frequenz, Timing, Modulation) mit einem Software-Defined Radio erfolgen.
+*   **Matter-over-Thread Validierung:** Nach erfolgreicher WiFi-Validierung, Durchführung eines End-to-End-Tests der Kommunikation (RX und TX) über das Thread-Netzwerk, um die hybride Funktionalität zu verifizieren.
+*   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests (insbesondere WiFi-Interferenzen) in realen Einsatzszenarien.
+*   **Deployment-Prozess für gesicherte Hardware (Zurückgestellt):** Das Erarbeiten einer zuverlässigen Methode zum Flashen der signierten Firmware auf Geräte mit bereits aktivierten eFuses ist für die Produktion kritisch, wird aber aufgrund der "gebrickten" Hardware vorerst zurückgestellt.
 
 ## 6. Hardware-Konfiguration (Pinout)
 
@@ -219,7 +222,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 *   **Versionskontrolle:** Das Projekt wird auf GitHub verwaltet.
     *   **Repository:** `https://github.com/tostmann/culfw-ng`
-*   **Build-System:** Umgestellt auf natives **ESP-IDF (`idf.py`)**. Das Build-Skript (`build_idf.sh`) unterstützt **dedizierte Build-Profile (`wifi`, `thread`, `serial`)**. Die Isolation wird durch drei Mechanismen sichergestellt: (1) Jedes Profil hat eine eigene, exklusive `sdkconfig.defaults.<profil>`-Datei. (2) Das Skript übergibt eine eindeutige Compiler-Definition (z.B. `-DPROFILE_SERIAL=1`) sowie das korrekte Target (`-DIDF_TARGET=esp32c6`) an CMake. (3) Die `CMakeLists.txt` und der C-Code (`main.h`) nutzen diese Definition, um Quellcode, Abhängigkeiten und Feature-Makros (`APP_MATTER_ENABLED`) zur Kompilierzeit präzise zu steuern.
+*   **Build-System:** Umgestellt auf natives **ESP-IDF (`idf.py`)**. Das Build-Skript (`build_idf.sh`) unterstützt **dedizierte Build-Profile (`wifi`, `thread`, `serial`)**. Die Isolation wird durch drei Mechanismen sichergestellt: (1) Jedes Profil hat eine eigene, exklusive `sdkconfig.defaults.<profil>`-Datei. (2) Das Skript übergibt eine eindeutige Compiler-Definition (z.B. `-DPROFILE_SERIAL=1`) sowie das korrekte Target (`-DIDF_TARGET=esp32c6`) an CMake. (3) Die `CMakeLists.txt` und der C-Code nutzen diese Definition, um Quellcode, Abhängigkeiten und Feature-Makros (`APP_MATTER_ENABLED`) zur Kompilierzeit präzise zu steuern.
 *   **Test-Umgebung (Systemebene):**
     *   **Technologie:** Docker und Docker Compose auf Raspberry Pi 5.
     *   **Services:**
