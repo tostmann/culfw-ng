@@ -173,12 +173,12 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 4. Erkenntnisse & Offene Probleme
 
-*   **Problem: Instabile Dekodierung von RF-Signalen (RX)**
-    *   **Analyse:** Obwohl der Empfang von rohen Pulsfolgen im `serial`-Profil funktioniert (sichtbar als `MU;...`), werden die Signale nicht zuverlässig dekodiert. Die **Software-Decoder-Logik wurde durch Puls-Injektion (`mi`) als korrekt verifiziert.** Das Problem liegt daher im Signal-Rausch-Verhältnis oder in Timing-Abweichungen der vom CC1101 via GPIO-Interrupt gelieferten Pulse.
-    *   **Maßnahme:** Die CC1101-Register für Empfängerbandbreite (`MDMCFG4` auf 325 kHz) und AGC (`AGCCTRL2`) wurden zur Optimierung für ASK/OOK angepasst. Die **Timing-Toleranzen in den Decodern (`slowrf.c`) wurden erweitert**, um den Interrupt-Jitter besser zu kompensieren. Die Hardware-Rauschunterdrückung (Carrier Sense an GDO2) wurde zur weiteren Analyse temporär deaktiviert.
-*   **Problem: RF-Senden (TX) wird nicht empfangen**
-    *   **Analyse:** Ein via `is...` Kommando gesendetes Intertechno-Signal wird von einem Referenz-CUL nicht empfangen. Die Diagnose hat bestätigt, dass der CC1101 korrekt in den **TX-Zustand (`MARCSTATE=0x13`)** wechselt und die **Sendeleistung auf das Maximum (`PATABLE=0xC6`)** eingestellt ist. Das Problem liegt daher nicht im Kontrollfluss oder der Leistung, sondern wahrscheinlich am exakten Puls-Timing oder an einer minimalen Frequenzabweichung.
-    *   **Maßnahme:** Die Timing-Parameter für Intertechno V1 wurden auf **350µs** Basis und **10 Wiederholungen** angepasst. Die Sendeleistung ist bereits maximiert. Der nächste Schritt ist die Verifizierung der genauen Sendefrequenz und des Puls-Timings mit externen Messgeräten (SDR).
+*   **Hypothese: FreeRTOS-Jitter erfordert extrem tolerante Decoder.**
+    *   **Analyse:** Das FreeRTOS-Scheduling auf dem Single-Core RISC-V des ESP32-C6 führt zu signifikantem Interrupt-Jitter. Dies macht Decoder mit engen Timing-Fenstern, die für Bare-Metal-Systeme (wie AVRs) konzipiert wurden, unzuverlässig. Die `MU;`-Ausgaben bestätigen den Empfang von Rohdaten, während die Dekodierung fehlschlägt. Das `MREG`-Kommando hat die korrekte SPI-Kommunikation (`VERSION=0x14`) verifiziert und schließt somit grundlegende Hardwarefehler aus.
+    *   **Maßnahme (Architekturentscheidung):** Die Timing-Fenster in den Decodern (`slowrf.c`) wurden **drastisch erweitert** (z.B. Intertechno T-Puls: 100-600µs, 3T-Puls: 600-2200µs), um diese systembedingte Ungenauigkeit zu kompensieren. Die Hardware-Rauschunterdrückung (Carrier Sense) wurde für Tests temporär deaktiviert, um keine schwachen, aber validen Signale zu verwerfen.
+*   **Problem: RF-Senden (TX) wird nicht zuverlässig empfangen.**
+    *   **Analyse:** Die internen Diagnosen sind erschöpft. Es ist verifiziert, dass der CC1101 korrekt in den TX-Zustand (`MARCSTATE=0x13`) wechselt und die Sendeleistung maximiert ist (`PATABLE=0xC6`). Das Problem liegt somit nicht im Kontrollfluss oder der Leistung, sondern mit hoher Wahrscheinlichkeit an der durch den RTOS beeinflussten Mikrosekunden-Präzision der Pulserzeugung (`ets_delay_us`) oder an einer minimalen Frequenzabweichung des Quarzes.
+    *   **Maßnahme:** Die Sendeleistung wurde maximiert. Der nächste Schritt muss die externe Verifizierung mit einem SDR sein, da softwareseitig alle Parameter optimiert wurden.
 *   **Verifizierte Hypothese: WiFi-Interferenz stört CC1101-Empfang.**
     *   **Analyse:** Mit der nun funktionierenden `serial`-Firmware (ohne aktivierten 2.4-GHz-Funk) ist der Empfang von 433-MHz-Signalen möglich, was im `wifi`-Profil zuvor nicht der Fall war. Dies bestätigt die starke Vermutung, dass der aktive WiFi-Stack den empfindlichen RF-Empfänger stört.
     *   **Konsequenz:** Die Entwicklung und das Fine-Tuning der RF-Schicht muss primär mit dem `serial`-Build erfolgen. Die Integration mit WiFi/Matter kann erst nach Sicherstellung eines stabilen RF-Layers erfolgen.
@@ -189,7 +189,7 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 ## 5. Nächste Schritte
 
 *   **Analyse und Behebung des TX-Pfads (Höchste Priorität):** Verifizierung der Frequenzgenauigkeit und des Puls-Timings mit einem SDR, da die Sendeleistung bereits maximiert wurde.
-*   **Validierung des RF-Empfangs:** Systematischer Test, ob die **erweiterten Timing-Toleranzen** nun zu einer zuverlässigen Dekodierung von Signalen eines Referenz-Senders führen. Bei Bedarf weiteres Fine-Tuning.
+*   **Validierung des RF-Empfangs:** Systematischer Test (z.B. mit `test_rf_rx_loop.py`), ob die **drastisch erweiterten Timing-Toleranzen** nun zu einer zuverlässigen Dekodierung von Signalen eines Referenz-Senders führen. Bei Bedarf weiteres Fine-Tuning der Puls-Schwellenwerte.
 *   **End-to-End-Validierung des RX-Pfads (Matter-over-WiFi):** Nach erfolgreichem Empfang im `serial`-Modus, erneuter Test mit dem `wifi`-Profil. Validierung des vollständigen Pfades: RF-Signal -> CC1101 -> Decoder -> Matter-Bridge -> Attribut-Update in Home Assistant.
 *   **Matter-over-Thread Validierung:** Durchführung eines End-to-End-Tests der Kommunikation (RX und TX) über das Thread-Netzwerk, um die hybride Funktionalität zu verifizieren.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
