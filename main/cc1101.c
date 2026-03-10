@@ -580,15 +580,15 @@ void cc1101_get_register_dump(char* buf, size_t max_len) {
     for (int i = 0; i <= 0x2E; i++) {
         uint8_t val = cc1101_read_reg(i);
         len += snprintf(buf + len, max_len - len, "%02X:%02X ", i, val);
-        if (i % 8 == 7) len += snprintf(buf + len, max_len - len, "<br>");
-        if (len > max_len - 10) break;
+        if (i % 8 == 7) len += snprintf(buf + len, max_len - len, "\r\n");
+        if (len > max_len - 20) break;
     }
-    // Add status registers
-    len += snprintf(buf + len, max_len - len, "<br>Status:<br>");
+    len += snprintf(buf + len, max_len - len, "\r\nStatus:\r\n");
     for (int i = 0x30; i <= 0x3D; i++) {
         uint8_t val = cc1101_read_reg(i | CC1101_READ_BURST);
         len += snprintf(buf + len, max_len - len, "%02X:%02X ", i, val);
-        if (len > max_len - 10) break;
+        if (i % 8 == 7) len += snprintf(buf + len, max_len - len, "\r\n");
+        if (len > max_len - 20) break;
     }
     cc1101_unlock();
 }
