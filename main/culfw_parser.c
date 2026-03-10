@@ -74,11 +74,14 @@ void handle_command(char *cmd) {
         
         char ip_addr[16] = "0.0.0.0";
         char ip6_addr[40] = "::";
+        const char* m_status = "N/A";
+#ifndef PROFILE_SERIAL
         wifi_manager_get_ip(ip_addr);
         wifi_manager_get_ipv6(ip6_addr);
+        m_status = matter_interface_get_status();
+#endif
 
         uint8_t mode = slowrf_get_mode();
-        const char* m_status = matter_interface_get_status();
         uint32_t dc_rem = duty_cycle_get_remaining();
         len = snprintf(out, sizeof(out), "V %s culfw-NG Build: %d (%s %s) CUL32-C6 ID:%02X%02X%02X%02X%02X%02X IP:%s IP6:%s (F-Band: %sMHz) Mode:X%02X Matter:%s DC_Rem:%lums\r\n", 
                        FW_VERSION, BUILD_NUMBER, __DATE__, __TIME__, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], ip_addr, ip6_addr, is_433 ? "433" : "868", mode, m_status, dc_rem);
