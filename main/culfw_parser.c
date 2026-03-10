@@ -141,8 +141,15 @@ void handle_command(char *cmd) {
             len = snprintf(out, sizeof(out), "F OK (raw)\r\n");
         }
     } else if (cmd[0] == 'M' && cmd[1] == 'R' && cmd[2] == 'E' && cmd[3] == 'G') {
-        uint8_t v = cc1101_read_reg(0x31 | 0xC0); // VERSION
-        len = snprintf(out, sizeof(out), "REGS: VERSION=0x%02X\r\n", v);
+        char dump[1024];
+        cc1101_get_register_dump(dump, sizeof(dump));
+        // Remove <br> for serial output
+        char *p = dump;
+        while ((p = strstr(p, "<br>"))) {
+            p[0] = ' '; p[1] = ' '; p[2] = ' '; p[3] = ' ';
+            p += 4;
+        }
+        len = snprintf(out, sizeof(out), "REGS: %s\r\n", dump);
     } else if (cmd[0] == 'i' && cmd[1] == 's') {
         const char* is_data = cmd + 2;
         if (strlen(is_data) == 32) {
