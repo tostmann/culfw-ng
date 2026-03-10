@@ -140,7 +140,7 @@ static void IRAM_ATTR gpio_isr_handler(void* arg) {
     }
 }
 
-#define SLOWRF_SYNC_MIN  8000
+#define SLOWRF_SYNC_MIN  4000
 
 typedef struct {
     uint8_t data[16];
