@@ -327,7 +327,7 @@ void culfw_parser_task(void *pvParameters) {
                 if (c == '\r' || c == '\n') {
                     if (cmd_pos > 0) {
                         cmd_buf[cmd_pos] = '\0';
-                        // ESP_LOGI(TAG, "Executing command: %s", cmd_buf);
+                        ESP_LOGI(TAG, "Executing command: %s", cmd_buf);
                         handle_command(cmd_buf);
                         cmd_pos = 0;
                     }
