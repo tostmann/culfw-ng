@@ -223,7 +223,7 @@ static void fs20_send_bit(int bit) {
 }
 
 static void it_v1_send_bit(char bit) {
-    int T = 350; // Reduced T for testing
+    int T = 420; // Standard Intertechno timing
     if (bit == '0') {
         gpio_set_level(GPIO_GDO0, 1); ets_delay_us(T);
         gpio_set_level(GPIO_GDO0, 0); ets_delay_us(T * 3);
