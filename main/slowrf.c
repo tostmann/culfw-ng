@@ -464,8 +464,9 @@ void slowrf_task(void *pvParameters) {
                 if (it3_dec.pulse_cnt == 4) {
                     uint16_t p1 = it3_dec.pulse_buf[0], p2 = it3_dec.pulse_buf[1], p3 = it3_dec.pulse_buf[2], p4 = it3_dec.pulse_buf[3];
                     it3_dec.pulse_cnt = 0;
-                    #define IS_T_V3(p) (p > 150 && p < 550)
-                    #define IS_3T_V3(p) (p >= 650 && p < 1350)
+                    // Loosened tolerances for ESP32 jitter
+                    #define IS_T_V3(p) (p > 100 && p < 600)
+                    #define IS_3T_V3(p) (p >= 600 && p < 1500)
                     if (IS_T_V3(p1) && IS_3T_V3(p2) && IS_T_V3(p3) && IS_3T_V3(p4)) it3_dec.s[it3_dec.bit_pos++] = '0';
                     else if (IS_T_V3(p1) && IS_3T_V3(p2) && IS_3T_V3(p3) && IS_T_V3(p4)) it3_dec.s[it3_dec.bit_pos++] = '1';
                     else it3_dec.sync_found = false;
@@ -479,8 +480,9 @@ void slowrf_task(void *pvParameters) {
             if (it1_dec.pulse_cnt >= 4) {
                 int idx = (it1_dec.pulse_cnt - 4) % 4;
                 uint16_t p1 = it1_dec.pulse_buf[idx], p2 = it1_dec.pulse_buf[(idx + 1) % 4], p3 = it1_dec.pulse_buf[(idx + 2) % 4], p4 = it1_dec.pulse_buf[(idx + 3) % 4];
-                #define IS_T_V1(p) (p >= 150 && p <= 750)
-                #define IS_3T_V1(p) (p > 800 && p <= 1850)
+                // Loosened tolerances for ESP32 jitter
+                #define IS_T_V1(p) (p >= 100 && p <= 800)
+                #define IS_3T_V1(p) (p > 800 && p <= 2200)
                 if (it1_dec.pos < 16) {
                     char bit = 0;
                     if (IS_T_V1(p1) && IS_3T_V1(p2) && IS_T_V1(p3) && IS_3T_V1(p4)) bit = '0';
