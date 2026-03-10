@@ -166,15 +166,19 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** **Build-System (Serial-Profil) stabilisiert:** Der `serial`-Build scheiterte wiederholt an Linker-Fehlern (`undefined reference`) und Architektur-Konflikten (Xtensa vs. RISC-V). Eine 3-stufige Strategie hat das Problem behoben: (1) Das Build-Skript (`build_idf.sh`) wurde gehärtet und übergibt nun explizit `-DSDKCONFIG_DEFAULTS=...`, `-DIDF_TARGET=esp32c6` und `-DPROFILE_SERIAL=1`. (2) Die `sdkconfig.defaults.serial` wurde um die notwendigen Treiber-Optionen für USB-JTAG erweitert. (3) Der C-Code (`culfw_parser.c`, `main.c`, `slowrf.c`) wurde mittels Präprozessor-Direktiven (`#ifndef PROFILE_SERIAL`, `#if APP_MATTER_ENABLED`) von allen Netzwerk- und Matter-Abhängigkeiten entkoppelt, um einen sauberen, minimalen Build zu ermöglichen.
 *   **[DONE]** **Decoder-Logik validiert:** Die Software-Dekodierung für Intertechno V1 wurde durch direkte Puls-Injektion (`mi`-Kommando) erfolgreich verifiziert. Dies beweist, dass die Logik in `slowrf.c` korrekt ist und Probleme im RF-Frontend (CC1101) liegen müssen.
 *   **[DONE]** **TX-Pfad-Diagnose implementiert:** Die Sende-Routine prüft nun aktiv den `MARCSTATE` des CC1101, um sicherzustellen, dass der Chip vor dem Senden in den TX-Zustand (`0x13`) wechselt. Dies wurde per Log-Ausgabe verifiziert.
+*   **[DONE]** **TX-Pfad gehärtet:** Die Sende-Routine wartet nun aktiv auf den korrekten TX-Zustand und führt bei Bedarf einen Retry durch.
+*   **[DONE]** **Sendeleistung maximiert:** Die Sendeleistung (PA_TABLE) wurde auf den Maximalwert (0xC6, ca. +12dBm) konfiguriert, um die Reichweite zu optimieren.
+*   **[DONE]** **RX-Decoder gehärtet:** Die Timing-Toleranzen für die Intertechno-Decoder wurden erweitert, um den Interrupt-Jitter des ESP32-C6 besser zu kompensieren.
+*   **[DONE]** **Diagnose-Toolkit erweitert:** Implementierung eines `MREG`-Kommandos zum vollständigen Dump aller CC1101-Konfigurations- und Statusregister über die serielle Schnittstelle.
 
 ## 4. Erkenntnisse & Offene Probleme
 
 *   **Problem: Instabile Dekodierung von RF-Signalen (RX)**
     *   **Analyse:** Obwohl der Empfang von rohen Pulsfolgen im `serial`-Profil funktioniert (sichtbar als `MU;...`), werden die Signale nicht zuverlässig dekodiert. Die **Software-Decoder-Logik wurde durch Puls-Injektion (`mi`) als korrekt verifiziert.** Das Problem liegt daher im Signal-Rausch-Verhältnis oder in Timing-Abweichungen der vom CC1101 via GPIO-Interrupt gelieferten Pulse.
-    *   **Maßnahme:** Die CC1101-Register für Empfängerbandbreite (`MDMCFG4` auf **325 kHz**) und AGC (`AGCCTRL2`) wurden zur Optimierung für ASK/OOK angepasst. Weiteres Fine-Tuning der Timing-Toleranzen in den Decodern (`slowrf.c`) ist notwendig.
+    *   **Maßnahme:** Die CC1101-Register für Empfängerbandbreite (`MDMCFG4` auf 325 kHz) und AGC (`AGCCTRL2`) wurden zur Optimierung für ASK/OOK angepasst. Die **Timing-Toleranzen in den Decodern (`slowrf.c`) wurden erweitert**, um den Interrupt-Jitter besser zu kompensieren. Die Hardware-Rauschunterdrückung (Carrier Sense an GDO2) wurde zur weiteren Analyse temporär deaktiviert.
 *   **Problem: RF-Senden (TX) wird nicht empfangen**
-    *   **Analyse:** Ein via `is...` Kommando gesendetes Intertechno-Signal wird von einem Referenz-CUL nicht empfangen. Die Diagnose hat bestätigt, dass der CC1101 korrekt in den **TX-Zustand (`MARCSTATE=0x13`)** wechselt. Das Problem liegt daher nicht im Kontrollfluss, sondern wahrscheinlich an der Sendeleistung (`PATABLE`), am Puls-Timing oder an einer minimalen Frequenzabweichung.
-    *   **Maßnahme:** Die Timing-Parameter für Intertechno V1 wurden auf **350µs** Basis und **10 Wiederholungen** angepasst. Die Sendeleistung muss im nächsten Schritt untersucht werden.
+    *   **Analyse:** Ein via `is...` Kommando gesendetes Intertechno-Signal wird von einem Referenz-CUL nicht empfangen. Die Diagnose hat bestätigt, dass der CC1101 korrekt in den **TX-Zustand (`MARCSTATE=0x13`)** wechselt und die **Sendeleistung auf das Maximum (`PATABLE=0xC6`)** eingestellt ist. Das Problem liegt daher nicht im Kontrollfluss oder der Leistung, sondern wahrscheinlich am exakten Puls-Timing oder an einer minimalen Frequenzabweichung.
+    *   **Maßnahme:** Die Timing-Parameter für Intertechno V1 wurden auf **350µs** Basis und **10 Wiederholungen** angepasst. Die Sendeleistung ist bereits maximiert. Der nächste Schritt ist die Verifizierung der genauen Sendefrequenz und des Puls-Timings mit externen Messgeräten (SDR).
 *   **Verifizierte Hypothese: WiFi-Interferenz stört CC1101-Empfang.**
     *   **Analyse:** Mit der nun funktionierenden `serial`-Firmware (ohne aktivierten 2.4-GHz-Funk) ist der Empfang von 433-MHz-Signalen möglich, was im `wifi`-Profil zuvor nicht der Fall war. Dies bestätigt die starke Vermutung, dass der aktive WiFi-Stack den empfindlichen RF-Empfänger stört.
     *   **Konsequenz:** Die Entwicklung und das Fine-Tuning der RF-Schicht muss primär mit dem `serial`-Build erfolgen. Die Integration mit WiFi/Matter kann erst nach Sicherstellung eines stabilen RF-Layers erfolgen.
@@ -184,8 +188,8 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 
 ## 5. Nächste Schritte
 
-*   **Analyse und Behebung des TX-Pfads (Höchste Priorität):** Systematische Erhöhung der Sendeleistung durch Anpassung der `PATABLE`-Register im CC1101-Treiber. Überprüfung der Frequenzgenauigkeit mit einem SDR.
-*   **Fein-Tuning des RF-Empfangs:** Anpassung der Timing-Toleranzen in den Software-Decodern (`slowrf.c`), um die in den `MU`-Rohdaten sichtbaren Pulse zuverlässig zu dekodieren und den Einfluss von Interrupt-Jitter zu minimieren.
+*   **Analyse und Behebung des TX-Pfads (Höchste Priorität):** Verifizierung der Frequenzgenauigkeit und des Puls-Timings mit einem SDR, da die Sendeleistung bereits maximiert wurde.
+*   **Validierung des RF-Empfangs:** Systematischer Test, ob die **erweiterten Timing-Toleranzen** nun zu einer zuverlässigen Dekodierung von Signalen eines Referenz-Senders führen. Bei Bedarf weiteres Fine-Tuning.
 *   **End-to-End-Validierung des RX-Pfads (Matter-over-WiFi):** Nach erfolgreichem Empfang im `serial`-Modus, erneuter Test mit dem `wifi`-Profil. Validierung des vollständigen Pfades: RF-Signal -> CC1101 -> Decoder -> Matter-Bridge -> Attribut-Update in Home Assistant.
 *   **Matter-over-Thread Validierung:** Durchführung eines End-to-End-Tests der Kommunikation (RX und TX) über das Thread-Netzwerk, um die hybride Funktionalität zu verifizieren.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
