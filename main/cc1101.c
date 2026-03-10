@@ -151,9 +151,10 @@ void cc1101_set_tx_mode() {
     cc1101_cmd_strobe(CC1101_STX);
     
     int timeout = 100;
-    while (((cc1101_read_reg(0x35 | CC1101_READ_BURST) & 0x70) != 0x30) && timeout--) {
+    // MARCSTATE TX is 0x13
+    while (((cc1101_read_reg(0x35 | CC1101_READ_BURST) & 0x1F) != 0x13) && timeout--) {
         cc1101_unlock();
-        vTaskDelay(1);
+        vTaskDelay(pdMS_TO_TICKS(1));
         cc1101_lock();
     }
     cc1101_unlock();
