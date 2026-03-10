@@ -65,7 +65,7 @@ bool culfw_reporting_enabled() {
 }
 
 void handle_command(char *cmd) {
-    char out[256];
+    char out[1024];
     int len = 0;
     if (cmd[0] == 'V') {
         bool is_433 = cc1101_is_433();
