@@ -1,8 +1,8 @@
 #!/bin/bash
-# Optimized build script for CULFW-NG
-# Use: ./build_idf.sh build
-# Use: ./build_idf.sh flash
-# Use: ./build_idf.sh monitor
+# Optimized build script for CULFW-NG supporting Build Profiles
+# Syntax: ./build_idf.sh <command> [profile]
+# Commands: build, flash, monitor, clean
+# Profiles: wifi, thread, serial (default: wifi)
 
 export PATH=$HOME/.platformio/packages/tool-cmake/bin:$HOME/.platformio/packages/tool-ninja:$PATH
 export IDF_PATH=$HOME/.platformio/packages/framework-espidf
@@ -14,11 +14,6 @@ if [ -z "$IDF_EXPORT_QUIET" ]; then
     source $IDF_PATH/export.sh > /dev/null 2>&1
 fi
 
-# Determine command and profile
-# Syntax: ./build_idf.sh <command> [profile]
-# Commands: build, flash, monitor
-# Profiles: wifi, thread, serial (default: wifi)
-
 CMD=$1
 PROFILE=${2:-wifi}
 
@@ -27,30 +22,40 @@ if [ -z "$CMD" ]; then
 fi
 
 case "$CMD" in
+    clean)
+        echo "Cleaning build directory and sdkconfig..."
+        rm -rf build sdkconfig sdkconfig.old dependencies.lock managed_components
+        ;;
     build)
         echo "Building profile: $PROFILE"
-        rm -rf sdkconfig build managed_components dependencies.lock
+        # We use a clean state for different profiles to avoid cache issues
+        rm -rf sdkconfig dependencies.lock
+        
         if [ "$PROFILE" == "serial" ]; then
-            cp "sdkconfig.defaults.$PROFILE" sdkconfig
-            # Force re-evaluation of dependencies
-            idf.py -DPROFILE_SERIAL=1 -DCONFIG_ESP_WIFI_ENABLED=n -DCONFIG_OPENTHREAD_ENABLED=n -DCONFIG_ESP_MATTER_ENABLE=n reconfigure
+            echo "Using Serial defaults..."
+            idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults.serial" -DPROFILE_SERIAL=1 build
+        elif [ "$PROFILE" == "thread" ]; then
+            echo "Using Thread defaults..."
+            # Merge base + thread defaults
+            cat sdkconfig.defaults sdkconfig.defaults.thread > sdkconfig.combined
+            idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.combined" build
+            rm sdkconfig.combined
         else
-            cat sdkconfig.defaults > sdkconfig
-            if [ -f "sdkconfig.defaults.$PROFILE" ]; then
-                cat "sdkconfig.defaults.$PROFILE" >> sdkconfig
-            fi
-            idf.py reconfigure
+            echo "Using WiFi defaults..."
+            # Merge base + wifi defaults
+            cat sdkconfig.defaults sdkconfig.defaults.wifi > sdkconfig.combined
+            idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.combined" build
+            rm sdkconfig.combined
         fi
-        idf.py build
         ;;
     flash|monitor)
-        # Shift arguments to pass remaining to idf.py (like -p /dev/...)
+        # Shift arguments to pass remaining to idf.py
         shift
-        if [ "$CMD" == "monitor" ]; then shift; fi # Monitor doesn't need profile arg
+        # If profile was provided, shift again
+        if [[ "$1" =~ ^(wifi|thread|serial)$ ]]; then shift; fi
         idf.py $CMD "$@"
         ;;
     *)
         idf.py "$@"
         ;;
 esac
-

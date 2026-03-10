@@ -31,15 +31,23 @@ else()
     message(STATUS "Serial Profile - omitting network sources")
 endif()
 
-set(app_requires nvs_flash esp_partition spiffs driver esp_timer esp_netif esp_event json esp_driver_usb_serial_jtag)
+set(app_requires 
+    nvs_flash 
+    esp_partition 
+    spiffs 
+    driver 
+    esp_timer 
+    esp_netif 
+    esp_event 
+    json 
+    esp_driver_usb_serial_jtag
+    esp_wifi
+    esp_http_server
+    openthread
+)
 
-if (CONFIG_ESP_WIFI_ENABLED STREQUAL "y" OR CONFIG_ESP_WIFI_ENABLED EQUAL 1)
-    list(APPEND app_requires esp_wifi esp_http_server)
-endif()
-
-if (CONFIG_OPENTHREAD_ENABLED STREQUAL "y" OR CONFIG_OPENTHREAD_ENABLED EQUAL 1)
-    list(APPEND app_requires openthread)
-endif()
+# Note: We include all requirements here. ESP-IDF will only link them if used.
+# This avoids issues with CMake conditional evaluation during the first pass.
 
 idf_component_register(SRCS ${app_sources}
                        INCLUDE_DIRS ${include_dirs}
