@@ -258,7 +258,7 @@ void cc1101_send_it_v1(const char* data) {
         ESP_LOGI(TAG, "TX entered TX state successfully (MARCSTATE: 0x%02X)", marc);
     }
 
-    int T = 350;
+    int T = 420;
     for (int repeat = 0; repeat < 10; repeat++) {
         for (int i = 0; data[i]; i++) {
             it_v1_send_bit(data[i]);
