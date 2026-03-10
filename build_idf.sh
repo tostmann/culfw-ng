@@ -28,6 +28,11 @@ case "$CMD" in
         ;;
     build)
         echo "Building profile: $PROFILE"
+        # Set target to esp32c6 if not already set or if clean build
+        if [ ! -f "sdkconfig" ]; then
+            idf.py set-target esp32c6
+        fi
+        
         # We use a clean state for different profiles to avoid cache issues
         rm -rf sdkconfig dependencies.lock
         
