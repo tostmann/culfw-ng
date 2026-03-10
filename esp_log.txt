@@ -1,0 +1,2 @@
+I (111) cpu_start: Pro cpu start user code
+CUL32-C6 READY
