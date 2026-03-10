@@ -475,20 +475,34 @@ void slowrf_task(void *pvParameters) {
             }
 
             // --- IT-V1 DECODING ---
-            it1_dec.pulse_buf[it1_dec.pulse_cnt % 4] = pulse;
-            it1_dec.pulse_cnt++;
-            if (it1_dec.pulse_cnt >= 4) {
-                int idx = (it1_dec.pulse_cnt - 4) % 4;
-                uint16_t p1 = it1_dec.pulse_buf[idx], p2 = it1_dec.pulse_buf[(idx + 1) % 4], p3 = it1_dec.pulse_buf[(idx + 2) % 4], p4 = it1_dec.pulse_buf[(idx + 3) % 4];
-                // Loosened tolerances for ESP32 jitter
-                #define IS_T_V1(p) (p >= 100 && p <= 800)
-                #define IS_3T_V1(p) (p > 800 && p <= 2200)
-                if (it1_dec.pos < 16) {
+            #define IS_T_V1(p) (p >= 100 && p <= 800)
+            #define IS_3T_V1(p) (p > 800 && p <= 2200)
+            if (it1_dec.pos == 0) {
+                it1_dec.pulse_buf[it1_dec.pulse_cnt % 4] = pulse;
+                it1_dec.pulse_cnt++;
+                if (it1_dec.pulse_cnt >= 4) {
+                    uint16_t pulses[4];
+                    for(int i=0; i<4; i++) pulses[i] = it1_dec.pulse_buf[(it1_dec.pulse_cnt - 4 + i) % 4];
+                    char bit = 0;
+                    if (IS_T_V1(pulses[0]) && IS_3T_V1(pulses[1]) && IS_T_V1(pulses[2]) && IS_3T_V1(pulses[3])) bit = '0';
+                    else if (IS_3T_V1(pulses[0]) && IS_T_V1(pulses[1]) && IS_3T_V1(pulses[2]) && IS_T_V1(pulses[3])) bit = '1';
+                    else if (IS_T_V1(pulses[0]) && IS_3T_V1(pulses[1]) && IS_3T_V1(pulses[2]) && IS_T_V1(pulses[3])) bit = 'F';
+                    if (bit) { it1_dec.s[it1_dec.pos++] = bit; it1_dec.pulse_cnt = 0; }
+                }
+            } else {
+                it1_dec.pulse_buf[it1_dec.pulse_cnt++] = pulse;
+                if (it1_dec.pulse_cnt == 4) {
+                    uint16_t p1 = it1_dec.pulse_buf[0], p2 = it1_dec.pulse_buf[1], p3 = it1_dec.pulse_buf[2], p4 = it1_dec.pulse_buf[3];
                     char bit = 0;
                     if (IS_T_V1(p1) && IS_3T_V1(p2) && IS_T_V1(p3) && IS_3T_V1(p4)) bit = '0';
                     else if (IS_3T_V1(p1) && IS_T_V1(p2) && IS_3T_V1(p3) && IS_T_V1(p4)) bit = '1';
                     else if (IS_T_V1(p1) && IS_3T_V1(p2) && IS_3T_V1(p3) && IS_T_V1(p4)) bit = 'F';
-                    if (bit) { it1_dec.s[it1_dec.pos++] = bit; it1_dec.pulse_cnt = 0; }
+                    if (bit && it1_dec.pos < 12) {
+                        it1_dec.s[it1_dec.pos++] = bit;
+                        it1_dec.pulse_cnt = 0;
+                    } else {
+                        reset_itv1(&it1_dec);
+                    }
                 }
             }
 
