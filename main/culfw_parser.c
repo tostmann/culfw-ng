@@ -321,19 +321,20 @@ void culfw_parser_task(void *pvParameters) {
     while (1) {
         int n = usb_serial_jtag_read_bytes(buf, sizeof(buf), pdMS_TO_TICKS(10));
         if (n > 0) {
+            // ESP_LOGI(TAG, "Received %d bytes", n);
             for (int i = 0; i < n; i++) {
                 char c = (char)buf[i];
                 if (c == '\r' || c == '\n') {
                     if (cmd_pos > 0) {
                         cmd_buf[cmd_pos] = '\0';
+                        // ESP_LOGI(TAG, "Executing command: %s", cmd_buf);
                         handle_command(cmd_buf);
                         cmd_pos = 0;
                     }
                 } else if (cmd_pos < sizeof(cmd_buf) - 1) {
                     cmd_buf[cmd_pos++] = c;
                 } else {
-                    // Overflow!
-                    ESP_LOGE(TAG, "Command buffer overflow! Resetting.");
+                    ESP_LOGE(TAG, "Command buffer overflow!");
                     cmd_pos = 0;
                 }
             }
