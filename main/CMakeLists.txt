@@ -23,7 +23,7 @@ if (NOT PROFILE_SERIAL)
         list(APPEND app_sources thread_manager.c)
     endif()
 
-    if (CONFIG_ESP_MATTER_ENABLE_WIFI OR CONFIG_ESP_MATTER_ENABLE_OPENTHREAD)
+    if (CONFIG_ESP_MATTER_ENABLE_MATTER_SERVER)
         message(STATUS "Matter Enabled - adding Matter sources")
         list(APPEND app_sources matter_bridge.c matter_interface.cpp)
     endif()
