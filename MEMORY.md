@@ -165,34 +165,27 @@ Entwicklung einer **intelligenten, hybriden Firmware** für ESP32-C6 basierte CU
 *   **[DONE]** Fehlerbehebung CC1101-Empfang: GDO0/GDO2 Pin-Konfiguration im Treiber korrigiert und damit Empfang von Rohdaten (Pulsen) ermöglicht.
 *   **[DONE]** **Build-System (Serial-Profil) stabilisiert:** Der `serial`-Build scheiterte wiederholt an Linker-Fehlern (`undefined reference`) und Architektur-Konflikten (Xtensa vs. RISC-V). Eine 3-stufige Strategie hat das Problem behoben: (1) Das Build-Skript (`build_idf.sh`) wurde gehärtet und übergibt nun explizit `-DSDKCONFIG_DEFAULTS=...`, `-DIDF_TARGET=esp32c6` und `-DPROFILE_SERIAL=1`. (2) Die `sdkconfig.defaults.serial` wurde um die notwendigen Treiber-Optionen für USB-JTAG erweitert. (3) Der C-Code (`culfw_parser.c`, `main.c`, `slowrf.c`) wurde mittels Präprozessor-Direktiven (`#ifndef PROFILE_SERIAL`, `#if APP_MATTER_ENABLED`) von allen Netzwerk- und Matter-Abhängigkeiten entkoppelt, um einen sauberen, minimalen Build zu ermöglichen.
 *   **[DONE]** **Decoder-Logik validiert:** Die Software-Dekodierung für Intertechno V1 wurde durch direkte Puls-Injektion (`mi`-Kommando) erfolgreich verifiziert. Dies beweist, dass die Logik in `slowrf.c` korrekt ist und Probleme im RF-Frontend (CC1101) liegen müssen.
+*   **[DONE]** **TX-Pfad-Diagnose implementiert:** Die Sende-Routine prüft nun aktiv den `MARCSTATE` des CC1101, um sicherzustellen, dass der Chip vor dem Senden in den TX-Zustand (`0x13`) wechselt. Dies wurde per Log-Ausgabe verifiziert.
 
 ## 4. Erkenntnisse & Offene Probleme
 
 *   **Problem: Instabile Dekodierung von RF-Signalen (RX)**
-    *   **Analyse:** Obwohl der Empfang von rohen Pulsfolgen im `serial`-Profil funktioniert (sichtbar als `MU;...` im SignalDuino-Modus), werden die Signale nicht zuverlässig zu Protokollen wie Intertechno dekodiert. Die Software-Decoder-Logik wurde durch Puls-Injektion (`mi`-Kommando) als korrekt verifiziert. Das Problem liegt daher im Signal-Rausch-Verhältnis oder Timing-Abweichungen der vom CC1101 gelieferten Pulse.
-    *   **Maßnahme:** Die CC1101-Register für Empfängerbandbreite (`MDMCFG4`) und AGC (`AGCCTRL2`) wurden angepasst, um die Empfindlichkeit für ASK/OOK zu optimieren. Dies brachte noch keinen vollständigen Erfolg. Weiteres Fine-Tuning ist notwendig.
-*   **Problem: RF-Senden (TX) nicht verifizierbar**
-    *   **Analyse:** Ein via `is...` Kommando gesendetes Intertechno-Signal wird von einem Referenz-CUL nicht empfangen. Dies deutet auf ein Problem im Sende-Pfad hin, z.B. falscher `MARCSTATE` im CC1101, Timing-Probleme im `ets_delay_us` oder eine suboptimale Sendeleistungs-Konfiguration (`PATABLE`).
+    *   **Analyse:** Obwohl der Empfang von rohen Pulsfolgen im `serial`-Profil funktioniert (sichtbar als `MU;...`), werden die Signale nicht zuverlässig dekodiert. Die **Software-Decoder-Logik wurde durch Puls-Injektion (`mi`) als korrekt verifiziert.** Das Problem liegt daher im Signal-Rausch-Verhältnis oder in Timing-Abweichungen der vom CC1101 via GPIO-Interrupt gelieferten Pulse.
+    *   **Maßnahme:** Die CC1101-Register für Empfängerbandbreite (`MDMCFG4` auf **325 kHz**) und AGC (`AGCCTRL2`) wurden zur Optimierung für ASK/OOK angepasst. Weiteres Fine-Tuning der Timing-Toleranzen in den Decodern (`slowrf.c`) ist notwendig.
+*   **Problem: RF-Senden (TX) wird nicht empfangen**
+    *   **Analyse:** Ein via `is...` Kommando gesendetes Intertechno-Signal wird von einem Referenz-CUL nicht empfangen. Die Diagnose hat bestätigt, dass der CC1101 korrekt in den **TX-Zustand (`MARCSTATE=0x13`)** wechselt. Das Problem liegt daher nicht im Kontrollfluss, sondern wahrscheinlich an der Sendeleistung (`PATABLE`), am Puls-Timing oder an einer minimalen Frequenzabweichung.
+    *   **Maßnahme:** Die Timing-Parameter für Intertechno V1 wurden auf **350µs** Basis und **10 Wiederholungen** angepasst. Die Sendeleistung muss im nächsten Schritt untersucht werden.
 *   **Verifizierte Hypothese: WiFi-Interferenz stört CC1101-Empfang.**
     *   **Analyse:** Mit der nun funktionierenden `serial`-Firmware (ohne aktivierten 2.4-GHz-Funk) ist der Empfang von 433-MHz-Signalen möglich, was im `wifi`-Profil zuvor nicht der Fall war. Dies bestätigt die starke Vermutung, dass der aktive WiFi-Stack den empfindlichen RF-Empfänger stört.
     *   **Konsequenz:** Die Entwicklung und das Fine-Tuning der RF-Schicht muss primär mit dem `serial`-Build erfolgen. Die Integration mit WiFi/Matter kann erst nach Sicherstellung eines stabilen RF-Layers erfolgen.
-*   **Gelöstes Problem: Extreme Kopplung durch ESP-Matter SDK und Linker-Fehler im 'serial'-Profil.**
-    *   **Analyse:** Der Versuch, einen minimalen `serial`-Build zu erstellen, scheiterte an tiefgreifenden, transitiven Abhängigkeiten, die das ESP-Matter SDK dem Build-System aufzwingt. Zusätzlich führte eine fehlerhafte Konfiguration im Build-Skript zu Architektur-Konflikten (Xtensa statt RISC-V).
-    *   **Lösung:** Eine mehrstufige Strategie löste das Problem: (1) Das Build-Skript wurde gehärtet, um für jedes Profil eine saubere, isolierte `sdkconfig`-Datei sowie die korrekte Zielarchitektur (`esp32c6`) zu verwenden. (2) Eine zentrale Header-Datei (`main.h`) und Compiler-Definitionen (`-DPROFILE_SERIAL=1`) steuern die bedingte Kompilierung von Code-Teilen und Abhängigkeiten in `CMakeLists.txt`, was eine saubere Entkopplung von Netzwerk- und Matter-Funktionen ermöglicht.
-*   **Gelöstes Problem: Laufzeit-Crash (`modem_clock`) bei simultaner Aktivierung von WiFi und Thread.**
-    *   **Analyse:** Die ESP32-C6-Hardware teilt sich ein einziges 2.4-GHz-Funkmodul für WiFi und Thread. Ein simultaner Betrieb ist nicht möglich.
-    *   **Lösung:** Eine architektonische Umstellung auf **dedizierte, sich gegenseitig ausschließende Build-Profile** (`wifi`, `thread`, `serial`), die sicherstellen, dass nur ein Netzwerkstack zur Zeit einkompiliert wird.
-*   **Gelöstes Problem: Kein Empfang von RF-Signalen trotz korrekter Frequenz.**
-    *   **Analyse:** Die Registerkonfiguration für `GDO0` (Daten) und `GDO2` (Carrier Sense) im CC1101-Treiber war vertauscht.
-    *   **Lösung:** Die Werte für `IOCFG0` und `IOCFG2` wurden korrigiert, was den Empfang von rohen Pulsfolgen freigeschaltet hat.
 *   **Erkenntnis: Irreversibilität von eFuses – Praxistest mit Konsequenzen.**
     *   **Analyse:** Das 868MHz-Board hat **permanent aktive `SECURE_BOOT_EN` eFuses** mit einem nicht mehr verfügbaren Schlüssel.
     *   **Konsequenz:** Dieses Board ist für die weitere Entwicklung effektiv unbrauchbar ("gebrickt"). Die Entwicklung wird **ausschließlich auf ungesicherter Hardware** (433MHz-Board) fortgesetzt.
 
 ## 5. Nächste Schritte
 
-*   **Fein-Tuning des RF-Empfangs (Höchste Priorität):** Systematische Anpassung der CC1101-Register (insbesondere `AGCCTRL`, `MDMCFG`, `DEVIATN`) und der Timing-Toleranzen in den Decodern (`slowrf.c`), um eine stabile, automatische Dekodierung der empfangenen `MU`-Pakete zu erreichen.
-*   **Analyse und Behebung des TX-Pfads:** Untersuchung, warum gesendete Signale nicht empfangen werden. Überprüfung des CC1101-Zustands (`MARCSTATE`) während des Sendens, Validierung der Timing-Genauigkeit und Test verschiedener Sendeleistungs-Einstellungen (`PATABLE`).
+*   **Analyse und Behebung des TX-Pfads (Höchste Priorität):** Systematische Erhöhung der Sendeleistung durch Anpassung der `PATABLE`-Register im CC1101-Treiber. Überprüfung der Frequenzgenauigkeit mit einem SDR.
+*   **Fein-Tuning des RF-Empfangs:** Anpassung der Timing-Toleranzen in den Software-Decodern (`slowrf.c`), um die in den `MU`-Rohdaten sichtbaren Pulse zuverlässig zu dekodieren und den Einfluss von Interrupt-Jitter zu minimieren.
 *   **End-to-End-Validierung des RX-Pfads (Matter-over-WiFi):** Nach erfolgreichem Empfang im `serial`-Modus, erneuter Test mit dem `wifi`-Profil. Validierung des vollständigen Pfades: RF-Signal -> CC1101 -> Decoder -> Matter-Bridge -> Attribut-Update in Home Assistant.
 *   **Matter-over-Thread Validierung:** Durchführung eines End-to-End-Tests der Kommunikation (RX und TX) über das Thread-Netzwerk, um die hybride Funktionalität zu verifizieren.
 *   **System-Validierung (Langzeit-Stabilität):** Durchführung von Langzeit-Stabilitätstests sowie Reichweiten- und Störfestigkeitstests in realen Einsatzszenarien.
