@@ -28,15 +28,27 @@ case "$CMD" in
         ;;
     build)
         echo "Building profile: $PROFILE"
-        # Set target to esp32c6 if not already set or if clean build
-        if [ ! -f "sdkconfig" ]; then
-            idf.py set-target esp32c6
-        fi
         
         # We use a clean state for different profiles to avoid cache issues
-        rm -rf sdkconfig dependencies.lock
+        rm -rf sdkconfig dependencies.lock build/CMakeCache.txt
         
         if [ "$PROFILE" == "serial" ]; then
+            echo "Using Serial defaults..."
+            idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults.serial" -DIDF_TARGET=esp32c6 -DPROFILE_SERIAL=1 build
+        elif [ "$PROFILE" == "thread" ]; then
+            echo "Using Thread defaults..."
+            # Merge base + thread defaults
+            cat sdkconfig.defaults sdkconfig.defaults.thread > sdkconfig.combined
+            idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.combined" -DIDF_TARGET=esp32c6 build
+            rm sdkconfig.combined
+        else
+            echo "Using WiFi defaults..."
+            # Merge base + wifi defaults
+            cat sdkconfig.defaults sdkconfig.defaults.wifi > sdkconfig.combined
+            idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.combined" -DIDF_TARGET=esp32c6 build
+            rm sdkconfig.combined
+        fi
+        ;;
             echo "Using Serial defaults..."
             idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults.serial" -DPROFILE_SERIAL=1 build
         elif [ "$PROFILE" == "thread" ]; then
