@@ -100,7 +100,7 @@ esp_err_t cc1101_init() {
         cc1101_write_reg(0x0F, 0x6A); 
     }
     
-    cc1101_write_reg(0x10, 0x08); // MDMCFG4: BW 812kHz (Maximum)
+    cc1101_write_reg(0x10, 0x55); // MDMCFG4: BW 325kHz
     cc1101_write_reg(0x11, 0x93); // MDMCFG3: DRATE
     cc1101_write_reg(0x12, 0x30); // MDMCFG2: ASK/OOK, No preamble/sync
     cc1101_write_reg(0x13, 0x22); // MDMCFG1
@@ -110,7 +110,7 @@ esp_err_t cc1101_init() {
     cc1101_write_reg(0x18, 0x18); // MCSM0
     cc1101_write_reg(0x19, 0x16); // FOCCFG
     cc1101_write_reg(0x1A, 0x6C); // BSCFG
-    cc1101_write_reg(0x1B, 0x07); // AGCCTRL2: Max Gain
+    cc1101_write_reg(0x1B, 0x43); // AGCCTRL2: Optimized for OOK
     cc1101_write_reg(0x1C, 0x40); // AGCCTRL1: LNA Gain
     cc1101_write_reg(0x1D, 0x91); // AGCCTRL0
     cc1101_write_reg(0x21, 0x56); // FREND1
